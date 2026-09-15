@@ -87,7 +87,8 @@ The next work should improve the pilot as a learning instrument and prove the au
    - ✅ OpenTelemetry GenAI metadata mapping with content-bearing fields ignored by default;
    - ✅ Vercel AI SDK step-callback metadata mapping without coupling CRUX core to the AI SDK package;
    - ✅ declared-versus-observed model/provider comparison;
-   - ⬜ run the adapter against one small real AI pipeline;
+   - ✅ credential-free consequential pipeline dogfood in CI: fallback model → human review → decision → action, with leakage assertions;
+   - ⬜ run the adapter against one small live AI provider/framework pipeline;
    - ⬜ ingest a CI/eval `EvidenceEnvelope` automatically;
    - ⬜ generate a receipt proposal from an observed trace;
    - ⬜ show declared-versus-observed divergence in the pilot viewer;
