@@ -2,7 +2,13 @@
 
 import type { CruxPortableBundle } from "@crux/formats";
 import type { Action, AIInfluence, Decision, SystemVersion } from "@crux/schemas";
-import { appendActionPoint, appendDecisionPoint } from "../lib/authoring";
+import {
+  appendActionPoint,
+  appendDecisionPoint,
+  appendHumanRole,
+  renameActionPoint,
+  renameDecisionPoint,
+} from "../lib/authoring";
 
 const authorityOptions: Decision["authority"][] = [
   "human",
@@ -59,6 +65,11 @@ export function AuthorityEditor({
     return <div className="empty">This system version is not available for authority authoring.</div>;
   }
 
+  const addRole = () => {
+    const result = appendHumanRole(bundle, systemVersionId);
+    onBundleChange(result.bundle);
+  };
+
   const addDecision = () => {
     const result = appendDecisionPoint(bundle, systemVersionId);
     onBundleChange(result.bundle);
@@ -72,6 +83,9 @@ export function AuthorityEditor({
   return (
     <div>
       <div className="kicker">Human responsibility</div>
+      <p className="small muted">
+        Record the real roles that remain accountable. Different decision points can point to different roles.
+      </p>
       {version.human_roles.length ? (
         version.human_roles.map((role) => (
           <div className="receipt" key={role.id} style={{ padding: 16, marginBottom: 14 }}>
@@ -133,6 +147,7 @@ export function AuthorityEditor({
           No human role is recorded for this version. Do not describe a decision as human-authorised unless a real responsible role exists.
         </div>
       )}
+      <button className="btn" type="button" onClick={addRole}>+ Add responsible role</button>
 
       <div className="divider" />
       <div className="kicker">Decision points</div>
@@ -148,10 +163,9 @@ export function AuthorityEditor({
                 id={`decision-name-${decision.id}`}
                 className="input"
                 value={decision.name}
-                onChange={(event) => mutate((nextVersion) => {
-                  const nextDecision = nextVersion.decisions.find((item) => item.id === decision.id);
-                  if (nextDecision) nextDecision.name = event.target.value;
-                })}
+                onChange={(event) => onBundleChange(
+                  renameDecisionPoint(bundle, systemVersionId, decision.id, event.target.value),
+                )}
               />
             </div>
             <div className="field">
@@ -278,10 +292,9 @@ export function AuthorityEditor({
                 id={`action-name-${action.id}`}
                 className="input"
                 value={action.name}
-                onChange={(event) => mutate((nextVersion) => {
-                  const nextAction = nextVersion.actions.find((item) => item.id === action.id);
-                  if (nextAction) nextAction.name = event.target.value;
-                })}
+                onChange={(event) => onBundleChange(
+                  renameActionPoint(bundle, systemVersionId, action.id, event.target.value),
+                )}
               />
             </div>
             <div className="field">
