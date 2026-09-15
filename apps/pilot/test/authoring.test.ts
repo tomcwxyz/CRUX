@@ -8,7 +8,10 @@ import {
   appendActionPoint,
   appendAIUse,
   appendDecisionPoint,
+  appendHumanRole,
   appendManualEvidence,
+  renameActionPoint,
+  renameDecisionPoint,
 } from "../lib/authoring";
 import { createStarterBundle } from "../lib/starter";
 
@@ -139,6 +142,58 @@ describe("pilot decision and action authoring", () => {
         (node) => node.type === "action" && node.action_ref === result.actionId,
       ),
     ).toBe(true);
+    expect(validateBundleReferences(parsed)).toEqual({ valid: true, issues: [] });
+  });
+
+  it("can add different responsible human roles without implying they are process steps", () => {
+    const starter = createStarterBundle("2026-09-15T11:30:00+00:00");
+    const version = starter.system_versions[0];
+    expect(version).toBeDefined();
+    if (!version) return;
+
+    const result = appendHumanRole(starter, version.id, "2026-09-15T11:35:00+00:00");
+    const parsed = portableBundleSchema.parse(result.bundle);
+
+    expect(parsed.system_versions[0]?.human_roles).toHaveLength(2);
+    expect(parsed.system_versions[0]?.human_roles[1]?.id).toBe(result.humanRoleId);
+    expect(validateBundleReferences(parsed)).toEqual({ valid: true, issues: [] });
+  });
+
+  it("keeps process labels aligned when decisions and actions are renamed", () => {
+    const starter = createStarterBundle("2026-09-15T11:30:00+00:00");
+    const version = starter.system_versions[0];
+    expect(version).toBeDefined();
+    if (!version) return;
+
+    const withDecision = appendDecisionPoint(starter, version.id, "2026-09-15T11:35:00+00:00");
+    const withAction = appendActionPoint(withDecision.bundle, version.id, "2026-09-15T11:36:00+00:00");
+    const renamedDecision = renameDecisionPoint(
+      withAction.bundle,
+      version.id,
+      withDecision.decisionId,
+      "Decide eligibility",
+    );
+    const renamedAction = renameActionPoint(
+      renamedDecision,
+      version.id,
+      withAction.actionId,
+      "Send outcome",
+    );
+    const parsed = portableBundleSchema.parse(renamedAction);
+    const editedVersion = parsed.system_versions[0];
+
+    expect(editedVersion?.decisions[0]?.name).toBe("Decide eligibility");
+    expect(editedVersion?.actions[0]?.name).toBe("Send outcome");
+    expect(
+      editedVersion?.process.nodes.find(
+        (node) => node.type === "decision" && node.decision_ref === withDecision.decisionId,
+      )?.name,
+    ).toBe("Decide eligibility");
+    expect(
+      editedVersion?.process.nodes.find(
+        (node) => node.type === "action" && node.action_ref === withAction.actionId,
+      )?.name,
+    ).toBe("Send outcome");
     expect(validateBundleReferences(parsed)).toEqual({ valid: true, issues: [] });
   });
 });
