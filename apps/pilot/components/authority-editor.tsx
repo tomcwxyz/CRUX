@@ -9,6 +9,7 @@ import {
   renameActionPoint,
   renameDecisionPoint,
 } from "../lib/authoring";
+import { ReceiptEditor } from "./receipt-editor";
 
 const authorityOptions: Decision["authority"][] = [
   "human",
@@ -386,6 +387,17 @@ export function AuthorityEditor({
         </div>
       )}
       <button className="btn" style={{ marginTop: 12 }} type="button" onClick={addAction}>+ Add action</button>
+
+      <div className="divider" />
+      <div className="kicker">Specific case</div>
+      <p className="small muted">
+        Move from the declared process to one concrete example: what did AI contribute, what happened next, and who ultimately had authority?
+      </p>
+      <ReceiptEditor
+        bundle={bundle}
+        systemVersionId={systemVersionId}
+        onBundleChange={onBundleChange}
+      />
     </div>
   );
 }
