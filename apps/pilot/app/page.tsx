@@ -23,6 +23,12 @@ export default function HomePage() {
 
       <PilotWorkbench />
 
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+        <a className="btn" href="/crux-pilot-session.md" download>
+          Download pilot session sheet
+        </a>
+      </div>
+
       <footer className="footer-note">
         <span>CRUX keeps the portable bundle as the source of truth.</span>
         <span>No account · no database · no hidden app-only state.</span>
