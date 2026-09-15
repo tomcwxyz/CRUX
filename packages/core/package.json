@@ -1,6 +1,6 @@
 {
   "name": "@crux/core",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -12,6 +12,14 @@
     "./trace": {
       "types": "./dist/trace.d.ts",
       "default": "./dist/trace.js"
+    },
+    "./learning": {
+      "types": "./dist/learning.d.ts",
+      "default": "./dist/learning.js"
+    },
+    "./projection": {
+      "types": "./dist/projection.d.ts",
+      "default": "./dist/projection.js"
     }
   },
   "files": ["dist"],
