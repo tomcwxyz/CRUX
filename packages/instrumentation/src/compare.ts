@@ -18,8 +18,9 @@ const stringAttribute = (event: Event, key: string) => {
   return typeof value === "string" ? value : undefined;
 };
 
-const declaredValue = (value: { status: string; value?: string } | undefined) =>
-  value?.status === "known" ? value.value : undefined;
+const declaredValue = (
+  value: { status: string; value?: string | undefined } | undefined,
+) => value?.status === "known" ? value.value : undefined;
 
 /**
  * Compares observed runtime model metadata with the model component declared on
