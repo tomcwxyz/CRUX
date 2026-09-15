@@ -1,9 +1,27 @@
 import type { CruxPortableBundle } from "@crux/formats";
+import type {
+  DisclosureLevel,
+  EvidenceKind,
+  EvidenceRelationship,
+} from "@crux/schemas";
 
 const nextUseNumber = (bundle: CruxPortableBundle) => {
   let number = bundle.ai_uses.length + 1;
   const usedIds = new Set(bundle.ai_uses.map((item) => item.id));
   while (usedIds.has(`ai-use:use-${number}`)) number += 1;
+  return number;
+};
+
+const nextEvidenceNumber = (bundle: CruxPortableBundle) => {
+  let number = bundle.evidence.length + 1;
+  const evidenceIds = new Set(bundle.evidence.map((item) => item.id));
+  const linkIds = new Set(bundle.evidence_links.map((item) => item.id));
+  while (
+    evidenceIds.has(`evidence:manual-${number}`) ||
+    linkIds.has(`evidence-link:manual-${number}`)
+  ) {
+    number += 1;
+  }
   return number;
 };
 
@@ -147,4 +165,59 @@ export const appendAIUse = (
 
   next.generated_at = now;
   return { bundle: next, aiUseId };
+};
+
+export type ManualEvidenceInput = {
+  summary: string;
+  kind: EvidenceKind;
+  relationship: EvidenceRelationship;
+  disclosure: DisclosureLevel;
+  observedAt?: string;
+  limitations?: string[];
+};
+
+export const appendManualEvidence = (
+  bundle: CruxPortableBundle,
+  claimId: string,
+  input: ManualEvidenceInput,
+  now = new Date().toISOString(),
+): { bundle: CruxPortableBundle; evidenceId: string; evidenceLinkId: string } => {
+  const organisation = bundle.organisations[0];
+  const claim = bundle.claims.find((item) => item.id === claimId);
+  if (!organisation) throw new Error("Create an organisation before adding evidence.");
+  if (!claim) throw new Error(`Cannot add evidence: claim ${claimId} was not found.`);
+  if (!input.summary.trim()) throw new Error("Evidence needs a short summary.");
+
+  const next = structuredClone(bundle);
+  const number = nextEvidenceNumber(next);
+  const evidenceId = `evidence:manual-${number}`;
+  const evidenceLinkId = `evidence-link:manual-${number}`;
+
+  next.evidence.push({
+    schema_version: "0.1",
+    id: evidenceId,
+    kind: input.kind,
+    summary: input.summary.trim(),
+    source: {
+      kind: "organisation",
+      producer: { name: organisation.name },
+    },
+    targets: structuredClone(claim.applies_to),
+    freshness: { observed_at: input.observedAt ?? now },
+    limitations: input.limitations?.filter(Boolean) ?? [],
+    external_refs: [],
+    disclosure: input.disclosure,
+  });
+
+  next.evidence_links.push({
+    schema_version: "0.1",
+    id: evidenceLinkId,
+    claim_ref: claim.id,
+    evidence_ref: evidenceId,
+    relationship: input.relationship,
+    created_at: now,
+  });
+
+  next.generated_at = now;
+  return { bundle: next, evidenceId, evidenceLinkId };
 };
