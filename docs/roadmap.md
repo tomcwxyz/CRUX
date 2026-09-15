@@ -53,7 +53,7 @@ Acceptance met: CRUX bundles can be authored, validated, inspected and safely pr
 
 ## 0.1-beta — real-world schema pilot · active
 
-The beta now has a deliberately thin, file-first pilot surface. It is not the future hosted product architecture: its purpose is to expose the existing portable contracts to real authors and readers without introducing a second canonical data model.
+The beta has a deliberately thin, file-first pilot surface. It is not the future hosted product architecture: its purpose is to expose the existing portable contracts to real authors and readers without introducing a second canonical data model.
 
 Implemented pilot capabilities:
 
@@ -68,19 +68,30 @@ Implemented pilot capabilities:
 - require explicit human involvement where a manually authored receipt claims human/hybrid final authority;
 - inspect working, public and affected-person projections;
 - prevent canonical/disclosure export while an in-progress draft fails schema or reference validation;
+- surface questions-to-resolve without creating a score;
 - download a structured pilot-session sheet for comparable authoring/comprehension observations.
 
 See `docs/PILOT.md` for the pilot protocol and `docs/PIPELINE_INTEGRATION.md` for how CRUX should participate in live AI systems.
 
 ### Immediate beta work
 
-The next work should improve the pilot as a learning instrument rather than expanding CRUX into generic CRUD:
+The next work should improve the pilot as a learning instrument and prove the automation boundary rather than expanding CRUX into generic CRUD:
 
 1. **Structured dry-runs** — author several real or realistic organisational cases end-to-end, including one genuinely consequential process and one non-consequential productivity use.
-2. **Questions to resolve** — surface missing transparency as prompts, not a score: e.g. a consequential use with no decision point, human authority with no responsible role, or a consequential version with no example receipt.
+2. **Questions to resolve** — test whether missing-transparency prompts are useful and proportionate rather than adding a completeness/trust score.
 3. **Non-author comprehension** — test the public and affected-person views with people who did not create the record; record misunderstanding as product/schema evidence.
-4. **Declared versus observed tension** — use receipts and imported evidence to test how CRUX should expose divergence between the declared process and what happened in practice without silently rewriting either.
-5. **Pipeline integration spike** — before building a hosted ingestion service, prove that existing runtime/eval telemetry can populate CRUX automatically: define a minimal runtime event envelope, map OpenTelemetry GenAI events into CRUX, prototype one Vercel AI SDK adapter, ingest an EvidenceEnvelope from CI, and generate a receipt proposal from a real trace.
+4. **Declared versus observed tension** — use receipts and imported evidence to test how CRUX exposes divergence between the declared process and what happened in practice without silently rewriting either.
+5. **Pipeline integration spike · in progress** — prove that runtime/eval telemetry can populate CRUX automatically before building a hosted ingestion service.
+   - ✅ framework-independent metadata-first `@crux/instrumentation` collector;
+   - ✅ canonical Run/Event production from live observations;
+   - ✅ OpenTelemetry GenAI metadata mapping with content-bearing fields ignored by default;
+   - ✅ Vercel AI SDK step-callback metadata mapping without coupling CRUX core to the AI SDK package;
+   - ✅ declared-versus-observed model/provider comparison;
+   - ⬜ run the adapter against one small real AI pipeline;
+   - ⬜ ingest a CI/eval `EvidenceEnvelope` automatically;
+   - ⬜ generate a receipt proposal from an observed trace;
+   - ⬜ show declared-versus-observed divergence in the pilot viewer;
+   - ⬜ only then design HTTP/OTLP transport, batching, auth and idempotency.
 6. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before adding persistence/accounts/workspaces.
 7. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
 
@@ -115,17 +126,17 @@ Primary test:
 
 ## Phase 3 — provenance and instrumentation
 
-Turn the beta pipeline spike into supported infrastructure:
+Turn the validated beta instrumentation package into supported infrastructure:
 
-- `@crux/sdk` around the existing Run/Event/Trace/Receipt contracts;
+- evolve `@crux/instrumentation` into the stable runtime SDK boundary rather than starting again with a second event model;
 - HTTP ingestion API with batching, idempotency and explicit identity/authority;
 - OpenTelemetry/OTLP mapping or Collector bridge;
 - framework adapters such as Vercel AI SDK where useful;
-- declared-versus-observed comparisons;
+- declared-versus-observed comparisons across models, actions and review controls;
 - receipt proposal generation;
 - regression-case feedback loop.
 
-Metadata is captured by default; content capture remains explicit and opt-in.
+Metadata is captured by default; content capture remains explicit and opt-in. Runtime collection should normally be observe-only rather than a critical availability dependency.
 
 ## Phase 4 — generic evaluation interoperability
 
