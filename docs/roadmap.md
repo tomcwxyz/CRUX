@@ -11,11 +11,11 @@ The product should grow from a strong open contract rather than allowing an earl
 
 Every phase preserves the standalone-first rule: integrations with TOPO, RACK, Ship Check and external eval tooling are optional enhancements.
 
-## 0.1-alpha.1 — evidence spine · active
+## 0.1-alpha.1 — evidence spine · complete
 
 Outcome: establish the smallest useful provider-neutral contracts for claims, evidence and evaluations.
 
-Build:
+Implemented:
 
 - repository/build baseline aligned with current RACK/Ship Check conventions;
 - `Claim` schema;
@@ -25,18 +25,18 @@ Build:
 - `EvaluationRun` schema;
 - neutral `EvidenceEnvelope`;
 - strict runtime validation and inferred TypeScript types;
-- fixtures/tests covering native CRUX evidence and external evidence from RACK/Ship Check-style producers;
+- tests covering native CRUX evidence and external RACK/Ship Check-style evidence;
 - product specification and interoperability rules.
 
-Acceptance:
+Acceptance met:
 
-- an organisation can represent a claim without pretending the claim is evidence;
+- a claim remains distinct from its evidence;
 - evidence can support, contradict, qualify or leave a claim inconclusive;
-- an eval definition can be rerun against different system versions;
-- external evidence does not need to depend on CRUX packages;
-- schemas reject malformed/ambiguous objects rather than silently accepting extra fields.
+- evaluation definitions are independently versioned from runs;
+- external producers use the neutral envelope without depending on CRUX runtime code;
+- strict schemas reject undeclared fields.
 
-## 0.1-alpha.2 — organisational/process contracts
+## 0.1-alpha.2 — organisational/process contracts · active
 
 Outcome: connect evidence to meaningful AI-mediated processes.
 
@@ -53,6 +53,15 @@ Build:
 - decision points and actions;
 - risk/safeguard relationships;
 - explicit unknown/withheld states.
+
+Implementation direction:
+
+- keep influence and agency orthogonal;
+- put authority on individual decision points rather than the whole system;
+- model agent actions separately from decisions;
+- preserve unknown/not-disclosed/withheld supplier information explicitly;
+- validate local graph references without introducing a database dependency;
+- prove the contracts against five substantially different workflows before expanding the schema.
 
 Acceptance:
 
