@@ -4,7 +4,12 @@ import {
   portableBundleSchema,
   validateBundleReferences,
 } from "@crux/formats";
-import { appendAIUse, appendManualEvidence } from "../lib/authoring";
+import {
+  appendActionPoint,
+  appendAIUse,
+  appendDecisionPoint,
+  appendManualEvidence,
+} from "../lib/authoring";
 import { createStarterBundle } from "../lib/starter";
 
 describe("pilot multi-use authoring", () => {
@@ -79,5 +84,61 @@ describe("pilot evidence authoring", () => {
         disclosure: "internal",
       }),
     ).toThrow("Evidence needs a short summary.");
+  });
+});
+
+describe("pilot decision and action authoring", () => {
+  it("adds a version-scoped decision point with explicit human authority", () => {
+    const starter = createStarterBundle("2026-09-15T11:30:00+00:00");
+    const version = starter.system_versions[0];
+    expect(version).toBeDefined();
+    if (!version) return;
+
+    const result = appendDecisionPoint(
+      starter,
+      version.id,
+      "2026-09-15T11:35:00+00:00",
+    );
+    const parsed = portableBundleSchema.parse(result.bundle);
+    const decision = parsed.system_versions[0]?.decisions[0];
+
+    expect(decision?.id).toBe(result.decisionId);
+    expect(decision?.authority).toBe("human");
+    expect(decision?.responsible_role_refs).toEqual(["role:reviewer"]);
+    expect(
+      parsed.system_versions[0]?.process.nodes.some(
+        (node) => node.type === "decision" && node.decision_ref === result.decisionId,
+      ),
+    ).toBe(true);
+    expect(validateBundleReferences(parsed)).toEqual({ valid: true, issues: [] });
+  });
+
+  it("adds a bounded action separately from the decision that precedes it", () => {
+    const starter = createStarterBundle("2026-09-15T11:30:00+00:00");
+    const version = starter.system_versions[0];
+    expect(version).toBeDefined();
+    if (!version) return;
+
+    const withDecision = appendDecisionPoint(
+      starter,
+      version.id,
+      "2026-09-15T11:35:00+00:00",
+    );
+    const result = appendActionPoint(
+      withDecision.bundle,
+      version.id,
+      "2026-09-15T11:36:00+00:00",
+    );
+    const parsed = portableBundleSchema.parse(result.bundle);
+    const editedVersion = parsed.system_versions[0];
+
+    expect(editedVersion?.actions[0]?.id).toBe(result.actionId);
+    expect(editedVersion?.actions[0]?.human_approval_required).toBe(true);
+    expect(
+      editedVersion?.process.nodes.some(
+        (node) => node.type === "action" && node.action_ref === result.actionId,
+      ),
+    ).toBe(true);
+    expect(validateBundleReferences(parsed)).toEqual({ valid: true, issues: [] });
   });
 });
