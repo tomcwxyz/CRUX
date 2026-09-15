@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { CruxPortableBundle } from "@crux/formats";
 import type { AIInfluence, Decision, DisclosureLevel } from "@crux/schemas";
 import { appendManualReceipt } from "../lib/receipts";
+import { PilotQuestions } from "./pilot-questions";
 
 const involvementOptions: AIInfluence[] = [
   "assistive",
@@ -113,6 +114,8 @@ export function ReceiptEditor({
 
   return (
     <div>
+      <PilotQuestions bundle={bundle} systemVersionId={systemVersionId} />
+
       <div className="notice" style={{ marginBottom: 16 }}>
         Receipt authoring is metadata-first. CRUX records the role AI played and what happened next; it does not copy the source material, prompt or model output into the receipt.
       </div>
@@ -212,7 +215,7 @@ export function ReceiptEditor({
           />
         </div>
         <div className="field">
-          <label htmlFor={`receipt-human-${systemVersionId}`}>What did a person do? · optional</label>
+          <label htmlFor={`receipt-human-${systemVersionId}`}>What did a person do? · optional unless human/hybrid has final authority</label>
           <textarea
             id={`receipt-human-${systemVersionId}`}
             className="textarea"
