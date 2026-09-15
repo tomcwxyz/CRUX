@@ -1,6 +1,6 @@
 # CRUX in AI pipelines
 
-**Status:** architectural direction for `0.1-beta`  
+**Status:** active `0.1-beta` integration spike  
 **Updated:** 15 September 2026
 
 CRUX should not become a manually maintained AI register that drifts away from production reality.
@@ -23,6 +23,19 @@ The operating principle is:
 > **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
 
 Manual authoring remains important because instrumentation cannot reliably infer organisational purpose, consequence, accountability, challenge routes or what should be publicly disclosed. Automation is important because people should not have to manually record model versions, eval runs, tool invocations or every execution trace.
+
+## Current beta implementation
+
+`packages/instrumentation` now provides the first runtime implementation of this design on the `beta/pipeline-instrumentation` branch.
+
+It currently proves four things:
+
+1. a live process can create canonical CRUX Run/Event records without a CRUX server;
+2. Vercel AI SDK step metadata can be mapped into a bounded `ai_invocation` event without importing the AI SDK into CRUX core;
+3. OpenTelemetry GenAI metadata can be mapped through a strict allow-list while content-bearing input/output attributes are ignored;
+4. observed model/provider metadata can be compared with the exact declared SystemVersion and surfaced as a match/divergence without mutating either side.
+
+This package is deliberately transport-free. The next test is one real small AI pipeline. HTTP/OTLP ingestion, batching, authentication and idempotency come after the event mapping survives that test.
 
 ## Where CRUX sits
 
@@ -118,8 +131,8 @@ A thin SDK, middleware adapter or telemetry bridge can emit bounded CRUX Run/Eve
 - provider/model requested;
 - provider/model actually used;
 - fallback model/provider;
-- tool name invoked;
-- tool outcome;
+- tool name invoked where that metadata is safe and useful;
+- tool/action outcome;
 - rule evaluated;
 - human review event;
 - override event;
@@ -129,13 +142,13 @@ A thin SDK, middleware adapter or telemetry bridge can emit bounded CRUX Run/Eve
 - escalation/error;
 - timestamps and sequence.
 
-By default CRUX should capture **metadata, not content**.
+By default CRUX captures **metadata, not content**.
 
-Prompt text, completions, retrieved documents, tool arguments/results and personal data should remain opt-in rather than being necessary for provenance.
+Prompt text, completions, retrieved documents, reasoning, tool arguments/results and personal data are not necessary for provenance and remain opt-in rather than default capture.
 
 ### OpenTelemetry alignment
 
-CRUX should consume or transform existing OpenTelemetry GenAI telemetry where possible instead of creating a parallel low-level observability vocabulary.
+CRUX consumes or transforms existing OpenTelemetry GenAI telemetry where possible instead of creating a parallel low-level observability vocabulary.
 
 OpenTelemetry is useful for technical observation. CRUX adds the organisational layer that ordinary telemetry does not know about:
 
@@ -149,18 +162,20 @@ informed eligibility Decision A,
 and is relevant to Claim B
 ```
 
-A future CRUX telemetry bridge should therefore map from existing GenAI spans/events into bounded CRUX events rather than require every application to emit both independently.
+The beta mapper currently allow-lists metadata such as operation name, provider, request/response model, response ID, token counts, finish reason and workflow name. It deliberately drops GenAI input/output message content.
 
 ### Framework adapters
 
-Framework-specific adapters can improve ergonomics while keeping the core provider-neutral.
+Framework-specific adapters improve ergonomics while keeping the core provider-neutral.
 
-Likely early adapters:
+The first AI SDK mapper accepts a small callback-shaped object rather than importing `ai`. That keeps framework churn outside CRUX canonical packages while still allowing `onStepFinish`/runtime metadata to become CRUX events.
 
-- Vercel AI SDK telemetry/lifecycle hooks;
+Likely later adapters:
+
 - OpenTelemetry Collector / OTLP;
+- richer Vercel AI SDK integration if the structural mapper is insufficient;
 - OpenAI / Anthropic SDK wrappers only where useful;
-- generic HTTP/event emitter.
+- generic HTTP/event exporter.
 
 Adapters depend on CRUX public contracts. CRUX core never depends on a framework adapter.
 
@@ -208,7 +223,7 @@ Unexpected cases can become proposed evaluation/regression cases, preserving the
 - model/provider actually used;
 - model/provider fallback;
 - timestamps;
-- tool invocation name and outcome;
+- selected tool invocation metadata;
 - action execution status;
 - eval/evaluation results;
 - Ship Check/RACK/CI evidence;
@@ -262,7 +277,7 @@ GET  /v1/receipts/{id}
 
 High-volume runtime telemetry should support batching and idempotency.
 
-The contracts should also remain usable without a CRUX server: local files, CLI pipes and direct library calls remain valid standalone paths.
+The contracts also remain usable without a CRUX server: local files, CLI pipes and direct library calls are valid standalone paths. The beta instrumentation package proves the direct-library path first.
 
 ## MCP
 
@@ -335,7 +350,23 @@ CRUX
 Claim contradicted by observed production evidence
 ```
 
-CRUX should surface the divergence without automatically deciding why it happened or whether the system is unethical.
+The beta package currently implements the first comparison at event level for declared provider/model versus observed provider/model. Review/action-control comparison remains a later spike.
+
+CRUX surfaces divergence without automatically deciding why it happened or whether the system is unethical.
+
+## Runtime availability boundary
+
+CRUX instrumentation can be **inline without being in the critical path**.
+
+The preferred starting mode is observe-only:
+
+```text
+AI application ─────────────→ user outcome
+      │
+      └── bounded metadata ─→ CRUX
+```
+
+A CRUX transport failure should not normally stop the AI application from serving its user. Organisations may separately decide that specific evidence or verification requirements should gate CI/deployment.
 
 ## Recommended implementation sequence
 
@@ -343,27 +374,28 @@ CRUX should surface the divergence without automatically deciding why it happene
 
 Before building a hosted ingestion service:
 
-1. define a minimal runtime event envelope around existing Run/Event schemas;
-2. build an OpenTelemetry-to-CRUX mapping experiment;
-3. build one Vercel AI SDK adapter experiment;
-4. ingest a CI/eval EvidenceEnvelope automatically;
-5. generate a receipt proposal from a real trace;
-6. test declared-versus-observed divergence in the pilot viewer.
+- ✅ define a minimal runtime collection layer around existing Run/Event schemas;
+- ✅ map OpenTelemetry GenAI metadata into CRUX;
+- ✅ map one Vercel AI SDK callback shape into CRUX;
+- ✅ detect basic declared-versus-observed provider/model divergence;
+- ⬜ exercise the package against one small real AI pipeline;
+- ⬜ ingest a CI/eval EvidenceEnvelope automatically;
+- ⬜ generate a receipt proposal from a real trace;
+- ⬜ display declared-versus-observed divergence in the pilot viewer.
 
-This should use local files or an in-memory/local endpoint first.
+This uses local/in-memory records first.
 
 ### After the beta proves the contracts
 
 Build:
 
-- `@crux/sdk`;
-- HTTP ingestion API;
+- HTTP ingestion API/exporter around the proven instrumentation model;
 - batching/idempotency/auth;
 - optional OTLP/Collector bridge;
-- optional MCP server;
-- adapter packages.
+- optional framework-specific adapter packages;
+- optional MCP server.
 
-The SDK and MCP layers must remain optional. The open bundle and core contracts continue to work independently.
+The SDK/API and MCP layers remain optional. The open bundle and core contracts continue to work independently.
 
 ## Architectural assertion
 
