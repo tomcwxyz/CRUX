@@ -2,7 +2,7 @@
 
 **Updated:** 15 September 2026
 
-CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the foundation, and a deliberately thin pilot authoring/viewer surface sits directly on top of the portable bundle.
+CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the foundation, a deliberately thin pilot authoring/viewer surface sits directly on top of the portable bundle, and a first metadata-only runtime instrumentation spike is being tested against the same canonical Run/Event contracts.
 
 ## Implemented
 
@@ -73,17 +73,42 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - manual evidence authoring with kind, relationship, disclosure and limitations; supporting evidence changes derived claim state rather than merely changing presentation
 - metadata-first specific-case receipt authoring that creates a valid Run → Event → Trace → Receipt chain
 - receipt authoring stores no source content by default and requires explicit human involvement when human/hybrid final authority is claimed
+- questions-to-resolve prompts that surface missing transparency without a score
+- downloadable pilot-session sheet for comparable authoring and comprehension testing
 - canonical/public/affected-person JSON export
 - no account, database or hidden application-only canonical state
 - structural and cross-reference validation before canonical/disclosure export
 - invalid in-progress edits remain visibly a working draft
 - starter bundle deliberately includes a declared but unevidenced claim
 
+### Beta pipeline integration spike
+
+Implemented on `beta/pipeline-instrumentation` for validation before merge:
+
+- `packages/instrumentation` as a framework-independent metadata-first runtime collector;
+- canonical Run/Event generation with no hosted CRUX dependency;
+- Vercel AI SDK step-callback mapping without importing the `ai` package into CRUX core;
+- OpenTelemetry GenAI span mapping using a strict allow-list of metadata attributes;
+- prompt/output/reasoning/tool-argument content excluded by default even when source telemetry contains it;
+- declared-versus-observed model/provider comparison against the exact SystemVersion;
+- divergence is surfaced for review rather than silently mutating the declaration;
+- tests for canonical event production, content leakage prevention and fallback-model divergence.
+
+Not yet implemented:
+
+- HTTP/OTLP transport or persistence;
+- CI EvidenceEnvelope automatic ingestion;
+- automatic trace-to-receipt proposal generation from live telemetry;
+- deployed MCP server;
+- hosted ingestion/auth/batching/idempotency.
+
+Those remain deliberately downstream of proving the runtime mapping contract.
+
 ## Current phase
 
-`0.1-beta` real-world piloting.
+`0.1-beta` real-world piloting plus a bounded pipeline-integration spike.
 
-The thin application now covers enough of the intended pilot loop to run structured dry-runs with real organisational examples:
+The thin application covers enough of the intended pilot loop to run structured dry-runs with real organisational examples:
 
 ```text
 purpose
@@ -95,12 +120,22 @@ purpose
   → working / public / affected-person views
 ```
 
-The next useful evidence should come from organisations and non-author comprehension tests rather than speculative schema expansion. See `docs/PILOT.md`.
+In parallel, the pipeline spike tests the complementary automated path:
 
-The pilot surface remains intentionally incomplete as a general authoring product. Its job is to reveal which interactions and concepts are genuinely needed while keeping the portable bundle as the source of truth.
+```text
+live AI framework / OpenTelemetry
+  → bounded runtime metadata
+  → Run / Event
+  → declared-versus-observed comparison
+  → later: Trace / receipt proposal / production evidence
+```
 
-The main questions now are whether people can correctly understand AI purpose, influence, agency, authority, evidence quality, version scope and consequential receipts, and whether small organisations can author meaningful records without specialist help.
+The operating rule is:
+
+> **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
+
+The next useful evidence should come from structured dry-runs, non-author comprehension tests and one small real instrumented AI pipeline rather than speculative schema expansion. See `docs/PILOT.md` and `docs/PIPELINE_INTEGRATION.md`.
 
 ## Product boundary
 
-CRUX remains standalone. TOPO, RACK, Ship Check and external evaluation systems are optional context, practice or evidence producers/consumers. None is a CRUX runtime dependency.
+CRUX remains standalone. TOPO, RACK, Ship Check and external evaluation/observability systems are optional context, practice or evidence producers/consumers. None is a CRUX runtime dependency.
