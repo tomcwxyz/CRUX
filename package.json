@@ -1,0 +1,24 @@
+{
+  "name": "crux",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "Open evidence and provenance for organisational AI.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.15.0",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "build": "turbo run build",
+    "check": "turbo run check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.10.7",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.10"
+  }
+}
