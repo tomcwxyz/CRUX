@@ -12,6 +12,8 @@ import {
 import type { AIAgency, AIInfluence } from "@crux/schemas";
 import { appendAIUse } from "../lib/authoring";
 import { createStarterBundle } from "../lib/starter";
+import { AuthorityEditor } from "./authority-editor";
+import { AuthoritySummary } from "./authority-summary";
 import { EvidenceEditor } from "./evidence-editor";
 
 type Tab = "overview" | "claims" | "receipts" | "edit";
@@ -381,6 +383,7 @@ export function PilotWorkbench() {
                   ))}
                 </div>
               ) : <div className="empty">No process detail is visible in this disclosure.</div>}
+              <AuthoritySummary version={projectedVersion ?? currentVersion} />
             </article>
           </div>
         ) : null}
@@ -530,7 +533,13 @@ export function PilotWorkbench() {
                     </Field>
                   </EditorSection>
 
-                  <EditorSection label="4 · What are you claiming?">
+                  {selectedVersionRef ? (
+                    <EditorSection label="4 · Who decides, and what can happen?">
+                      <AuthorityEditor bundle={bundle} systemVersionId={selectedVersionRef} onBundleChange={setBundle} />
+                    </EditorSection>
+                  ) : null}
+
+                  <EditorSection label="5 · What are you claiming?">
                     {selectedClaim ? (
                       <Field label="A statement someone else should be able to inspect" id="claim">
                         <textarea id="claim" className="textarea" value={selectedClaim.statement} onChange={(event) => updateClaim(event.target.value)} />
@@ -542,7 +551,7 @@ export function PilotWorkbench() {
                   </EditorSection>
 
                   {selectedClaim ? (
-                    <EditorSection label="5 · What evidence do you have?">
+                    <EditorSection label="6 · What evidence do you have?">
                       <EvidenceEditor bundle={bundle} claimId={selectedClaim.id} onBundleChange={setBundle} />
                     </EditorSection>
                   ) : null}
