@@ -1,0 +1,227 @@
+{
+  "format": "crux-bundle/0.1",
+  "generated_at": "2026-09-15T10:00:00+00:00",
+  "organisations": [
+    {
+      "schema_version": "0.1",
+      "id": "organisation:example",
+      "name": "Example Foundation",
+      "disclosure": "public",
+      "external_refs": [],
+      "created_at": "2026-09-15T10:00:00+00:00"
+    }
+  ],
+  "ai_uses": [
+    {
+      "schema_version": "0.1",
+      "id": "ai-use:funding-review",
+      "organisation_ref": "organisation:example",
+      "name": "Funding review",
+      "purpose": "Help staff find eligibility evidence.",
+      "public_summary": "AI helps staff find evidence but does not decide awards.",
+      "status": "active",
+      "people_affected": ["funding applicants"],
+      "consequential": true,
+      "system_refs": ["system:funding-assistant"],
+      "disclosure": "public",
+      "external_refs": [],
+      "created_at": "2026-09-15T10:00:00+00:00"
+    }
+  ],
+  "systems": [
+    {
+      "schema_version": "0.1",
+      "id": "system:funding-assistant",
+      "name": "Funding Assistant",
+      "description": "Extracts eligibility evidence for staff review.",
+      "ai_use_refs": ["ai-use:funding-review"],
+      "influence": ["informational"],
+      "agency": "none",
+      "status": "active",
+      "current_version_ref": "system-version:funding-assistant:2.3",
+      "disclosure": "public",
+      "external_refs": [],
+      "created_at": "2026-09-15T10:00:00+00:00"
+    }
+  ],
+  "system_versions": [
+    {
+      "schema_version": "0.1",
+      "id": "system-version:funding-assistant:2.3",
+      "system_ref": "system:funding-assistant",
+      "version": "2.3",
+      "effective_from": "2026-09-15T10:00:00+00:00",
+      "process": {
+        "id": "process:funding-review",
+        "name": "Funding review",
+        "nodes": [
+          {
+            "id": "node:application",
+            "type": "input",
+            "name": "Application",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:review-output",
+            "type": "output",
+            "name": "Evidence findings",
+            "disclosure": "public"
+          }
+        ],
+        "edges": [
+          {
+            "from": "node:application",
+            "to": "node:review-output",
+            "carries": []
+          }
+        ]
+      },
+      "components": [],
+      "data_sources": [],
+      "human_roles": [],
+      "decisions": [],
+      "actions": [],
+      "risks": [],
+      "safeguards": [],
+      "disclosure": "public",
+      "external_refs": [],
+      "published_at": "2026-09-15T10:00:00+00:00"
+    }
+  ],
+  "claims": [
+    {
+      "schema_version": "0.1",
+      "id": "claim:no-autonomous-rejection",
+      "type": "control",
+      "statement": "AI cannot independently reject a funding application.",
+      "applies_to": [
+        {
+          "kind": "system_version",
+          "ref": "system-version:funding-assistant:2.3"
+        }
+      ],
+      "status": "active",
+      "disclosure": "public",
+      "created_at": "2026-09-15T10:00:00+00:00"
+    }
+  ],
+  "evidence": [
+    {
+      "schema_version": "0.1",
+      "id": "evidence:decision-authority:1",
+      "kind": "system_configuration",
+      "summary": "The configured process contains no AI rejection action.",
+      "source": {
+        "kind": "native",
+        "producer": {
+          "name": "crux"
+        }
+      },
+      "targets": [
+        {
+          "kind": "system_version",
+          "ref": "system-version:funding-assistant:2.3"
+        }
+      ],
+      "freshness": {
+        "observed_at": "2026-09-15T10:00:00+00:00"
+      },
+      "limitations": [],
+      "external_refs": [],
+      "disclosure": "public"
+    }
+  ],
+  "evidence_links": [
+    {
+      "schema_version": "0.1",
+      "id": "evidence-link:no-rejection:1",
+      "claim_ref": "claim:no-autonomous-rejection",
+      "evidence_ref": "evidence:decision-authority:1",
+      "relationship": "supports",
+      "created_at": "2026-09-15T10:00:00+00:00"
+    }
+  ],
+  "evaluation_definitions": [],
+  "evaluation_runs": [],
+  "evaluation_cases": [],
+  "runs": [
+    {
+      "schema_version": "0.1",
+      "id": "run:funding:24861",
+      "system_version_ref": "system-version:funding-assistant:2.3",
+      "started_at": "2026-09-15T10:00:00+00:00",
+      "completed_at": "2026-09-15T10:00:12+00:00",
+      "status": "completed",
+      "capture_mode": "metadata_only",
+      "disclosure": "internal",
+      "external_refs": []
+    }
+  ],
+  "events": [
+    {
+      "schema_version": "0.1",
+      "id": "event:funding:24861:ai",
+      "run_ref": "run:funding:24861",
+      "sequence": 1,
+      "occurred_at": "2026-09-15T10:00:03+00:00",
+      "type": "ai_invocation",
+      "summary": "AI extracted eligibility evidence.",
+      "attributes": {
+        "internal_route": "provider-route-a"
+      },
+      "disclosure": "internal"
+    },
+    {
+      "schema_version": "0.1",
+      "id": "event:funding:24861:review",
+      "run_ref": "run:funding:24861",
+      "sequence": 2,
+      "occurred_at": "2026-09-15T10:00:08+00:00",
+      "type": "human_review",
+      "summary": "A funding officer reviewed the original application.",
+      "attributes": {},
+      "disclosure": "affected_party"
+    }
+  ],
+  "traces": [
+    {
+      "schema_version": "0.1",
+      "id": "trace:funding:24861",
+      "run_ref": "run:funding:24861",
+      "system_version_ref": "system-version:funding-assistant:2.3",
+      "generated_at": "2026-09-15T10:00:12+00:00",
+      "steps": [
+        {
+          "event_ref": "event:funding:24861:ai",
+          "relationship_to_previous": "starts"
+        },
+        {
+          "event_ref": "event:funding:24861:review",
+          "relationship_to_previous": "reviews"
+        }
+      ],
+      "summary": "AI evidence extraction led to human review.",
+      "disclosure": "affected_party"
+    }
+  ],
+  "receipts": [
+    {
+      "schema_version": "0.1",
+      "id": "receipt:funding:af-24861",
+      "run_ref": "run:funding:24861",
+      "trace_ref": "trace:funding:24861",
+      "system_version_ref": "system-version:funding-assistant:2.3",
+      "occurred_at": "2026-09-15T10:00:12+00:00",
+      "ai_involvement": ["informational"],
+      "ai_summary": "AI identified eligibility evidence.",
+      "effect_of_ai": "The findings prompted human review.",
+      "human_involvement": "A funding officer checked the original application.",
+      "final_authority": "human",
+      "outcome": "The funding officer made the eligibility decision.",
+      "source_content_included": false,
+      "disclosure": "affected_party",
+      "external_refs": []
+    }
+  ],
+  "observations": []
+}

@@ -4,9 +4,7 @@
 
 CRUX helps organisations show where AI is used, how AI-mediated processes work, what evidence supports claims about those systems, and what actually happened in consequential cases.
 
-CRUX is deliberately not a trust score, compliance badge or all-purpose eval platform. Its job is to make organisational AI **inspectable, evidenced and traceable**.
-
-The core chain is:
+CRUX is not a trust score, compliance badge or all-purpose eval platform. Its job is to make organisational AI **inspectable, evidenced and traceable**.
 
 ```text
 Where do we use AI?
@@ -24,14 +22,23 @@ What actually happened when the system ran?
 
 CRUX is a standalone product. It must remain useful with no other Good Ship product installed or connected.
 
-The sibling products answer different questions:
-
 - **TOPO** — what may AI know? Portable, user-controlled context and memory.
 - **RACK** — how should AI work? Portable working practice, boundaries and verification.
-- **CRUX** — where is AI used, what evidence supports the claims made about it, and what actually happened?
+- **CRUX** — where is AI used, what evidence supports its claims, and what actually happened?
 - **Ship Check** — what implementation evidence can be independently observed in software?
 
 Integrations are optional, explicit and replaceable. CRUX owns its canonical transparency, claim/evidence and provenance records. It does not read another product's database or require another Good Ship runtime.
+
+## What exists now
+
+CRUX currently has four implementation layers:
+
+- `packages/schemas` — strict canonical contracts for organisations, AI uses, systems, versions, claims, evidence, evaluations, runs, events, traces and receipts;
+- `packages/core` — evidence scope/freshness resolution, disclosure projection, trace consistency and proposal-first learning;
+- `packages/formats` — the portable `crux-bundle/0.1` format, cross-reference validation, disclosure exports and JSON Schema;
+- `packages/cli` — standalone validation, inspection, disclosure projection and schema export.
+
+The contracts are provider-neutral. RACK, Ship Check, external eval tools, custom test suites, research, audits and human evaluations can contribute evidence without becoming CRUX dependencies.
 
 ## Core model
 
@@ -42,48 +49,59 @@ Organisation
     │      └── System
     │             ├── System Version
     │             │      ├── Process
-    │             │      ├── Components
-    │             │      ├── Data Sources
-    │             │      ├── Human Roles
-    │             │      ├── Decision Points
-    │             │      ├── Risks
-    │             │      └── Safeguards
+    │             │      ├── Components / Data Sources
+    │             │      ├── Human Roles / Decisions / Actions
+    │             │      └── Risks / Safeguards
     │             ├── Claims
     │             │      └── Evidence
     │             │              └── Evaluations
     │             └── Runs
     │                    ├── Events
+    │                    ├── Traces
     │                    └── Receipts
     └── Change History
 ```
 
-The first implementation focus is the evidence spine:
+A **Trace** is the selected causal path that matters for explanation. It is deliberately not the same thing as a complete raw execution log.
 
-- `Claim`
-- `Evidence`
-- `EvaluationDefinition`
-- `EvaluationRun`
-- `EvidenceEnvelope`
+## Standalone CLI
 
-These contracts are provider-neutral. RACK, Ship Check, external eval tools, custom test suites, research, audits and human evaluations should all be able to contribute evidence without becoming CRUX dependencies.
+Requires Node.js 22.12+ and pnpm 10.15.
 
-## Repository shape
+```bash
+pnpm install
+pnpm build
+```
 
-CRUX follows the same broad engineering conventions as RACK and Ship Check:
+Validate a canonical bundle:
 
-- `packages/schemas` — canonical runtime and interchange schemas;
-- `docs/specification.md` — accepted product/specification direction;
-- `docs/roadmap.md` — active implementation roadmap;
-- `docs/architecture.md` — product boundaries and interoperability rules;
-- later `packages/core` — claim/evidence resolution and versioning policy;
-- later `packages/cli` — validation and inspection tooling;
-- later application surfaces — guided authoring, publishing, system exploration and receipts.
+```bash
+pnpm crux -- validate examples/funding-review/crux.json
+```
 
-The schema package is TypeScript + Zod, built and tested independently.
+Inspect it in plain language, including current claim/evidence state:
+
+```bash
+pnpm crux -- inspect examples/funding-review/crux.json
+```
+
+Create a public disclosure projection:
+
+```bash
+pnpm crux -- redact examples/funding-review/crux.json \
+  --level public \
+  -o crux-public.json
+```
+
+Export JSON Schema for independent tooling:
+
+```bash
+pnpm crux -- schema -o crux-bundle.schema.json
+```
+
+`redact` produces `crux-disclosure/0.1`, a derived disclosure artefact. It does not mutate or pretend to replace the canonical bundle.
 
 ## Development
-
-Requires Node.js 22.12 or newer and pnpm 10.15.
 
 ```bash
 pnpm install
@@ -91,10 +109,12 @@ pnpm check
 pnpm build
 ```
 
-Run schema tests directly:
+Useful package-level checks:
 
 ```bash
 pnpm --filter @crux/schemas test
+pnpm --filter @crux/core test
+pnpm --filter @crux/formats test
 ```
 
 ## Principles
@@ -107,13 +127,14 @@ pnpm --filter @crux/schemas test
 - **Unknown is meaningful** — unknown, withheld and supplier-undisclosed information remain visible states.
 - **No implied trust** — CRUX records evidence; it does not certify that an AI system is trustworthy.
 - **Open contracts** — portable, versioned interchange formats are part of the product contract.
-- **Minimal integration data** — connected tools exchange bounded evidence rather than entire projects, prompts or conversations.
+- **Minimal integration data** — connected tools exchange bounded evidence rather than whole projects, prompts or conversations.
+- **Proposal-first learning** — a real-world receipt can suggest a future eval case, but CRUX does not silently turn production behaviour into accepted policy or tests.
 
 ## Status
 
-CRUX is at **0.1-alpha.1**: specification and schema foundation.
+CRUX is at **0.1-alpha.5**. The open contracts, evidence-resolution core, provenance foundations, portable bundle and first CLI are implemented. The next milestone is hardening these against real organisational examples before moving into the guided product surface.
 
-See [the specification](docs/specification.md), [roadmap](docs/roadmap.md) and [architecture](docs/architecture.md).
+See the [specification](docs/specification.md), [roadmap](docs/roadmap.md), [architecture](docs/architecture.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [versioning policy](docs/VERSIONING.md).
 
 ## Licence
 

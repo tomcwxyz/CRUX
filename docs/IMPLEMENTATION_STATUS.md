@@ -2,65 +2,70 @@
 
 **Updated:** 15 September 2026
 
-CRUX is currently implementing the `0.1-alpha.4` roadmap phase.
+CRUX is currently in `0.1-alpha.5`: the standalone specification/tooling layer is implemented and being hardened before a guided application surface is introduced.
 
-## Complete enough to build on
+## Implemented
 
 ### Evidence spine
 
-- Claim
-- Evidence
-- EvidenceLink
-- EvaluationDefinition
-- EvaluationRun
+- Claim / Evidence / EvidenceLink
+- EvaluationDefinition / EvaluationRun
 - neutral EvidenceEnvelope
 - provider-neutral external evidence contracts
 
 ### Organisational/process model
 
-- Organisation
-- AIUse
-- System
-- SystemVersion
+- Organisation / AIUse / System / SystemVersion
 - influence and agency as separate concepts
 - process nodes and graph edges
 - components and data sources
 - human roles
-- decision points with local authority
+- local decision authority
 - bounded actions
 - risks and safeguards
 - explicit unknown/not-disclosed/withheld supplier states
 
 ### Evidence resolution
 
-- declared/supported/qualified/contradicted/stale/unknown derived states
+- declared/supported/qualified/contradicted/stale/unknown
 - version and organisational scope resolution
 - broad/narrow evidence handling
 - freshness and review windows
 - conflict preservation
 - unresolved/inapplicable evidence reporting
 - disclosure filtering
-- bounded evidence summaries without a trust score
+- evidence summaries without a trust score
 
-### Provenance foundations
+### Provenance and learning
 
-- Run
-- Event
-- Trace
-- Receipt
-- Observation
+- Run / Event / Trace / Receipt / Observation
 - metadata-first capture mode
-- causal trace selection rather than raw-log-as-explanation
-- trace/run/event/receipt consistency validation
-- challenge-route metadata
+- causal traces rather than raw-log-as-explanation
+- run/event/trace/receipt consistency validation
 - affected-person receipt representation
+- privacy-safe trace projections with hidden-context signals
+- proposal-first EvaluationCase promotion from receipts/incidents
 
-## Active work
+### Portable tooling
 
-The remaining `0.1-alpha.4` work is to connect receipts/incidents back into evaluation cases and strengthen privacy-safe public/affected-person trace projection.
+- canonical `crux-bundle/0.1`
+- cross-record reference validation
+- `crux-disclosure/0.1` derived disclosure exports
+- JSON Schema export
+- `crux validate`
+- `crux inspect`
+- `crux redact`
+- `crux schema`
+- explicit version/migration policy
+- worked portable examples
 
-After that, `0.1-alpha.5` adds portable bundle formats and the first standalone CLI (`validate`, `inspect`, `redact`).
+## Current work
+
+- dogfood the CLI against repository examples in CI;
+- harden disclosure and cross-reference semantics through real examples;
+- prepare a small real-world schema pilot before building the guided authoring application;
+- resist adding database/application concepts until the portable model demonstrates a genuine need.
 
 ## Product boundary
 
-CRUX remains standalone. TOPO, RACK, Ship Check and external evaluation systems are optional evidence/context/practice producers or consumers. None is a runtime dependency of CRUX.
+CRUX remains standalone. TOPO, RACK, Ship Check and external evaluation systems are optional context, practice or evidence producers/consumers. None is a CRUX runtime dependency.
