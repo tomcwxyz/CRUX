@@ -126,6 +126,46 @@ trace / receipt
 
 The same evaluation definition can be run repeatedly against multiple system versions. Evaluation evidence is time- and version-scoped.
 
+## CRUX inside AI pipelines
+
+CRUX should not become a manually maintained register that drifts away from production reality.
+
+Its operating principle is:
+
+> **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
+
+CRUX can participate at four moments:
+
+```text
+Design / authoring
+      ↓
+SystemVersion + claims + authority
+      ↓
+CI / pre-deployment
+      ↓
+Eval + assurance evidence
+      ↓
+Runtime
+      ↓
+Runs + events + observed behaviour
+      ↓
+Outcome
+      ↓
+Trace + receipt + learning
+```
+
+Human-authored or human-approved fields remain appropriate for organisational purpose, people affected, consequence interpretation, accountability, action boundaries, claims, challenge routes and disclosure choices.
+
+Software-backed systems should be able to provide model/provider identity, actual fallback usage, tool/action execution, eval results, version/deployment identifiers, timestamps and runtime provenance automatically.
+
+CRUX should consume existing GenAI observability where possible rather than create a competing raw telemetry layer. OpenTelemetry-style instrumentation can describe technical operations; CRUX maps those operations to organisational SystemVersions, process nodes, decisions, claims and receipts.
+
+The canonical machine integration should therefore be API/event contracts first. High-volume runtime events belong in an SDK/API/telemetry bridge rather than MCP.
+
+MCP is an optional agent-facing interface over the same contracts: useful for reading current system transparency, evidence and receipts, and for low-frequency tools such as submitting evidence or explicitly recording a human review/decision. It is not the canonical persistence or telemetry protocol.
+
+See `docs/PIPELINE_INTEGRATION.md` for the detailed design and implementation sequence.
+
 ## Future application shape
 
 Later packages should retain these separations:
@@ -135,6 +175,8 @@ Later packages should retain these separations:
 - `packages/formats` — portable import/export and public representations;
 - `packages/cli` — validate, inspect and redact workflows;
 - `apps/web` or equivalent — guided authoring and public publishing;
-- optional adapters — RACK, TOPO, Ship Check and generic eval providers.
+- `packages/sdk` — optional runtime/event instrumentation after beta validation;
+- optional adapters — OpenTelemetry, Vercel AI SDK, RACK, TOPO, Ship Check and generic eval providers;
+- optional MCP server — an agent-facing view/tool layer over public CRUX contracts.
 
 Adapters should depend on public contracts, never the other way round.
