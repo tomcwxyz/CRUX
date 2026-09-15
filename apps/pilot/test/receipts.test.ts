@@ -55,7 +55,7 @@ describe("pilot receipt authoring", () => {
     expect(parsed.receipts[0]?.disclosure).toBe("affected_party");
   });
 
-  it("can create a receipt without inventing human involvement", () => {
+  it("can create a non-human-authority receipt without inventing human involvement", () => {
     const starter = createStarterBundle("2026-09-15T12:00:00+00:00");
     const version = starter.system_versions[0];
     expect(version).toBeDefined();
@@ -65,11 +65,11 @@ describe("pilot receipt authoring", () => {
       starter,
       version.id,
       {
-        aiInvolvement: ["assistive"],
-        aiSummary: "AI drafted a summary.",
-        effectOfAI: "The draft was available for use in the next step.",
-        finalAuthority: "human",
-        outcome: "A staff member chose what to use in the final document.",
+        aiInvolvement: ["conditional"],
+        aiSummary: "AI classified the request into a bounded workflow category.",
+        effectOfAI: "The classification selected the next rule-based route.",
+        finalAuthority: "rule",
+        outcome: "The configured rule routed the request to the standard queue.",
       },
       "2026-09-15T12:05:00+00:00",
     );
@@ -77,7 +77,23 @@ describe("pilot receipt authoring", () => {
     const parsed = portableBundleSchema.parse(result.bundle);
     expect(parsed.events.map((event) => event.type)).toEqual(["ai_invocation", "decision"]);
     expect(parsed.receipts[0]?.human_involvement).toBeUndefined();
+    expect(parsed.receipts[0]?.final_authority).toBe("rule");
     expect(validateBundleReferences(parsed)).toEqual({ valid: true, issues: [] });
+  });
+
+  it("requires human involvement when human or hybrid authority is claimed", () => {
+    const starter = createStarterBundle("2026-09-15T12:00:00+00:00");
+    const version = starter.system_versions[0];
+    expect(version).toBeDefined();
+    if (!version) return;
+
+    expect(() => appendManualReceipt(starter, version.id, {
+      aiInvolvement: ["assistive"],
+      aiSummary: "AI drafted a summary.",
+      effectOfAI: "The draft informed the next step.",
+      finalAuthority: "human",
+      outcome: "A person made the decision.",
+    })).toThrow("Describe the human involvement when final authority is human or hybrid.");
   });
 
   it("rejects empty explanation fields", () => {
@@ -90,6 +106,7 @@ describe("pilot receipt authoring", () => {
       aiInvolvement: ["assistive"],
       aiSummary: " ",
       effectOfAI: "It informed the next step.",
+      humanInvolvement: "A person reviewed the draft.",
       finalAuthority: "human",
       outcome: "A person made the decision.",
     })).toThrow("AI contribution is required.");
