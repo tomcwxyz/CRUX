@@ -36,44 +36,34 @@ Acceptance met:
 - external producers use the neutral envelope without depending on CRUX runtime code;
 - strict schemas reject undeclared fields.
 
-## 0.1-alpha.2 — organisational/process contracts · active
+## 0.1-alpha.2 — organisational/process contracts · complete
 
 Outcome: connect evidence to meaningful AI-mediated processes.
 
-Build:
+Implemented:
 
-- `Organisation`;
-- `AIUse`;
-- `System`;
-- `SystemVersion`;
-- influence and agency taxonomies;
-- process node/edge model;
+- `Organisation`, `AIUse`, `System` and immutable-addressable `SystemVersion` contracts;
+- orthogonal influence and agency taxonomies;
+- typed process nodes and validated graph edges;
 - components and data sources;
 - human roles;
-- decision points and actions;
+- decision points with per-decision authority;
+- bounded actions with explicit approval, scope and reversibility;
 - risk/safeguard relationships;
-- explicit unknown/withheld states.
+- explicit known/unknown/not-disclosed/withheld states for supplier information;
+- local graph-reference validation without a database dependency.
 
-Implementation direction:
-
-- keep influence and agency orthogonal;
-- put authority on individual decision points rather than the whole system;
-- model agent actions separately from decisions;
-- preserve unknown/not-disclosed/withheld supplier information explicitly;
-- validate local graph references without introducing a database dependency;
-- prove the contracts against five substantially different workflows before expanding the schema.
-
-Acceptance:
-
-Five substantially different examples can use the same contracts:
+Acceptance met against five distinct schema fixtures:
 
 1. grant application review;
-2. recruitment shortlisting;
-3. internal writing assistant;
+2. recruitment shortlisting with separate AI and human decision points;
+3. lightweight internal writing assistant;
 4. frontline safeguarding triage;
 5. bounded autonomous support agent.
 
-## 0.1-alpha.3 — evidence resolution and freshness
+The contracts deliberately keep influence and agency separate and model agent actions independently from decisions.
+
+## 0.1-alpha.3 — evidence resolution and freshness · active
 
 Outcome: derive useful claim state from evidence without inventing a trust score.
 
@@ -86,6 +76,15 @@ Build `packages/core` with:
 - derived statuses: declared/supported/qualified/contradicted/stale/unknown;
 - conflict preservation rather than destructive resolution;
 - disclosure filtering.
+
+Initial rules:
+
+- a declaration with no linked evidence stays `declared`, not `supported`;
+- contradictory current evidence is never hidden by supporting evidence;
+- explicit system-version evidence does not silently transfer to another version;
+- stale evidence remains inspectable but cannot create a current `supported` state;
+- unresolved evidence references are surfaced rather than dropped;
+- disclosure filtering produces views without mutating canonical evidence.
 
 Acceptance:
 

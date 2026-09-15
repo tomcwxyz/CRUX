@@ -1,6 +1,6 @@
 {
-  "name": "@crux/schemas",
-  "version": "0.1.0-alpha.2",
+  "name": "@crux/core",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -18,7 +18,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "@crux/schemas": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.2",
