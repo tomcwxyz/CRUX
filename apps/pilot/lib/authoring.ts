@@ -3,6 +3,8 @@ import type {
   DisclosureLevel,
   EvidenceKind,
   EvidenceRelationship,
+  ProcessNode,
+  SystemVersion,
 } from "@crux/schemas";
 
 const nextUseNumber = (bundle: CruxPortableBundle) => {
@@ -23,6 +25,41 @@ const nextEvidenceNumber = (bundle: CruxPortableBundle) => {
     number += 1;
   }
   return number;
+};
+
+const systemKey = (version: SystemVersion) =>
+  version.system_ref.split(":").slice(1).join("-") || "system";
+
+const nextNestedNumber = (ids: string[], prefix: string) => {
+  let number = ids.length + 1;
+  const used = new Set(ids);
+  while (used.has(`${prefix}${number}`)) number += 1;
+  return number;
+};
+
+const insertBeforeFirstOutput = (version: SystemVersion, node: ProcessNode) => {
+  const outputIndex = version.process.nodes.findIndex((item) => item.type === "output");
+  if (outputIndex === -1) {
+    version.process.nodes.push(node);
+    return;
+  }
+
+  const output = version.process.nodes[outputIndex];
+  if (!output) return;
+
+  const inbound = version.process.edges.filter((edge) => edge.to === output.id);
+  version.process.nodes.splice(outputIndex, 0, node);
+
+  if (inbound.length > 0) {
+    for (const edge of inbound) edge.to = node.id;
+  } else {
+    const previous = version.process.nodes[outputIndex - 1];
+    if (previous) {
+      version.process.edges.push({ from: previous.id, to: node.id, carries: [] });
+    }
+  }
+
+  version.process.edges.push({ from: node.id, to: output.id, carries: [] });
 };
 
 export const appendAIUse = (
@@ -220,4 +257,86 @@ export const appendManualEvidence = (
 
   next.generated_at = now;
   return { bundle: next, evidenceId, evidenceLinkId };
+};
+
+export const appendDecisionPoint = (
+  bundle: CruxPortableBundle,
+  systemVersionId: string,
+  now = new Date().toISOString(),
+): { bundle: CruxPortableBundle; decisionId: string } => {
+  const next = structuredClone(bundle);
+  const version = next.system_versions.find((item) => item.id === systemVersionId);
+  if (!version) throw new Error(`Cannot add decision: system version ${systemVersionId} was not found.`);
+
+  const key = systemKey(version);
+  const prefix = `decision:${key}-`;
+  const number = nextNestedNumber(version.decisions.map((item) => item.id), prefix);
+  const decisionId = `${prefix}${number}`;
+  const nodeId = `node:${key}-decision-${number}`;
+  const role = version.human_roles[0];
+  const system = next.systems.find((item) => item.id === version.system_ref);
+
+  version.decisions.push({
+    id: decisionId,
+    name: `Decision point ${number}`,
+    consequence: "Describe what changes for a person, service, opportunity or entitlement because of this decision.",
+    authority: role ? "human" : "external",
+    ai_influence: system ? [...system.influence] : [],
+    review_before_effect: Boolean(role),
+    responsible_role_refs: role ? [role.id] : [],
+    disclosure: "public",
+  });
+
+  insertBeforeFirstOutput(version, {
+    id: nodeId,
+    type: "decision",
+    name: `Decision point ${number}`,
+    decision_ref: decisionId,
+    disclosure: "public",
+  });
+
+  next.generated_at = now;
+  return { bundle: next, decisionId };
+};
+
+export const appendActionPoint = (
+  bundle: CruxPortableBundle,
+  systemVersionId: string,
+  now = new Date().toISOString(),
+): { bundle: CruxPortableBundle; actionId: string } => {
+  const next = structuredClone(bundle);
+  const version = next.system_versions.find((item) => item.id === systemVersionId);
+  if (!version) throw new Error(`Cannot add action: system version ${systemVersionId} was not found.`);
+
+  const key = systemKey(version);
+  const prefix = `action:${key}-`;
+  const number = nextNestedNumber(version.actions.map((item) => item.id), prefix);
+  const actionId = `${prefix}${number}`;
+  const nodeId = `node:${key}-action-${number}`;
+  const hasHumanRole = version.human_roles.length > 0;
+
+  version.actions.push({
+    id: actionId,
+    name: `Action ${number}`,
+    description: "Describe what the system or a person can cause to happen.",
+    initiated_by: hasHumanRole ? "human" : "external",
+    human_approval_required: true,
+    reversibility: "unknown",
+    scope: {
+      summary: "Describe the boundaries and limits of this action.",
+      limits: {},
+    },
+    disclosure: "public",
+  });
+
+  insertBeforeFirstOutput(version, {
+    id: nodeId,
+    type: "action",
+    name: `Action ${number}`,
+    action_ref: actionId,
+    disclosure: "public",
+  });
+
+  next.generated_at = now;
+  return { bundle: next, actionId };
 };
