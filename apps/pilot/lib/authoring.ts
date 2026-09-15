@@ -62,6 +62,12 @@ const insertBeforeFirstOutput = (version: SystemVersion, node: ProcessNode) => {
   version.process.edges.push({ from: node.id, to: output.id, carries: [] });
 };
 
+const findVersion = (bundle: CruxPortableBundle, systemVersionId: string) => {
+  const version = bundle.system_versions.find((item) => item.id === systemVersionId);
+  if (!version) throw new Error(`System version ${systemVersionId} was not found.`);
+  return version;
+};
+
 export const appendAIUse = (
   bundle: CruxPortableBundle,
   now = new Date().toISOString(),
@@ -259,14 +265,37 @@ export const appendManualEvidence = (
   return { bundle: next, evidenceId, evidenceLinkId };
 };
 
+export const appendHumanRole = (
+  bundle: CruxPortableBundle,
+  systemVersionId: string,
+  now = new Date().toISOString(),
+): { bundle: CruxPortableBundle; humanRoleId: string } => {
+  const next = structuredClone(bundle);
+  const version = findVersion(next, systemVersionId);
+  const key = systemKey(version);
+  const prefix = `role:${key}-responsible-`;
+  const number = nextNestedNumber(version.human_roles.map((item) => item.id), prefix);
+  const humanRoleId = `${prefix}${number}`;
+
+  version.human_roles.push({
+    id: humanRoleId,
+    name: `Responsible role ${number}`,
+    responsibilities: ["Describe what this role remains accountable for."],
+    can_override_ai: false,
+    disclosure: "public",
+  });
+
+  next.generated_at = now;
+  return { bundle: next, humanRoleId };
+};
+
 export const appendDecisionPoint = (
   bundle: CruxPortableBundle,
   systemVersionId: string,
   now = new Date().toISOString(),
 ): { bundle: CruxPortableBundle; decisionId: string } => {
   const next = structuredClone(bundle);
-  const version = next.system_versions.find((item) => item.id === systemVersionId);
-  if (!version) throw new Error(`Cannot add decision: system version ${systemVersionId} was not found.`);
+  const version = findVersion(next, systemVersionId);
 
   const key = systemKey(version);
   const prefix = `decision:${key}-`;
@@ -299,14 +328,33 @@ export const appendDecisionPoint = (
   return { bundle: next, decisionId };
 };
 
+export const renameDecisionPoint = (
+  bundle: CruxPortableBundle,
+  systemVersionId: string,
+  decisionId: string,
+  name: string,
+): CruxPortableBundle => {
+  const next = structuredClone(bundle);
+  const version = findVersion(next, systemVersionId);
+  const decision = version.decisions.find((item) => item.id === decisionId);
+  if (!decision) throw new Error(`Decision ${decisionId} was not found.`);
+
+  decision.name = name;
+  const node = version.process.nodes.find(
+    (item) => item.type === "decision" && item.decision_ref === decisionId,
+  );
+  if (node) node.name = name;
+  next.generated_at = new Date().toISOString();
+  return next;
+};
+
 export const appendActionPoint = (
   bundle: CruxPortableBundle,
   systemVersionId: string,
   now = new Date().toISOString(),
 ): { bundle: CruxPortableBundle; actionId: string } => {
   const next = structuredClone(bundle);
-  const version = next.system_versions.find((item) => item.id === systemVersionId);
-  if (!version) throw new Error(`Cannot add action: system version ${systemVersionId} was not found.`);
+  const version = findVersion(next, systemVersionId);
 
   const key = systemKey(version);
   const prefix = `action:${key}-`;
@@ -339,4 +387,24 @@ export const appendActionPoint = (
 
   next.generated_at = now;
   return { bundle: next, actionId };
+};
+
+export const renameActionPoint = (
+  bundle: CruxPortableBundle,
+  systemVersionId: string,
+  actionId: string,
+  name: string,
+): CruxPortableBundle => {
+  const next = structuredClone(bundle);
+  const version = findVersion(next, systemVersionId);
+  const action = version.actions.find((item) => item.id === actionId);
+  if (!action) throw new Error(`Action ${actionId} was not found.`);
+
+  action.name = name;
+  const node = version.process.nodes.find(
+    (item) => item.type === "action" && item.action_ref === actionId,
+  );
+  if (node) node.name = name;
+  next.generated_at = new Date().toISOString();
+  return next;
 };
