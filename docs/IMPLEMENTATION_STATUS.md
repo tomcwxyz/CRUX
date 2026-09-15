@@ -2,7 +2,7 @@
 
 **Updated:** 15 September 2026
 
-`0.1-alpha.5` is complete. CRUX now has a standalone, account-free contract/tooling layer suitable for real-world schema piloting.
+CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the foundation, and a deliberately thin pilot authoring/viewer surface now sits directly on top of the portable bundle.
 
 ## Implemented
 
@@ -58,13 +58,28 @@
 - worked portable examples
 - CI dogfooding of the standalone CLI
 
+### Beta pilot surface
+
+- `apps/pilot` Next.js application
+- open/import a local canonical CRUX JSON bundle
+- working/public/affected-person disclosure lenses
+- organisation, AI-use, system/process, claim/evidence and receipt views
+- intentionally narrow guided editing for the primary organisational story
+- canonical/public/affected-person JSON export
+- no account, database or hidden application-only canonical state
+- structural and cross-reference validation before canonical/disclosure export
+- invalid in-progress edits remain visibly a working draft
+- starter bundle deliberately includes a declared but unevidenced claim
+
 ## Current phase
 
-`0.1-beta` pilot preparation.
+`0.1-beta` real-world piloting.
 
-The next useful evidence comes from real organisations and non-author comprehension tests rather than more speculative schema. See `docs/PILOT.md`.
+The next useful evidence should come from organisations and non-author comprehension tests rather than speculative schema expansion. See `docs/PILOT.md`.
 
-Before a guided application is built, the pilot should establish whether people can correctly understand AI purpose, influence, agency, authority, evidence quality, version scope and consequential receipts from CRUX records.
+The pilot surface is intentionally incomplete as an authoring product. Its job is to reveal which interactions and concepts are genuinely needed while keeping the portable bundle as the source of truth.
+
+The main questions now are whether people can correctly understand AI purpose, influence, agency, authority, evidence quality, version scope and consequential receipts, and whether small organisations can author meaningful records without specialist help.
 
 ## Product boundary
 
