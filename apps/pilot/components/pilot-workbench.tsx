@@ -12,6 +12,7 @@ import {
 import type { AIAgency, AIInfluence } from "@crux/schemas";
 import { appendAIUse } from "../lib/authoring";
 import { createStarterBundle } from "../lib/starter";
+import { EvidenceEditor } from "./evidence-editor";
 
 type Tab = "overview" | "claims" | "receipts" | "edit";
 type Lens = "working" | "public" | "affected_party";
@@ -539,6 +540,12 @@ export function PilotWorkbench() {
                     )}
                     <div className="notice" style={{ marginTop: 10 }}>A starter claim is <strong>declared</strong>, not supported. Evidence has to earn the stronger status.</div>
                   </EditorSection>
+
+                  {selectedClaim ? (
+                    <EditorSection label="5 · What evidence do you have?">
+                      <EvidenceEditor bundle={bundle} claimId={selectedClaim.id} onBundleChange={setBundle} />
+                    </EditorSection>
+                  ) : null}
                 </>
               ) : <div className="empty">This imported bundle does not contain the records required by the thin pilot editor. You can still inspect it.</div>}
             </div>
