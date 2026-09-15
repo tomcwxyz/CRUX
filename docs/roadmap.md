@@ -33,7 +33,7 @@ A trace is the causal path relevant to explanation, not a raw observability log.
 
 ## 0.1-alpha.5 — formats and CLI · complete
 
-The open standard is now independently usable before a hosted product exists.
+The open standard is independently usable before a hosted product exists.
 
 Implemented:
 
@@ -51,13 +51,38 @@ Implemented:
 
 Acceptance met: CRUX bundles can be authored, validated, inspected and safely projected without an account or hosted service.
 
-## 0.1-beta — real-world schema pilot · active preparation
+## 0.1-beta — real-world schema pilot · active
 
-The next job is to test comprehension and representational adequacy with 5–8 organisations, not to add speculative product surface.
+The beta now has a deliberately thin, file-first pilot surface. It is not the future hosted product architecture: its purpose is to expose the existing portable contracts to real authors and readers without introducing a second canonical data model.
+
+Implemented pilot capabilities:
+
+- create and switch between multiple AI uses within one organisation;
+- describe purpose, people affected, influence and agency;
+- record multiple accountable human roles;
+- add decision points with local authority, consequence, AI influence, review-before-effect and challenge information;
+- distinguish decisions from bounded actions and describe action initiation, approval, scope and reversibility;
+- author claims and attach supporting, qualifying, contradictory or inconclusive evidence;
+- derive evidence-aware claim state rather than allowing the UI to declare a stronger status;
+- author a metadata-first specific-case receipt as a valid Run → Event → Trace → Receipt chain;
+- require explicit human involvement where a manually authored receipt claims human/hybrid final authority;
+- inspect working, public and affected-person projections;
+- prevent canonical/disclosure export while an in-progress draft fails schema or reference validation.
 
 See `docs/PILOT.md` for the pilot protocol.
 
-Core questions:
+### Immediate beta work
+
+The next work should improve the pilot as a learning instrument rather than expanding CRUX into generic CRUD:
+
+1. **Structured dry-runs** — author several real or realistic organisational cases end-to-end, including one genuinely consequential process and one non-consequential productivity use.
+2. **Questions to resolve** — surface missing transparency as prompts, not a score: e.g. a consequential use with no decision point, human authority with no responsible role, or a consequential version with no example receipt.
+3. **Non-author comprehension** — test the public and affected-person views with people who did not create the record; record misunderstanding as product/schema evidence.
+4. **Declared versus observed tension** — use receipts and imported evidence to test how CRUX should expose divergence between the declared process and what happened in practice without silently rewriting either.
+5. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before adding persistence/accounts/workspaces.
+6. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
+
+Core questions remain:
 
 - Can a non-author tell where AI is involved and what it does?
 - Can they distinguish AI influence from agency and identify final authority?
@@ -71,7 +96,7 @@ Do not expand the schema because participants use different terminology. Add con
 
 ## Phase 1 — standalone transparency product
 
-After the schema pilot, build the guided organisation/workspace, AI-use authoring, system/process explorer, claims/evidence views, evaluation history, disclosure controls, immutable publication and human/machine-readable public pages.
+After the schema pilot, build the durable organisation/workspace, AI-use authoring, system/process explorer, claims/evidence views, evaluation history, disclosure controls, immutable publication and human/machine-readable public pages.
 
 Primary test:
 
