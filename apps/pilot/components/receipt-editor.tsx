@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { CruxPortableBundle } from "@crux/formats";
 import type { AIInfluence, Decision, DisclosureLevel } from "@crux/schemas";
 import { appendManualReceipt } from "../lib/receipts";
@@ -50,6 +50,19 @@ export function ReceiptEditor({
     [bundle.receipts, systemVersionId],
   );
 
+  useEffect(() => {
+    setDecisionId("");
+    setInvolvement(system?.influence[0] ?? "assistive");
+    setAiSummary("");
+    setEffect("");
+    setHumanInvolvement("");
+    setFinalAuthority("human");
+    setOutcome("");
+    setChallenge("");
+    setDisclosure("affected_party");
+    setError(null);
+  }, [systemVersionId]);
+
   if (!version) {
     return <div className="empty">This system version is not available for receipt authoring.</div>;
   }
@@ -57,12 +70,20 @@ export function ReceiptEditor({
   const chooseDecision = (value: string) => {
     setDecisionId(value);
     const decision = version.decisions.find((item) => item.id === value);
-    if (!decision) return;
+    if (!decision) {
+      setFinalAuthority("human");
+      setInvolvement(system?.influence[0] ?? "assistive");
+      setChallenge("");
+      return;
+    }
     setFinalAuthority(decision.authority);
     if (decision.ai_influence[0]) setInvolvement(decision.ai_influence[0]);
-    if (decision.challenge?.available && decision.challenge.description) {
-      setChallenge(decision.challenge.description);
-    }
+    else setInvolvement(system?.influence[0] ?? "assistive");
+    setChallenge(
+      decision.challenge?.available && decision.challenge.description
+        ? decision.challenge.description
+        : "",
+    );
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
