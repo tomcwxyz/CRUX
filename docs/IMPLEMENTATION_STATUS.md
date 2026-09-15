@@ -92,13 +92,17 @@ Implemented on `beta/pipeline-instrumentation` for validation before merge:
 - prompt/output/reasoning/tool-argument content excluded by default even when source telemetry contains it;
 - declared-versus-observed model/provider comparison against the exact SystemVersion;
 - divergence is surfaced for review rather than silently mutating the declaration;
-- tests for canonical event production, content leakage prevention and fallback-model divergence.
+- tests for canonical event production, content leakage prevention and fallback-model divergence;
+- credential-free consequential pipeline dogfood that runs fallback model → human review → decision → action through the real instrumentation package;
+- CI asserts the runtime dogfood records the model divergence while synthetic sensitive input/output content never enters the CRUX snapshot.
 
 Not yet implemented:
 
+- a live AI provider/framework pipeline test;
 - HTTP/OTLP transport or persistence;
 - CI EvidenceEnvelope automatic ingestion;
 - automatic trace-to-receipt proposal generation from live telemetry;
+- declared-versus-observed presentation in the pilot viewer;
 - deployed MCP server;
 - hosted ingestion/auth/batching/idempotency.
 
@@ -134,7 +138,7 @@ The operating rule is:
 
 > **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
 
-The next useful evidence should come from structured dry-runs, non-author comprehension tests and one small real instrumented AI pipeline rather than speculative schema expansion. See `docs/PILOT.md` and `docs/PIPELINE_INTEGRATION.md`.
+The next useful evidence should come from structured dry-runs, non-author comprehension tests and one small live instrumented AI pipeline rather than speculative schema expansion. See `docs/PILOT.md` and `docs/PIPELINE_INTEGRATION.md`.
 
 ## Product boundary
 
