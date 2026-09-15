@@ -2,7 +2,7 @@
 
 **Updated:** 15 September 2026
 
-CRUX is currently in `0.1-alpha.5`: the standalone specification/tooling layer is implemented and being hardened before a guided application surface is introduced.
+`0.1-alpha.5` is complete. CRUX now has a standalone, account-free contract/tooling layer suitable for real-world schema piloting.
 
 ## Implemented
 
@@ -17,10 +17,8 @@ CRUX is currently in `0.1-alpha.5`: the standalone specification/tooling layer i
 
 - Organisation / AIUse / System / SystemVersion
 - influence and agency as separate concepts
-- process nodes and graph edges
-- components and data sources
-- human roles
-- local decision authority
+- process graphs, components and data sources
+- human roles and local decision authority
 - bounded actions
 - risks and safeguards
 - explicit unknown/not-disclosed/withheld supplier states
@@ -39,9 +37,9 @@ CRUX is currently in `0.1-alpha.5`: the standalone specification/tooling layer i
 ### Provenance and learning
 
 - Run / Event / Trace / Receipt / Observation
-- metadata-first capture mode
+- metadata-first capture
 - causal traces rather than raw-log-as-explanation
-- run/event/trace/receipt consistency validation
+- trace/run/event/receipt consistency validation
 - affected-person receipt representation
 - privacy-safe trace projections with hidden-context signals
 - proposal-first EvaluationCase promotion from receipts/incidents
@@ -50,7 +48,7 @@ CRUX is currently in `0.1-alpha.5`: the standalone specification/tooling layer i
 
 - canonical `crux-bundle/0.1`
 - cross-record reference validation
-- `crux-disclosure/0.1` derived disclosure exports
+- derived `crux-disclosure/0.1`
 - JSON Schema export
 - `crux validate`
 - `crux inspect`
@@ -58,13 +56,15 @@ CRUX is currently in `0.1-alpha.5`: the standalone specification/tooling layer i
 - `crux schema`
 - explicit version/migration policy
 - worked portable examples
+- CI dogfooding of the standalone CLI
 
-## Current work
+## Current phase
 
-- dogfood the CLI against repository examples in CI;
-- harden disclosure and cross-reference semantics through real examples;
-- prepare a small real-world schema pilot before building the guided authoring application;
-- resist adding database/application concepts until the portable model demonstrates a genuine need.
+`0.1-beta` pilot preparation.
+
+The next useful evidence comes from real organisations and non-author comprehension tests rather than more speculative schema. See `docs/PILOT.md`.
+
+Before a guided application is built, the pilot should establish whether people can correctly understand AI purpose, influence, agency, authority, evidence quality, version scope and consequential receipts from CRUX records.
 
 ## Product boundary
 

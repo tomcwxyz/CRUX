@@ -18,6 +18,18 @@ const visibleAt = (level: DisclosureLevel, maximum: DisclosureLevel) =>
   disclosureRank[level] <= disclosureRank[maximum];
 
 const isUrlRef = (ref: string) => /^https?:\/\//.test(ref);
+const cruxOwnedTargetKinds = new Set<TargetRef["kind"]>([
+  "organisation",
+  "ai_use",
+  "system",
+  "system_version",
+  "process",
+  "decision",
+  "action",
+  "risk",
+  "safeguard",
+  "claim",
+]);
 
 export type ProjectedSystemVersion = {
   id: string;
@@ -124,7 +136,12 @@ const projectVersion = (
 };
 
 const filterTargetRefs = (targets: TargetRef[], visibleRefs: Set<string>) =>
-  targets.filter((target) => isUrlRef(target.ref) || visibleRefs.has(target.ref));
+  targets.filter(
+    (target) =>
+      isUrlRef(target.ref) ||
+      !cruxOwnedTargetKinds.has(target.kind) ||
+      visibleRefs.has(target.ref),
+  );
 
 export const redactBundle = (
   bundle: CruxPortableBundle,
@@ -193,8 +210,10 @@ export const redactBundle = (
     }
   }
 
-  const claims = bundle.claims
-    .filter((item) => visibleAt(item.disclosure, maximumLevel))
+  const candidateClaims = bundle.claims.filter((item) => visibleAt(item.disclosure, maximumLevel));
+  for (const claim of candidateClaims) visibleRefs.add(claim.id);
+
+  const claims = candidateClaims
     .map((item) => ({
       ...item,
       applies_to: filterTargetRefs(item.applies_to, visibleRefs),

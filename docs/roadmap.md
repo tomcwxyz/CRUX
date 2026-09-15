@@ -11,57 +11,29 @@ Every phase preserves the standalone-first rule: TOPO, RACK, Ship Check and exte
 
 ## 0.1-alpha.1 — evidence spine · complete
 
-Established `Claim`, `Evidence`, `EvidenceLink`, `EvaluationDefinition`, `EvaluationRun` and a neutral `EvidenceEnvelope`, with strict runtime validation and tests for native and external evidence.
-
-Acceptance met: declarations remain distinct from evidence; evidence can support, contradict, qualify or remain inconclusive; evaluation definitions are independently versioned from runs; external producers do not need CRUX runtime code.
+Established `Claim`, `Evidence`, `EvidenceLink`, `EvaluationDefinition`, `EvaluationRun` and a neutral `EvidenceEnvelope`, with strict validation and tests for native and external evidence.
 
 ## 0.1-alpha.2 — organisational/process contracts · complete
 
 Established `Organisation`, `AIUse`, `System`, `SystemVersion`, process graphs, components, data sources, human roles, decision points, bounded actions, risks and safeguards.
 
-Influence and agency are orthogonal. Decision authority belongs to individual decision points. Unknown, withheld and supplier-undisclosed information are explicit states.
-
-Acceptance met against five different workflows: grant review, recruitment shortlisting, internal writing support, safeguarding triage and a bounded autonomous support agent.
+Influence and agency are orthogonal. Decision authority belongs to individual decision points. Unknown, withheld and supplier-undisclosed information are explicit states. Acceptance was tested against grant review, recruitment, writing support, safeguarding triage and a bounded autonomous support agent.
 
 ## 0.1-alpha.3 — evidence resolution and freshness · complete
 
-`packages/core` now derives `declared | supported | qualified | contradicted | stale | unknown` without inventing a trust score.
+`packages/core` derives `declared | supported | qualified | contradicted | stale | unknown` without inventing a trust score.
 
-Implemented:
-
-- version and organisational scope resolution;
-- exact, broader, narrower, unrelated and version-mismatch evidence scopes;
-- freshness and claim review windows;
-- narrower supporting evidence qualifies rather than over-claims;
-- contradictory current evidence is preserved even when newer support exists;
-- stale evidence remains inspectable without controlling current status;
-- unresolved and inapplicable evidence is surfaced;
-- disclosure-filtered views do not mutate canonical evidence.
-
-Acceptance met: conflicting evidence remains inspectable and the resolution explains why the current state exists.
+Implemented version/organisational scope, exact/broader/narrower applicability, freshness, conflict preservation, unresolved/inapplicable evidence reporting and disclosure filtering. Narrow evidence cannot over-prove a broad claim; current contradiction is never hidden by newer support.
 
 ## 0.1-alpha.4 — traces and receipts · complete
 
-Established metadata-first provenance without turning CRUX into a raw observability store.
+Established metadata-first `Run`, bounded `Event`, causal `Trace`, affected-person `Receipt`, production `Observation`, challenge metadata, consistency validation, privacy-safe projections and proposal-first `EvaluationCase` promotion.
 
-Implemented:
+A trace is the causal path relevant to explanation, not a raw observability log. Hidden causal steps are explicitly signalled in derived disclosure views.
 
-- `Run`;
-- bounded `Event` metadata;
-- causal `Trace` selection;
-- affected-person `Receipt`;
-- production `Observation`;
-- challenge/appeal metadata;
-- run/event/trace/receipt consistency validation;
-- privacy-safe public and affected-person projections;
-- explicit indication when hidden steps make visible causal context incomplete;
-- proposal-first `EvaluationCase` promotion from receipts/incidents rather than automatic learning.
+## 0.1-alpha.5 — formats and CLI · complete
 
-Acceptance met: a specific outcome can point to an exact immutable system version and explain AI contribution, subsequent effect, final authority and challenge route without requiring raw sensitive content.
-
-## 0.1-alpha.5 — formats and CLI · active
-
-Outcome: make the standard independently useful before a hosted product exists.
+The open standard is now independently usable before a hosted product exists.
 
 Implemented:
 
@@ -70,41 +42,36 @@ Implemented:
 - JSON Schema export;
 - `crux validate`;
 - `crux inspect` with evidence-aware claim state;
-- `crux redact` producing an explicit `crux-disclosure/0.1` projection rather than pretending a filtered record is canonical;
+- `crux redact` producing a separate `crux-disclosure/0.1` projection;
 - `crux schema`;
-- versioning/migration policy;
-- portable worked examples.
+- explicit versioning/migration policy;
+- worked portable examples;
+- CI dogfooding of validation, inspection, public/affected-person projection and schema export;
+- conservative disclosure handling that preserves external RACK/other evidence targets while hiding references to undisclosed CRUX-owned objects.
 
-Current hardening:
+Acceptance met: CRUX bundles can be authored, validated, inspected and safely projected without an account or hosted service.
 
-- dogfood CLI operations in CI against repository examples;
-- expand example coverage where it exposes genuine schema gaps;
-- add migration fixtures only when a second bundle/schema version exists;
-- keep disclosure projection conservative for objects that do not yet carry their own disclosure metadata.
+## 0.1-beta — real-world schema pilot · active preparation
 
-Acceptance target:
+The next job is to test comprehension and representational adequacy with 5–8 organisations, not to add speculative product surface.
 
-> An organisation can author, validate, inspect and create a safe disclosure projection from a conformant CRUX record without creating an account or using a hosted service.
+See `docs/PILOT.md` for the pilot protocol.
 
-## 0.1-beta — real-world schema pilot
+Core questions:
 
-Pilot with 5–8 organisations covering materially different AI uses. Test comprehension rather than form completion.
+- Can a non-author tell where AI is involved and what it does?
+- Can they distinguish AI influence from agency and identify final authority?
+- Can they distinguish organisational claims from supporting, qualifying or contradictory evidence?
+- Can they tell what evidence is current and what system version it applies to?
+- Can an affected person understand a consequential receipt without raw sensitive content?
+- Are public/affected-person disclosures useful as well as safe?
+- Does CRUX remain useful when TOPO, RACK and Ship Check are absent?
 
-Can another person correctly answer:
-
-- where is AI involved?
-- what does it do?
-- what can it influence or action?
-- who has authority?
-- what claims are being made?
-- what evidence exists, and what is missing/stale/contradictory?
-- what happened in a specific case?
-
-Do not expand schema merely because participants use different terminology. Add concepts only where the current model cannot faithfully represent something important.
+Do not expand the schema because participants use different terminology. Add concepts only where the current model cannot faithfully represent something important.
 
 ## Phase 1 — standalone transparency product
 
-Build an organisation/workspace, guided AI-use authoring, system/process explorer, claims/evidence, evaluation records, disclosure controls, immutable publication and human/machine-readable public pages.
+After the schema pilot, build the guided organisation/workspace, AI-use authoring, system/process explorer, claims/evidence views, evaluation history, disclosure controls, immutable publication and human/machine-readable public pages.
 
 Primary test:
 
@@ -120,17 +87,13 @@ Primary test:
 
 ## Phase 3 — provenance and instrumentation
 
-Build the instrumentation API and TypeScript SDK around the existing Run/Event/Trace/Receipt contracts, plus declared-versus-observed comparisons and the regression-case feedback loop.
-
-Metadata is captured by default. Content capture must always be explicit.
+Build the instrumentation API and TypeScript SDK around the existing Run/Event/Trace/Receipt contracts, plus declared-versus-observed comparisons and the regression-case feedback loop. Metadata is captured by default; content capture is explicit.
 
 ## Phase 4 — generic evaluation interoperability
 
-Add file/CLI import, REST and webhook/event ingestion around the existing neutral `EvidenceEnvelope`, then test useful provider adapters without embedding vendor semantics in core CRUX contracts.
+Add file/CLI import, REST and webhook ingestion around the neutral `EvidenceEnvelope`, then test provider adapters without embedding vendor semantics in core CRUX contracts.
 
 ## Phase 5 — optional RACK adapter
-
-First direction:
 
 ```text
 RACK verification/eval result
@@ -142,7 +105,7 @@ CRUX review/import
 Claim evidence
 ```
 
-Later, CRUX constraints may become **proposed** RACK practice changes, always requiring review. No prompts, personal context or complete Rack projects are required for the evidence path.
+CRUX constraints may later become **proposed** RACK practice changes, always requiring review. No prompts, personal context or complete Rack projects are required for evidence exchange.
 
 ## Phase 6 — optional TOPO adapter
 
@@ -150,7 +113,7 @@ Allow purpose-bound TOPO context to help author CRUX records while keeping perso
 
 ## Phase 7 — optional Ship Check adapter
 
-Accept Ship Check findings and assurance results as bounded technical evidence. Absence of a finding must never be translated into proof of a broader CRUX claim.
+Accept Ship Check findings and assurance as bounded technical evidence. Absence of a finding must never be translated into proof of a broader CRUX claim.
 
 ## Phase 8 — open discovery ecosystem
 
