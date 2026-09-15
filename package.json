@@ -1,6 +1,6 @@
 {
   "name": "crux",
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-beta.0",
   "private": true,
   "type": "module",
   "description": "Open evidence and provenance for organisational AI.",
@@ -11,6 +11,7 @@
     "build": "turbo run build",
     "check": "turbo run check",
     "crux": "pnpm --filter @crux/cli build && node packages/cli/dist/index.js",
+    "pilot": "pnpm --filter @crux/pilot dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "turbo run test",
