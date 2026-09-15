@@ -4,8 +4,14 @@ import type {
   Evidence,
   EvidenceLink,
   EvidenceRelationship,
-  TargetRef,
 } from "@crux/schemas";
+import {
+  compareTargetScope,
+  type EvidenceScopeState,
+  type ScopeContext,
+} from "./scope.js";
+
+export * from "./scope.js";
 
 export type DerivedClaimStatus =
   | "declared"
@@ -16,15 +22,26 @@ export type DerivedClaimStatus =
   | "unknown";
 
 export type EvidenceFreshnessState = "fresh" | "stale";
-export type EvidenceScopeState = "compatible" | "version_mismatch";
 
 export type ResolvedEvidence = {
   evidence_ref: string;
   relationship: EvidenceRelationship;
+  effective_relationship: EvidenceRelationship;
   freshness: EvidenceFreshnessState;
   scope: EvidenceScopeState;
+  applicable: boolean;
   observed_at: string;
   review_after?: string;
+};
+
+export type EvidenceSummary = {
+  linked: number;
+  resolved: number;
+  current: number;
+  stale: number;
+  inapplicable: number;
+  unresolved: number;
+  latest_observed_at?: string;
 };
 
 export type ClaimEvidenceResolution = {
@@ -33,6 +50,10 @@ export type ClaimEvidenceResolution = {
   as_of: string;
   claim_review_overdue: boolean;
   evidence: ResolvedEvidence[];
+  summary: EvidenceSummary;
+  current_evidence_refs: string[];
+  stale_evidence_refs: string[];
+  inapplicable_evidence_refs: string[];
   unresolved_evidence_refs: string[];
   conflicting_relationships: EvidenceRelationship[];
   version_scope_mismatches: string[];
@@ -64,34 +85,27 @@ export const filterEvidenceByDisclosure = (
   return evidence.filter((item) => disclosureRank[item.disclosure] <= maximumRank);
 };
 
-const refsEqual = (left: TargetRef, right: TargetRef) =>
-  left.kind === right.kind && left.ref === right.ref;
-
-const systemVersionTargets = (targets: TargetRef[]) =>
-  targets.filter((target) => target.kind === "system_version");
-
 export const evidenceScopeForClaim = (
   claim: Claim,
   evidence: Evidence,
-): EvidenceScopeState => {
-  const claimVersions = systemVersionTargets(claim.applies_to);
-  const evidenceVersions = systemVersionTargets(evidence.targets);
+  context?: ScopeContext,
+): EvidenceScopeState => compareTargetScope(claim.applies_to, evidence.targets, context);
 
-  if (claimVersions.length === 0 || evidenceVersions.length === 0) {
-    return "compatible";
-  }
-
-  return claimVersions.some((claimTarget) =>
-    evidenceVersions.some((evidenceTarget) => refsEqual(claimTarget, evidenceTarget)),
-  )
-    ? "compatible"
-    : "version_mismatch";
+const effectiveRelationship = (
+  relationship: EvidenceRelationship,
+  scope: EvidenceScopeState,
+): EvidenceRelationship => {
+  if (scope === "narrower" && relationship === "supports") return "qualifies";
+  return relationship;
 };
 
-const uniqueRelationships = (items: ResolvedEvidence[]): EvidenceRelationship[] =>
-  [...new Set(items.map((item) => item.relationship))];
+const isApplicableScope = (scope: EvidenceScopeState) =>
+  !["version_mismatch", "unrelated"].includes(scope);
 
-const deriveFreshStatus = (
+const uniqueRelationships = (items: ResolvedEvidence[]): EvidenceRelationship[] =>
+  [...new Set(items.map((item) => item.effective_relationship))];
+
+const deriveCurrentStatus = (
   relationships: EvidenceRelationship[],
 ): DerivedClaimStatus => {
   if (relationships.includes("contradicts")) return "contradicted";
@@ -100,16 +114,22 @@ const deriveFreshStatus = (
   return "unknown";
 };
 
+const newestFirst = (left: ResolvedEvidence, right: ResolvedEvidence) =>
+  instant(right.observed_at) - instant(left.observed_at) ||
+  left.evidence_ref.localeCompare(right.evidence_ref);
+
 export const resolveClaimEvidence = ({
   claim,
   links,
   evidence,
   asOf,
+  scopeContext,
 }: {
   claim: Claim;
   links: EvidenceLink[];
   evidence: Evidence[];
   asOf: string;
+  scopeContext?: ScopeContext;
 }): ClaimEvidenceResolution => {
   const claimLinks = links.filter((link) => link.claim_ref === claim.id);
   const evidenceById = new Map(evidence.map((item) => [item.id, item]));
@@ -123,12 +143,14 @@ export const resolveClaimEvidence = ({
       continue;
     }
 
-    const scope = evidenceScopeForClaim(claim, item);
+    const scope = evidenceScopeForClaim(claim, item, scopeContext);
     resolved.push({
       evidence_ref: item.id,
       relationship: link.relationship,
+      effective_relationship: effectiveRelationship(link.relationship, scope),
       freshness: isEvidenceFresh(item, asOf) ? "fresh" : "stale",
       scope,
+      applicable: isApplicableScope(scope),
       observed_at: item.freshness.observed_at,
       ...(item.freshness.review_after
         ? { review_after: item.freshness.review_after }
@@ -136,11 +158,14 @@ export const resolveClaimEvidence = ({
     });
   }
 
-  const compatible = resolved.filter((item) => item.scope === "compatible");
-  const fresh = compatible.filter((item) => item.freshness === "fresh");
-  const stale = compatible.filter((item) => item.freshness === "stale");
-  const freshRelationships = uniqueRelationships(fresh);
-  const conclusiveFreshRelationships = freshRelationships.filter(
+  resolved.sort(newestFirst);
+
+  const applicable = resolved.filter((item) => item.applicable);
+  const current = applicable.filter((item) => item.freshness === "fresh");
+  const stale = applicable.filter((item) => item.freshness === "stale");
+  const inapplicable = resolved.filter((item) => !item.applicable);
+  const currentRelationships = uniqueRelationships(current);
+  const conclusiveCurrentRelationships = currentRelationships.filter(
     (relationship) => relationship !== "inconclusive",
   );
   const versionScopeMismatches = resolved
@@ -160,29 +185,49 @@ export const resolveClaimEvidence = ({
   } else if (claimLinks.length === 0) {
     status = "declared";
     reasons.push("The claim is declared but has no linked evidence.");
-  } else if (fresh.length > 0) {
-    status = deriveFreshStatus(freshRelationships);
+  } else if (current.length > 0) {
+    status = deriveCurrentStatus(currentRelationships);
     if (status === "unknown") {
-      reasons.push("Current linked evidence is inconclusive.");
+      reasons.push("Current applicable evidence is inconclusive.");
     } else {
-      reasons.push(`Current compatible evidence ${status === "contradicted" ? "contradicts" : status === "qualified" ? "qualifies" : "supports"} the claim.`);
+      reasons.push(
+        `Current applicable evidence ${
+          status === "contradicted"
+            ? "contradicts"
+            : status === "qualified"
+              ? "qualifies"
+              : "supports"
+        } the claim.`,
+      );
     }
   } else if (stale.length > 0) {
     status = "stale";
-    reasons.push("Linked compatible evidence exists, but it is past its review date.");
+    reasons.push("Applicable evidence exists, but it is past its review date.");
   } else {
     status = "unknown";
     if (unresolvedEvidenceRefs.length > 0) {
       reasons.push("Linked evidence could not be resolved.");
     }
     if (versionScopeMismatches.length > 0) {
-      reasons.push("Linked evidence targets a different system version.");
+      reasons.push("Linked evidence targets a different explicit system version.");
+    }
+    if (inapplicable.some((item) => item.scope === "unrelated")) {
+      reasons.push("Linked evidence is outside the claim's organisational or system scope.");
     }
   }
 
-  const conflictCandidates = conclusiveFreshRelationships;
+  if (
+    current.some(
+      (item) => item.scope === "narrower" && item.relationship === "supports",
+    )
+  ) {
+    reasons.push(
+      "Supporting evidence covers a narrower scope than the claim, so it qualifies rather than fully supports the claim.",
+    );
+  }
+
   const conflictingRelationships =
-    conflictCandidates.length > 1 ? conflictCandidates : [];
+    conclusiveCurrentRelationships.length > 1 ? conclusiveCurrentRelationships : [];
 
   if (conflictingRelationships.length > 1) {
     reasons.push(
@@ -190,12 +235,26 @@ export const resolveClaimEvidence = ({
     );
   }
 
+  const latestObservedAt = resolved[0]?.observed_at;
+
   return {
     claim_ref: claim.id,
     status,
     as_of: asOf,
     claim_review_overdue: claimReviewOverdue,
     evidence: resolved,
+    summary: {
+      linked: claimLinks.length,
+      resolved: resolved.length,
+      current: current.length,
+      stale: stale.length,
+      inapplicable: inapplicable.length,
+      unresolved: [...new Set(unresolvedEvidenceRefs)].length,
+      ...(latestObservedAt ? { latest_observed_at: latestObservedAt } : {}),
+    },
+    current_evidence_refs: current.map((item) => item.evidence_ref),
+    stale_evidence_refs: stale.map((item) => item.evidence_ref),
+    inapplicable_evidence_refs: inapplicable.map((item) => item.evidence_ref),
     unresolved_evidence_refs: [...new Set(unresolvedEvidenceRefs)],
     conflicting_relationships: conflictingRelationships,
     version_scope_mismatches: [...new Set(versionScopeMismatches)],
