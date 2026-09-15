@@ -10,6 +10,7 @@ import {
   type CruxPortableBundle,
 } from "@crux/formats";
 import type { AIAgency, AIInfluence } from "@crux/schemas";
+import { appendAIUse } from "../lib/authoring";
 import { createStarterBundle } from "../lib/starter";
 
 type Tab = "overview" | "claims" | "receipts" | "edit";
@@ -72,6 +73,7 @@ const downloadJson = (value: unknown, filename: string) => {
 
 export function PilotWorkbench() {
   const [bundle, setBundle] = useState<CruxPortableBundle>(() => createStarterBundle());
+  const [selectedUseId, setSelectedUseId] = useState("ai-use:primary");
   const [tab, setTab] = useState<Tab>("overview");
   const [lens, setLens] = useState<Lens>("working");
   const [error, setError] = useState<string | null>(null);
@@ -125,12 +127,32 @@ export function PilotWorkbench() {
     : (projection?.trace_views.flatMap((view) => (view.receipt ? [view.receipt] : [])) ?? []);
 
   const primaryOrganisation = bundle.organisations[0];
-  const primaryUse = bundle.ai_uses[0];
-  const primarySystem = bundle.systems[0];
-  const primaryClaim = bundle.claims[0];
-  const currentVersion =
-    versions.find((version) => systems.some((system) => system.current_version_ref === version.id)) ??
-    versions[0];
+  const selectedUse = bundle.ai_uses.find((item) => item.id === selectedUseId) ?? bundle.ai_uses[0];
+  const selectedSystem = selectedUse
+    ? bundle.systems.find(
+        (system) => selectedUse.system_refs.includes(system.id) || system.ai_use_refs.includes(selectedUse.id),
+      )
+    : undefined;
+  const selectedVersionRef = selectedSystem?.current_version_ref;
+  const selectedClaim = selectedVersionRef
+    ? bundle.claims.find((claim) =>
+        claim.applies_to.some(
+          (target) => target.kind === "system_version" && target.ref === selectedVersionRef,
+        ),
+      )
+    : undefined;
+
+  const selectedVisibleUse = aiUses.find((item) => item.id === selectedUse?.id) ?? aiUses[0];
+  const selectedVisibleSystem = selectedVisibleUse
+    ? systems.find(
+        (system) =>
+          selectedVisibleUse.system_refs.includes(system.id) ||
+          system.ai_use_refs.includes(selectedVisibleUse.id),
+      )
+    : undefined;
+  const currentVersion = selectedVisibleSystem?.current_version_ref
+    ? versions.find((version) => version.id === selectedVisibleSystem.current_version_ref)
+    : versions[0];
   const projectedVersion = projection?.system_versions.find((version) => version.id === currentVersion?.id);
   const processNodes = projectedVersion?.process.nodes ?? currentVersion?.process.nodes ?? [];
 
@@ -152,21 +174,36 @@ export function PilotWorkbench() {
     });
   };
 
-  const updateUse = (patch: Partial<CruxPortableBundle["ai_uses"][number]>) =>
+  const updateUse = (patch: Partial<CruxPortableBundle["ai_uses"][number]>) => {
+    if (!selectedUse) return;
     mutate((next) => {
-      if (next.ai_uses[0]) Object.assign(next.ai_uses[0], patch);
+      const use = next.ai_uses.find((item) => item.id === selectedUse.id);
+      if (use) Object.assign(use, patch);
     });
+  };
 
-  const updateSystem = (patch: Partial<CruxPortableBundle["systems"][number]>) =>
+  const updateSystem = (patch: Partial<CruxPortableBundle["systems"][number]>) => {
+    if (!selectedSystem) return;
     mutate((next) => {
-      if (next.systems[0]) Object.assign(next.systems[0], patch);
+      const system = next.systems.find((item) => item.id === selectedSystem.id);
+      if (system) Object.assign(system, patch);
     });
+  };
+
+  const updateClaim = (statement: string) => {
+    if (!selectedClaim) return;
+    mutate((next) => {
+      const claim = next.claims.find((item) => item.id === selectedClaim.id);
+      if (claim) claim.statement = statement;
+    });
+  };
 
   const openBundle = async (file: File | undefined) => {
     if (!file) return;
     try {
       const parsed = parsePortableBundle(JSON.parse(await file.text()) as unknown);
       setBundle(parsed);
+      setSelectedUseId(parsed.ai_uses[0]?.id ?? "");
       setLens("working");
       setTab("overview");
       setError(null);
@@ -176,10 +213,25 @@ export function PilotWorkbench() {
   };
 
   const reset = () => {
-    setBundle(createStarterBundle());
+    const starter = createStarterBundle();
+    setBundle(starter);
+    setSelectedUseId(starter.ai_uses[0]?.id ?? "");
     setLens("working");
     setTab("edit");
     setError(null);
+  };
+
+  const addUse = () => {
+    try {
+      const result = appendAIUse(bundle);
+      setBundle(result.bundle);
+      setSelectedUseId(result.aiUseId);
+      setLens("working");
+      setTab("edit");
+      setError(null);
+    } catch (caught) {
+      setError(formatError(caught));
+    }
   };
 
   const baseName = slug(primaryOrganisation?.name ?? "crux");
@@ -239,7 +291,10 @@ export function PilotWorkbench() {
             key={id}
             type="button"
             className={`tab ${tab === id ? "active" : ""}`}
-            onClick={() => setTab(id)}
+            onClick={() => {
+              setTab(id);
+              if (id === "edit") setLens("working");
+            }}
             role="tab"
             aria-selected={tab === id}
           >
@@ -307,7 +362,7 @@ export function PilotWorkbench() {
             ))}
 
             <article className="card full">
-              <div className="kicker">How the current process works</div>
+              <div className="kicker">Selected process · {selectedVisibleUse?.name ?? "No visible AI use"}</div>
               <h3>{projectedVersion?.process.name ?? currentVersion?.process.name ?? "No visible process"}</h3>
               {processNodes.length ? (
                 <div className="process">
@@ -398,12 +453,27 @@ export function PilotWorkbench() {
             <aside className="editor-nav">
               <div className="kicker">Pilot authoring</div>
               <h2 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, fontSize: 30, margin: "0 0 12px" }}>Start with the organisational story.</h2>
-              <p className="small muted">The pilot editor deliberately touches only the primary organisation, AI use, system and claim.</p>
+              <p className="small muted">Use separate records for materially different uses of AI. The pilot target is normally 2–3 uses per organisation.</p>
+              <div className="divider" />
+              <div className="kicker">AI uses in this record</div>
+              <div className="pill-row" style={{ alignItems: "stretch" }}>
+                {bundle.ai_uses.map((use) => (
+                  <button
+                    key={use.id}
+                    type="button"
+                    className={`btn ${selectedUse?.id === use.id ? "primary" : "ghost"}`}
+                    onClick={() => setSelectedUseId(use.id)}
+                  >
+                    {use.name || "Untitled use"}
+                  </button>
+                ))}
+              </div>
+              <button className="btn" style={{ marginTop: 10 }} type="button" onClick={addUse}>+ Add AI use</button>
               <div className="notice" style={{ marginTop: 18 }}>The JSON bundle remains canonical. Public views and exports only unlock when the working record validates.</div>
             </aside>
 
             <div>
-              {primaryOrganisation && primaryUse && primarySystem && primaryClaim ? (
+              {primaryOrganisation && selectedUse && selectedSystem ? (
                 <>
                   <EditorSection label="1 · Who is being transparent?">
                     <Field label="Organisation name" id="organisation-name">
@@ -418,60 +488,59 @@ export function PilotWorkbench() {
 
                   <EditorSection label="2 · Where is AI used?">
                     <Field label="Name this use of AI" id="use-name">
-                      <input id="use-name" className="input" value={primaryUse.name} onChange={(event) => updateUse({ name: event.target.value })} />
+                      <input id="use-name" className="input" value={selectedUse.name} onChange={(event) => updateUse({ name: event.target.value })} />
                     </Field>
                     <Field label="Purpose" id="purpose">
-                      <textarea id="purpose" className="textarea" value={primaryUse.purpose} onChange={(event) => updateUse({ purpose: event.target.value })} />
+                      <textarea id="purpose" className="textarea" value={selectedUse.purpose} onChange={(event) => updateUse({ purpose: event.target.value })} />
                     </Field>
                     <Field label="Plain-language public summary" id="public-summary">
-                      <textarea id="public-summary" className="textarea" value={primaryUse.public_summary ?? ""} onChange={(event) => updateUse({ public_summary: event.target.value })} />
+                      <textarea id="public-summary" className="textarea" value={selectedUse.public_summary ?? ""} onChange={(event) => updateUse({ public_summary: event.target.value })} />
                     </Field>
                     <Field label="People affected · comma separated" id="people">
                       <input
                         id="people"
                         className="input"
-                        value={primaryUse.people_affected.join(", ")}
+                        value={selectedUse.people_affected.join(", ")}
                         onChange={(event) => updateUse({ people_affected: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })}
                       />
                     </Field>
                     <label className="checkbox-line">
-                      <input type="checkbox" checked={primaryUse.consequential} onChange={(event) => updateUse({ consequential: event.target.checked })} />
+                      <input type="checkbox" checked={selectedUse.consequential} onChange={(event) => updateUse({ consequential: event.target.checked })} />
                       This can materially affect a person, service, opportunity or entitlement.
                     </label>
                   </EditorSection>
 
                   <EditorSection label="3 · What role does AI have?">
                     <Field label="System or workflow name" id="system-name">
-                      <input id="system-name" className="input" value={primarySystem.name} onChange={(event) => updateSystem({ name: event.target.value })} />
+                      <input id="system-name" className="input" value={selectedSystem.name} onChange={(event) => updateSystem({ name: event.target.value })} />
                     </Field>
                     <Field label="What does the system do?" id="system-description">
-                      <textarea id="system-description" className="textarea" value={primarySystem.description} onChange={(event) => updateSystem({ description: event.target.value })} />
+                      <textarea id="system-description" className="textarea" value={selectedSystem.description} onChange={(event) => updateSystem({ description: event.target.value })} />
                     </Field>
                     <Field label="Highest AI influence in this system" id="influence">
-                      <select id="influence" className="select" value={primarySystem.influence[0] ?? "assistive"} onChange={(event) => updateSystem({ influence: [event.target.value as AIInfluence] })}>
+                      <select id="influence" className="select" value={selectedSystem.influence[0] ?? "assistive"} onChange={(event) => updateSystem({ influence: [event.target.value as AIInfluence] })}>
                         {influenceOptions.map((value) => <option key={value} value={value}>{value}</option>)}
                       </select>
                     </Field>
                     <Field label="AI agency" id="agency">
-                      <select id="agency" className="select" value={primarySystem.agency} onChange={(event) => updateSystem({ agency: event.target.value as AIAgency })}>
+                      <select id="agency" className="select" value={selectedSystem.agency} onChange={(event) => updateSystem({ agency: event.target.value as AIAgency })}>
                         {agencyOptions.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
                       </select>
                     </Field>
                   </EditorSection>
 
                   <EditorSection label="4 · What are you claiming?">
-                    <Field label="A statement someone else should be able to inspect" id="claim">
-                      <textarea
-                        id="claim"
-                        className="textarea"
-                        value={primaryClaim.statement}
-                        onChange={(event) => mutate((next) => { if (next.claims[0]) next.claims[0].statement = event.target.value; })}
-                      />
-                    </Field>
-                    <div className="notice">This starts as <strong>declared</strong>, not supported. Evidence has to earn the stronger status.</div>
+                    {selectedClaim ? (
+                      <Field label="A statement someone else should be able to inspect" id="claim">
+                        <textarea id="claim" className="textarea" value={selectedClaim.statement} onChange={(event) => updateClaim(event.target.value)} />
+                      </Field>
+                    ) : (
+                      <div className="notice">This imported use has no directly version-scoped starter claim. It remains inspectable, but the thin editor will not invent one silently.</div>
+                    )}
+                    <div className="notice" style={{ marginTop: 10 }}>A starter claim is <strong>declared</strong>, not supported. Evidence has to earn the stronger status.</div>
                   </EditorSection>
                 </>
-              ) : <div className="empty">This imported bundle does not contain the primary records required by the thin pilot editor. You can still inspect it.</div>}
+              ) : <div className="empty">This imported bundle does not contain the records required by the thin pilot editor. You can still inspect it.</div>}
             </div>
           </div>
         ) : null}
