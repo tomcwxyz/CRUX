@@ -67,9 +67,10 @@ Implemented pilot capabilities:
 - author a metadata-first specific-case receipt as a valid Run → Event → Trace → Receipt chain;
 - require explicit human involvement where a manually authored receipt claims human/hybrid final authority;
 - inspect working, public and affected-person projections;
-- prevent canonical/disclosure export while an in-progress draft fails schema or reference validation.
+- prevent canonical/disclosure export while an in-progress draft fails schema or reference validation;
+- download a structured pilot-session sheet for comparable authoring/comprehension observations.
 
-See `docs/PILOT.md` for the pilot protocol.
+See `docs/PILOT.md` for the pilot protocol and `docs/PIPELINE_INTEGRATION.md` for how CRUX should participate in live AI systems.
 
 ### Immediate beta work
 
@@ -79,8 +80,9 @@ The next work should improve the pilot as a learning instrument rather than expa
 2. **Questions to resolve** — surface missing transparency as prompts, not a score: e.g. a consequential use with no decision point, human authority with no responsible role, or a consequential version with no example receipt.
 3. **Non-author comprehension** — test the public and affected-person views with people who did not create the record; record misunderstanding as product/schema evidence.
 4. **Declared versus observed tension** — use receipts and imported evidence to test how CRUX should expose divergence between the declared process and what happened in practice without silently rewriting either.
-5. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before adding persistence/accounts/workspaces.
-6. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
+5. **Pipeline integration spike** — before building a hosted ingestion service, prove that existing runtime/eval telemetry can populate CRUX automatically: define a minimal runtime event envelope, map OpenTelemetry GenAI events into CRUX, prototype one Vercel AI SDK adapter, ingest an EvidenceEnvelope from CI, and generate a receipt proposal from a real trace.
+6. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before adding persistence/accounts/workspaces.
+7. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
 
 Core questions remain:
 
@@ -91,6 +93,7 @@ Core questions remain:
 - Can an affected person understand a consequential receipt without raw sensitive content?
 - Are public/affected-person disclosures useful as well as safe?
 - Does CRUX remain useful when TOPO, RACK and Ship Check are absent?
+- Can technical observations automatically improve CRUX without allowing telemetry to invent organisational meaning?
 
 Do not expand the schema because participants use different terminology. Add concepts only where the current model cannot faithfully represent something important.
 
@@ -112,11 +115,23 @@ Primary test:
 
 ## Phase 3 — provenance and instrumentation
 
-Build the instrumentation API and TypeScript SDK around the existing Run/Event/Trace/Receipt contracts, plus declared-versus-observed comparisons and the regression-case feedback loop. Metadata is captured by default; content capture is explicit.
+Turn the beta pipeline spike into supported infrastructure:
+
+- `@crux/sdk` around the existing Run/Event/Trace/Receipt contracts;
+- HTTP ingestion API with batching, idempotency and explicit identity/authority;
+- OpenTelemetry/OTLP mapping or Collector bridge;
+- framework adapters such as Vercel AI SDK where useful;
+- declared-versus-observed comparisons;
+- receipt proposal generation;
+- regression-case feedback loop.
+
+Metadata is captured by default; content capture remains explicit and opt-in.
 
 ## Phase 4 — generic evaluation interoperability
 
 Add file/CLI import, REST and webhook ingestion around the neutral `EvidenceEnvelope`, then test provider adapters without embedding vendor semantics in core CRUX contracts.
+
+Add an optional MCP server as an agent-facing interface over CRUX resources and meaningful low-frequency tools. MCP should not become the canonical high-volume runtime telemetry transport.
 
 ## Phase 5 — optional RACK adapter
 
@@ -155,3 +170,4 @@ Publish/discover `/.well-known/ai-transparency.json` and open representations fo
 - Unknown and contradictory evidence remains visible.
 - Schema changes require deliberate version review.
 - Application/database convenience must not dictate interchange contracts.
+- Runtime automation may report behaviour but may not silently define organisational purpose, accountability or disclosure policy.
