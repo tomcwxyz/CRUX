@@ -31,12 +31,13 @@ Integrations are optional, explicit and replaceable. CRUX owns its canonical tra
 
 ## What exists now
 
-CRUX currently has four implementation layers:
+CRUX currently has five implementation layers:
 
 - `packages/schemas` — strict canonical contracts for organisations, AI uses, systems, versions, claims, evidence, evaluations, runs, events, traces and receipts;
 - `packages/core` — evidence scope/freshness resolution, disclosure projection, trace consistency and proposal-first learning;
 - `packages/formats` — the portable `crux-bundle/0.1` format, cross-reference validation, disclosure exports and JSON Schema;
-- `packages/cli` — standalone validation, inspection, disclosure projection and schema export.
+- `packages/cli` — standalone validation, inspection, disclosure projection and schema export;
+- `apps/pilot` — a deliberately thin, file-first authoring and viewing surface for the `0.1-beta` organisational pilot.
 
 The contracts are provider-neutral. RACK, Ship Check, external eval tools, custom test suites, research, audits and human evaluations can contribute evidence without becoming CRUX dependencies.
 
@@ -63,6 +64,28 @@ Organisation
 ```
 
 A **Trace** is the selected causal path that matters for explanation. It is deliberately not the same thing as a complete raw execution log.
+
+## Beta pilot app
+
+The pilot UI does not introduce a second database model. It edits and reads the same portable CRUX bundle used by the CLI.
+
+```bash
+pnpm install
+pnpm pilot
+```
+
+The pilot surface can:
+
+- start a simple canonical CRUX record;
+- open an existing `crux-bundle/0.1` JSON file;
+- show organisational AI uses, systems and the current process;
+- distinguish claims from their evidence and derived evidence state;
+- display consequential receipts;
+- switch between working, public and affected-person disclosure lenses;
+- export canonical, public and affected-person JSON;
+- keep incomplete edits as an explicit draft and block canonical/disclosure export until schema and reference validation pass.
+
+It intentionally does **not** have accounts, hosted persistence or a separate application-only source of truth. The beta is designed to learn what the eventual guided product genuinely needs.
 
 ## Standalone CLI
 
@@ -115,6 +138,7 @@ Useful package-level checks:
 pnpm --filter @crux/schemas test
 pnpm --filter @crux/core test
 pnpm --filter @crux/formats test
+pnpm --filter @crux/pilot test
 ```
 
 ## Principles
@@ -132,9 +156,9 @@ pnpm --filter @crux/formats test
 
 ## Status
 
-CRUX is at **0.1-alpha.5**. The open contracts, evidence-resolution core, provenance foundations, portable bundle and first CLI are implemented. The next milestone is hardening these against real organisational examples before moving into the guided product surface.
+CRUX is at **0.1-beta.0**. The open contracts, evidence-resolution core, provenance foundations, portable bundle and CLI are implemented. A thin pilot authoring/viewer surface is now available to test the model with real organisations while preserving the standalone, file-first architecture.
 
-See the [specification](docs/specification.md), [roadmap](docs/roadmap.md), [architecture](docs/architecture.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [versioning policy](docs/VERSIONING.md).
+See the [specification](docs/specification.md), [roadmap](docs/roadmap.md), [architecture](docs/architecture.md), [pilot plan](docs/PILOT.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [versioning policy](docs/VERSIONING.md).
 
 ## Licence
 
