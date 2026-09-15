@@ -115,7 +115,7 @@ describe("CRUX trace and receipt contracts", () => {
   it("creates an affected-person receipt without reproducing raw source content", () => {
     const receipt = receiptSchema.parse({
       schema_version: "0.1",
-      id: "receipt:funding:AF-24861",
+      id: "receipt:funding:af-24861",
       run_ref: "run:funding:24861",
       trace_ref: "trace:funding:24861",
       system_version_ref: "system-version:funding-assistant:2.3",
