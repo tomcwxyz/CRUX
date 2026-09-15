@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   inspectBundle,
   parsePortableBundle,
+  portableBundleSchema,
   redactBundle,
   validateBundleReferences,
   type CruxPortableBundle,
@@ -13,6 +14,13 @@ import { createStarterBundle } from "../lib/starter";
 
 type Tab = "overview" | "claims" | "receipts" | "edit";
 type Lens = "working" | "public" | "affected_party";
+
+type DisplayClaim = {
+  id: string;
+  statement: string;
+  status: string;
+  reasons: string[];
+};
 
 const lensLabel: Record<Lens, string> = {
   working: "Working record",
@@ -68,11 +76,20 @@ export function PilotWorkbench() {
   const [lens, setLens] = useState<Lens>("working");
   const [error, setError] = useState<string | null>(null);
 
-  const validation = useMemo(() => validateBundleReferences(bundle), [bundle]);
-  const inspection = useMemo(() => inspectBundle(bundle), [bundle]);
+  const structural = useMemo(() => portableBundleSchema.safeParse(bundle), [bundle]);
+  const referenceValidation = useMemo(
+    () => (structural.success ? validateBundleReferences(structural.data) : null),
+    [structural],
+  );
+  const canonical = structural.success && referenceValidation?.valid ? structural.data : null;
+  const inspection = useMemo(
+    () => (structural.success ? inspectBundle(structural.data) : null),
+    [structural],
+  );
+  const effectiveLens: Lens = canonical ? lens : "working";
   const projection = useMemo(
-    () => (lens === "working" ? null : redactBundle(bundle, lens)),
-    [bundle, lens],
+    () => (canonical && effectiveLens !== "working" ? redactBundle(canonical, effectiveLens) : null),
+    [canonical, effectiveLens],
   );
 
   const visibleUseIds = projection ? idsFrom(projection.ai_uses) : null;
@@ -89,14 +106,21 @@ export function PilotWorkbench() {
   const versions = bundle.system_versions.filter(
     (item) => !visibleVersionIds || visibleVersionIds.has(item.id),
   );
-  const claims = inspection.claim_statuses.filter(
-    (item) => !visibleClaimIds || visibleClaimIds.has(item.id),
-  );
   const evidence = bundle.evidence.filter(
     (item) => !visibleEvidenceIds || visibleEvidenceIds.has(item.id),
   );
 
-  const receiptViews = lens === "working"
+  const draftClaims: DisplayClaim[] = bundle.claims.map((claim) => ({
+    id: claim.id,
+    statement: claim.statement,
+    status: "draft",
+    reasons: ["The working record is not currently a valid canonical CRUX bundle."],
+  }));
+  const claims: DisplayClaim[] = (inspection?.claim_statuses ?? draftClaims).filter(
+    (item) => !visibleClaimIds || visibleClaimIds.has(item.id),
+  );
+
+  const receiptViews = effectiveLens === "working"
     ? bundle.receipts
     : (projection?.trace_views.flatMap((view) => (view.receipt ? [view.receipt] : [])) ?? []);
 
@@ -104,12 +128,20 @@ export function PilotWorkbench() {
   const primaryUse = bundle.ai_uses[0];
   const primarySystem = bundle.systems[0];
   const primaryClaim = bundle.claims[0];
-
   const currentVersion =
     versions.find((version) => systems.some((system) => system.current_version_ref === version.id)) ??
     versions[0];
   const projectedVersion = projection?.system_versions.find((version) => version.id === currentVersion?.id);
   const processNodes = projectedVersion?.process.nodes ?? currentVersion?.process.nodes ?? [];
+
+  const schemaIssues = structural.success
+    ? []
+    : structural.error.issues.slice(0, 6).map((issue) => ({
+        path: issue.path.join(".") || "bundle",
+        message: issue.message,
+      }));
+  const referenceIssues = referenceValidation?.issues.slice(0, 6) ?? [];
+  const canPublish = canonical !== null;
 
   const mutate = (change: (next: CruxPortableBundle) => void) => {
     setBundle((current) => {
@@ -151,6 +183,12 @@ export function PilotWorkbench() {
   };
 
   const baseName = slug(primaryOrganisation?.name ?? "crux");
+  const exportCanonical = () => {
+    if (canonical) downloadJson(canonical, `${baseName}-crux.json`);
+  };
+  const exportDisclosure = (level: "public" | "affected_party") => {
+    if (canonical) downloadJson(redactBundle(canonical, level), `${baseName}-crux-${level}.json`);
+  };
 
   return (
     <section className="workbench" aria-label="CRUX pilot workbench">
@@ -165,22 +203,23 @@ export function PilotWorkbench() {
             />
           </label>
           <button className="btn ghost" type="button" onClick={reset}>New</button>
-          <button className="btn primary" type="button" onClick={() => downloadJson(bundle, `${baseName}-crux.json`)}>
+          <button className="btn primary" type="button" disabled={!canPublish} onClick={exportCanonical}>
             Download bundle
           </button>
-          <button className="btn" type="button" onClick={() => downloadJson(redactBundle(bundle, "public"), `${baseName}-crux-public.json`)}>
+          <button className="btn" type="button" disabled={!canPublish} onClick={() => exportDisclosure("public")}>
             Export public
           </button>
-          <button className="btn" type="button" onClick={() => downloadJson(redactBundle(bundle, "affected_party"), `${baseName}-crux-affected.json`)}>
+          <button className="btn" type="button" disabled={!canPublish} onClick={() => exportDisclosure("affected_party")}>
             Export affected
           </button>
         </div>
         <div className="toolbar-group" aria-label="Disclosure lens">
           {(["working", "public", "affected_party"] as Lens[]).map((item) => (
             <button
-              className={`btn ${lens === item ? "primary" : "ghost"}`}
+              className={`btn ${effectiveLens === item ? "primary" : "ghost"}`}
               type="button"
               key={item}
+              disabled={item !== "working" && !canPublish}
               onClick={() => setLens(item)}
             >
               {lensLabel[item]}
@@ -211,6 +250,17 @@ export function PilotWorkbench() {
 
       <div className="panel">
         {error ? <div className="error-box" style={{ marginBottom: 18 }}>{error}</div> : null}
+        {!canPublish ? (
+          <div className="error-box" style={{ marginBottom: 18 }}>
+            <strong>Working draft — not exportable as canonical CRUX yet.</strong>
+            {schemaIssues.map((issue) => (
+              <div key={`${issue.path}-${issue.message}`}>{issue.path}: {issue.message}</div>
+            ))}
+            {referenceIssues.map((issue) => (
+              <div key={`${issue.path}-${issue.message}`}>{issue.path}: {issue.message}</div>
+            ))}
+          </div>
+        ) : null}
 
         {tab === "overview" ? (
           <div className="grid">
@@ -221,9 +271,9 @@ export function PilotWorkbench() {
                 {organisations[0]?.description ?? "No organisation description is visible in this disclosure."}
               </p>
               <div className="pill-row">
-                <span className="pill moss">{lensLabel[lens]}</span>
-                <span className="pill">
-                  {validation.valid ? "Valid references" : `${validation.issues.length} reference issue(s)`}
+                <span className="pill moss">{lensLabel[effectiveLens]}</span>
+                <span className={`pill ${canPublish ? "moss" : "rust"}`}>
+                  {canPublish ? "Canonical bundle valid" : "Draft needs attention"}
                 </span>
               </div>
             </article>
@@ -235,8 +285,8 @@ export function PilotWorkbench() {
             {aiUses.map((use) => (
               <article className="card wide" key={use.id}>
                 <div className="kicker">AI use</div>
-                <h3>{use.name}</h3>
-                <p className="body-copy">{use.public_summary ?? use.purpose}</p>
+                <h3>{use.name || "Untitled AI use"}</h3>
+                <p className="body-copy">{use.public_summary || use.purpose || "Purpose not yet described."}</p>
                 <div className="pill-row">
                   {use.consequential ? <span className="pill rust">Consequential</span> : <span className="pill">Not marked consequential</span>}
                   {use.people_affected.map((person) => <span className="pill" key={person}>{person}</span>)}
@@ -245,8 +295,8 @@ export function PilotWorkbench() {
                   <div key={system.id}>
                     <div className="divider" />
                     <div className="kicker">System</div>
-                    <h3>{system.name}</h3>
-                    <p className="small muted">{system.description}</p>
+                    <h3>{system.name || "Untitled system"}</h3>
+                    <p className="small muted">{system.description || "System description not yet complete."}</p>
                     <div className="pill-row">
                       {system.influence.map((value) => <span className="pill" key={value}>Influence: {value}</span>)}
                       <span className="pill">Agency: {system.agency.replaceAll("_", " ")}</span>
@@ -294,7 +344,7 @@ export function PilotWorkbench() {
                   <div className="claim" key={claim.id}>
                     <div className={`claim-status ${claim.status}`}>{claim.status}</div>
                     <div>
-                      <div className="claim-text">{claim.statement}</div>
+                      <div className="claim-text">{claim.statement || "Claim not yet complete."}</div>
                       {claim.reasons.map((reason) => <div className="reason" key={reason}>{reason}</div>)}
                       <div className="pill-row"><span className="pill">{linked.length} linked evidence record{linked.length === 1 ? "" : "s"}</span></div>
                     </div>
@@ -349,7 +399,7 @@ export function PilotWorkbench() {
               <div className="kicker">Pilot authoring</div>
               <h2 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, fontSize: 30, margin: "0 0 12px" }}>Start with the organisational story.</h2>
               <p className="small muted">The pilot editor deliberately touches only the primary organisation, AI use, system and claim.</p>
-              <div className="notice" style={{ marginTop: 18 }}>The JSON bundle remains canonical. CRUX does not save this anywhere unless you download it.</div>
+              <div className="notice" style={{ marginTop: 18 }}>The JSON bundle remains canonical. Public views and exports only unlock when the working record validates.</div>
             </aside>
 
             <div>
@@ -421,7 +471,7 @@ export function PilotWorkbench() {
                     <div className="notice">This starts as <strong>declared</strong>, not supported. Evidence has to earn the stronger status.</div>
                   </EditorSection>
                 </>
-              ) : <div className="empty">This imported bundle does not contain the primary records required by the thin pilot editor. You can still inspect and export it.</div>}
+              ) : <div className="empty">This imported bundle does not contain the primary records required by the thin pilot editor. You can still inspect it.</div>}
             </div>
           </div>
         ) : null}
