@@ -59,6 +59,10 @@ export const appendManualReceipt = (
   const effectOfAI = requiredText(input.effectOfAI, "Effect of AI");
   const outcome = requiredText(input.outcome, "Outcome");
   const humanInvolvement = input.humanInvolvement?.trim() || undefined;
+  if (["human", "hybrid"].includes(input.finalAuthority) && !humanInvolvement) {
+    throw new Error("Describe the human involvement when final authority is human or hybrid.");
+  }
+
   const challengeDescription = input.challengeDescription?.trim() || undefined;
   const disclosure = input.disclosure ?? "affected_party";
   const number = nextReceiptNumber(next);
@@ -132,7 +136,9 @@ export const appendManualReceipt = (
     type: "decision",
     ...(decision ? { decision_ref: decision.id } : {}),
     ...(decisionNode ? { process_node_ref: decisionNode.id } : {}),
-    ...(humanRoleRef && input.finalAuthority === "human" ? { human_role_ref: humanRoleRef } : {}),
+    ...(humanRoleRef && ["human", "hybrid"].includes(input.finalAuthority)
+      ? { human_role_ref: humanRoleRef }
+      : {}),
     summary: outcome,
     attributes: {},
     disclosure,
