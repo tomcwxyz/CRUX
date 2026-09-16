@@ -77,7 +77,7 @@ See `docs/PILOT.md`, `docs/PIPELINE_INTEGRATION.md` and `docs/TRANSPORT_DECISION
 
 ### Immediate beta work
 
-The next work should improve CRUX as a learning instrument and validate the implemented automation boundary rather than expanding into generic CRUD.
+The next work should improve CRUX as a learning instrument while turning the accepted runtime/transport contracts into a durable but still provider-neutral service boundary.
 
 1. **Structured organisational dry-runs** — author several real or realistic cases end-to-end, including one genuinely consequential process and one non-consequential productivity use.
 2. **Questions to resolve** — test whether missing-transparency prompts are useful and proportionate rather than adding a completeness/trust score.
@@ -95,7 +95,7 @@ The next work should improve CRUX as a learning instrument and validate the impl
    - ✅ review-required receipt proposal from an observed causal trace;
    - ✅ browser Workflow test human-accepted;
    - ✅ browser Declared-versus-observed test human-accepted.
-6. **Transport contract · implemented, browser acceptance pending**
+6. **Transport contract · accepted**
    - ✅ `@crux/transport` storage-free semantic write boundary;
    - ✅ versioned `crux-ingest/0.1` batch for Run/Event/Observation/EvidenceEnvelope;
    - ✅ exact SystemVersion targeting;
@@ -108,9 +108,22 @@ The next work should improve CRUX as a learning instrument and validate the impl
    - ✅ OTLP/HTTP JSON GenAI bridge → existing OTel mapper → same ingestion contract;
    - ✅ OTLP fixture proves input/output message content is excluded;
    - ✅ stateless `/api/ingest-test` route with no persistence;
-   - ✅ browser Test 4 demonstrating accept → replay → conflict/policy rejection and OTLP adaptation;
-   - ⬜ human-review Test 4 and confirm the transport explanation is understandable and proportionate.
-7. **After Test 4 acceptance: durable ingress design** — choose persistence and producer authentication around the proven contract, without changing the canonical CRUX model to suit the database. First questions are transactional ingestion ledger, producer identity/authorisation, organisation/workspace tenancy, retention, asynchronous delivery and failure independence.
+   - ✅ browser Test 4 demonstrates accept → replay → conflict/policy rejection and OTLP adaptation;
+   - ✅ browser Test 4 human-accepted: the direct semantic and OTLP paths were understandable, idempotent replay was visible, stable-ID conflict was rejected, free-text runtime content was rejected, and prompt/output fields remained outside CRUX.
+7. **Durable ingress · active** — wrap the accepted transport contract in persistence/auth semantics without changing `crux-ingest/0.1`.
+   - ✅ storage abstraction added around the pure ingestion function;
+   - ✅ request-level idempotency key is `(scope, producer, request_id)`;
+   - ✅ exact request replay returns the original acceptance ledger without a second transaction;
+   - ✅ changed payload with a reused request key is a hard conflict;
+   - ✅ authenticated principal/context is separate from self-declared `producer.id` provenance;
+   - ✅ explicit `runtime:write` and `evidence:write` capabilities;
+   - ✅ in-memory reference store for local/CI contract tests;
+   - ⬜ choose and implement the first Postgres persistence adapter and migrations;
+   - ⬜ producer credential/OIDC model and scope resolution;
+   - ⬜ transactional request + acceptance ledger in durable storage;
+   - ⬜ retry/concurrency behaviour around revision conflicts;
+   - ⬜ retention and deletion policy for internal runtime provenance;
+   - ⬜ asynchronous delivery/queue posture for production instrumentation.
 8. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before broader persistence/accounts/workspaces work.
 9. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
 
@@ -125,6 +138,7 @@ Core questions remain:
 - Does CRUX remain useful when TOPO, RACK and Ship Check are absent?
 - Can technical observations automatically improve CRUX without allowing telemetry to invent organisational meaning?
 - Can CRUX receive runtime evidence without becoming a general-purpose observability store or content sink?
+- Can durable ingestion preserve the same privacy and organisational-authority boundaries proven by the browser tests?
 
 Do not expand the schema because participants use different terminology. Add concepts only where the current model cannot faithfully represent something important.
 
@@ -204,3 +218,4 @@ Publish/discover `/.well-known/ai-transparency.json` and open representations fo
 - Application/database convenience must not dictate interchange contracts.
 - Runtime automation may report behaviour but may not silently define organisational purpose, accountability or disclosure policy.
 - Transport failures should not normally fail the AI workflow itself.
+- Self-declared producer provenance is not authentication; durable services must authorise the authenticated principal separately.
