@@ -29,22 +29,6 @@ export async function POST(request: Request) {
   const prompt = safeText(body.prompt, DEFAULT_PROMPT, 800);
   const model = safeText(body.model, process.env.CRUX_SMOKE_MODEL ?? DEFAULT_MODEL, 160);
 
-  if (
-    mode === "live" &&
-    !process.env.AI_GATEWAY_API_KEY &&
-    !process.env.VERCEL_OIDC_TOKEN
-  ) {
-    return Response.json(
-      {
-        ok: false,
-        code: "missing_gateway_auth",
-        message:
-          "Live testing needs AI Gateway authentication on the deployed server. The built-in demo works without credentials.",
-      },
-      { status: 503 },
-    );
-  }
-
   const runId = `run:browser-test:${Date.now()}`;
   const crux = createInstrumentationSession({
     runId,
@@ -55,6 +39,10 @@ export async function POST(request: Request) {
     let responseText: string;
 
     if (mode === "live") {
+      // On Vercel, AI SDK model strings route through AI Gateway and use the
+      // deployment's managed authentication where available. Do not gate this
+      // on process.env: let the Gateway return the real authentication/runtime
+      // error so the browser test reflects the deployed environment accurately.
       const result = await generateText({
         model,
         prompt,
