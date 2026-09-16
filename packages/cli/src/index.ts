@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import process from "node:process";
 import { ZodError } from "zod";
 import {
+  importEvidenceEnvelope,
   inspectBundle,
   parsePortableBundle,
   portableBundleJsonSchema,
@@ -17,6 +18,7 @@ Usage:
   crux validate <bundle.json>
   crux inspect <bundle.json> [--as-of <iso-timestamp>]
   crux redact <bundle.json> --level <public|affected_party|trusted|internal> [-o <file>]
+  crux ingest-evidence <bundle.json> <envelope.json> [-o <file>]
   crux schema [-o <file>]
 `;
 
@@ -108,12 +110,24 @@ const main = async () => {
     return;
   }
 
+  if (command === "ingest-evidence") {
+    const envelopePath = args[2];
+    if (!envelopePath || envelopePath.startsWith("-")) {
+      throw new Error(`ingest-evidence requires an EvidenceEnvelope path.\n\n${usage}`);
+    }
+
+    const result = importEvidenceEnvelope(bundle, await readJson(envelopePath));
+    await writeOrPrint(result.bundle, option(args, ["-o", "--output"]));
+    process.stderr.write(`Evidence ${result.evidence.id}: ${result.status}\n`);
+    return;
+  }
+
   throw new Error(`Unknown command ${command}.\n\n${usage}`);
 };
 
 main().catch((error: unknown) => {
   if (error instanceof ZodError) {
-    process.stderr.write(`Invalid CRUX bundle structure:\n${formatZodError(error)}\n`);
+    process.stderr.write(`Invalid CRUX structure:\n${formatZodError(error)}\n`);
   } else if (error instanceof SyntaxError) {
     process.stderr.write(`Invalid JSON: ${error.message}\n`);
   } else if (error instanceof Error) {
