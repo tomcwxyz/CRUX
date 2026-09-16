@@ -33,7 +33,30 @@ export function DurableTestPanel() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
       });
-      const payload = (await response.json()) as DurableResult;
+
+      const body = await response.text();
+      let payload: DurableResult;
+
+      if (body.length === 0) {
+        payload = {
+          ok: false,
+          action,
+          code: "empty_server_response",
+          message: `The durable ingress endpoint returned HTTP ${response.status} with an empty body.`,
+        };
+      } else {
+        try {
+          payload = JSON.parse(body) as DurableResult;
+        } catch {
+          payload = {
+            ok: false,
+            action,
+            code: "non_json_server_response",
+            message: `The durable ingress endpoint returned HTTP ${response.status}: ${body.slice(0, 300)}`,
+          };
+        }
+      }
+
       setResults((current) => [...current, payload]);
     } catch (error) {
       setResults((current) => [
@@ -100,7 +123,7 @@ export function DurableTestPanel() {
       ) : null}
 
       <p className="small muted" style={{ marginTop: 18 }}>
-        Preview-only synthetic test. The browser never receives the database credential. `producer.id` remains provenance; the server supplies the authenticated principal and capabilities separately.
+        Synthetic production-safe test. The browser never receives the database credential. `producer.id` remains provenance; the server supplies the authenticated principal and capabilities separately.
       </p>
     </article>
   );
