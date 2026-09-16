@@ -82,6 +82,9 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - declared-versus-observed provider/model view scoped to the exact SystemVersion
 - observed-behaviour view is currently restricted to the working/internal lens and displays only bounded provider/model metadata
 - validated `examples/observed-divergence/crux.json` for manual pilot testing
+- browser-first `/test` surface with progressive model-call, workflow and declared-versus-observed tests
+- browser workflow test records a real AI invocation followed by synthetic human review → decision → bounded action, then derives a review-required receipt proposal
+- browser divergence test creates an actual declared SystemVersion and reconciles it with the observed invocation through `@crux/core`
 - downloadable pilot-session sheet for comparable authoring and comprehension testing
 - canonical/public/affected-person JSON export
 - no account, database or hidden application-only canonical state
@@ -96,7 +99,9 @@ Implemented on `beta/pipeline-instrumentation` for validation before merge:
 - `packages/instrumentation` as a framework-independent metadata-first runtime collector;
 - canonical Run/Event generation with no hosted CRUX dependency;
 - Vercel AI SDK structural mapping without importing the `ai` package into CRUX canonical/runtime core;
-- actual AI SDK `generateText()` lifecycle test using `MockLanguageModelV4`, proving framework integration while keeping an external live-provider call separate;
+- actual AI SDK `generateText()` lifecycle test using `MockLanguageModelV4`;
+- real external-provider browser smoke test through Vercel AI Gateway using `anthropic/claude-3-haiku`;
+- the live smoke test proved prompt and model output remained outside the CRUX snapshot while provider/model/token metadata was retained;
 - OpenTelemetry GenAI span mapping using a strict allow-list of metadata attributes;
 - prompt/output/reasoning/tool-argument content excluded by default even when source telemetry contains it;
 - declared-versus-observed provider/model reconciliation moved into `@crux/core` rather than owned by an adapter;
@@ -106,21 +111,23 @@ Implemented on `beta/pipeline-instrumentation` for validation before merge:
 - credential-free consequential pipeline dogfood that runs fallback model → human review → decision → action through the real instrumentation package;
 - CI asserts runtime divergence while synthetic sensitive input/output content never enters the CRUX snapshot;
 - CI/eval `EvidenceEnvelope` import and replay dogfooded through the standalone CLI;
-- receipt-proposal generation dogfooded from the observed event chain without copying event summaries into the proposal.
+- receipt-proposal generation dogfooded from the observed event chain without copying event summaries into the proposal;
+- browser Workflow and Declared-versus-observed test paths deployed on the beta preview for human inspection.
 
 Not yet implemented/proven:
 
-- one smoke test against a real external model provider;
+- human acceptance of the deployed Workflow test's trace/receipt-proposal semantics;
+- human acceptance of the deployed Declared-versus-observed browser explanation;
 - HTTP/OTLP transport or persistence;
 - declared-versus-observed checks for action/review-control semantics beyond provider/model metadata;
 - deployed MCP server;
 - hosted ingestion/auth/batching/idempotency.
 
-Those remain deliberately downstream of validating the bounded local contracts and the external-provider smoke test.
+Transport remains deliberately downstream of validating the browser workflow/reconciliation tests rather than being selected simply because the model-call smoke test passed.
 
 ## Current phase
 
-`0.1-beta` real-world piloting plus a bounded pipeline-integration spike whose local contract path is now implemented.
+`0.1-beta` real-world piloting plus a bounded pipeline-integration spike whose contract path and first live-provider path are now implemented.
 
 The thin application covers enough of the intended pilot loop to run structured dry-runs with real organisational examples:
 
@@ -154,7 +161,7 @@ The operating rule remains:
 
 > **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
 
-The next useful evidence should come from structured dry-runs, non-author comprehension tests and one small external-provider smoke test rather than speculative schema or transport expansion. See `docs/PILOT.md` and `docs/PIPELINE_INTEGRATION.md`.
+The next useful evidence should come from exercising the deployed Workflow and Declared-versus-observed browser tests, then structured organisational dry-runs and non-author comprehension testing. See `docs/PILOT.md` and `docs/PIPELINE_INTEGRATION.md`.
 
 ## Product boundary
 
