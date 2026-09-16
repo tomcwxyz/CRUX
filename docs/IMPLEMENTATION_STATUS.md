@@ -2,7 +2,7 @@
 
 **Updated:** 16 September 2026
 
-CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the foundation, a deliberately thin pilot authoring/viewer surface sits directly on top of the portable bundle, and the first metadata-only runtime/evidence integration path is now implemented and dogfooded against the same canonical contracts.
+CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the foundation, a deliberately thin pilot authoring/viewer surface sits directly on top of the portable bundle, and the first metadata-only runtime, evidence and transport paths are implemented against the same canonical contracts.
 
 ## Implemented
 
@@ -82,9 +82,10 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - declared-versus-observed provider/model view scoped to the exact SystemVersion
 - observed-behaviour view is currently restricted to the working/internal lens and displays only bounded provider/model metadata
 - validated `examples/observed-divergence/crux.json` for manual pilot testing
-- browser-first `/test` surface with progressive model-call, workflow and declared-versus-observed tests
+- browser-first `/test` surface with progressive model-call, workflow, declared-versus-observed and transport-boundary tests
 - browser workflow test records a real AI invocation followed by synthetic human review → decision → bounded action, then derives a review-required receipt proposal
 - browser divergence test creates an actual declared SystemVersion and reconciles it with the observed invocation through `@crux/core`
+- browser transport test demonstrates first ingestion, idempotent replay, stable-ID conflict rejection, content-policy rejection and OTLP adaptation
 - downloadable pilot-session sheet for comparable authoring and comprehension testing
 - canonical/public/affected-person JSON export
 - no account, database or hidden application-only canonical state
@@ -92,7 +93,7 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - invalid in-progress edits remain visibly a working draft
 - starter bundle deliberately includes a declared but unevidenced claim
 
-### Beta pipeline integration spike
+### Beta pipeline and transport integration spike
 
 Implemented on `beta/pipeline-instrumentation` for validation before merge:
 
@@ -104,30 +105,40 @@ Implemented on `beta/pipeline-instrumentation` for validation before merge:
 - the live smoke test proved prompt and model output remained outside the CRUX snapshot while provider/model/token metadata was retained;
 - OpenTelemetry GenAI span mapping using a strict allow-list of metadata attributes;
 - prompt/output/reasoning/tool-argument content excluded by default even when source telemetry contains it;
-- declared-versus-observed provider/model reconciliation moved into `@crux/core` rather than owned by an adapter;
-- exact-SystemVersion scoping for observed comparisons;
-- divergence is surfaced for review rather than silently mutating the declaration;
-- tests for canonical event production, content leakage prevention and fallback-model divergence;
-- credential-free consequential pipeline dogfood that runs fallback model → human review → decision → action through the real instrumentation package;
-- CI asserts runtime divergence while synthetic sensitive input/output content never enters the CRUX snapshot;
-- CI/eval `EvidenceEnvelope` import and replay dogfooded through the standalone CLI;
-- receipt-proposal generation dogfooded from the observed event chain without copying event summaries into the proposal;
-- browser Workflow and Declared-versus-observed test paths deployed on the beta preview for human inspection.
+- declared-versus-observed provider/model reconciliation in `@crux/core`, scoped to the exact SystemVersion;
+- divergence surfaced for review rather than silently mutating the declaration;
+- credential-free consequential pipeline dogfood: fallback model → human review → decision → action;
+- idempotent CI/eval `EvidenceEnvelope` import and replay;
+- review-required receipt-proposal generation from observed event chains;
+- human acceptance of the deployed Workflow and Declared-versus-observed browser tests;
+- `packages/transport` as a storage-free canonical semantic ingestion boundary;
+- versioned `crux-ingest/0.1` batch containing Run, Event, Observation and EvidenceEnvelope records;
+- explicit producer identity and per-record acceptance provenance;
+- exact SystemVersion targeting for runtime observations;
+- idempotent same-record replay and hard rejection of same-ID/different-record conflicts;
+- duplicate Run event-sequence rejection;
+- default HTTP transport policy that permits metadata-only capture and rejects subject refs, free-text event summaries and non-allow-listed runtime attributes;
+- payload/record-count boundaries;
+- EvidenceEnvelope import through the same transport without silently creating EvidenceLinks;
+- OTLP/HTTP JSON GenAI bridge that maps through the existing OpenTelemetry allow-list into the same `crux-ingest/0.1` contract;
+- regression fixture proving OTLP input/output message fields do not enter the CRUX batch;
+- stateless `/api/ingest-test` Next route returning an updated portable bundle plus acceptance ledger with `persistence: none`;
+- browser Test 4 for direct semantic ingestion and OTLP adaptation.
 
 Not yet implemented/proven:
 
-- human acceptance of the deployed Workflow test's trace/receipt-proposal semantics;
-- human acceptance of the deployed Declared-versus-observed browser explanation;
-- HTTP/OTLP transport or persistence;
+- human acceptance of browser Test 4's transport explanation;
+- durable transport persistence and transactional ingestion ledger;
+- producer authentication/authorisation, tenancy or API keys/OIDC;
+- delivery queues/retries/rate limiting;
 - declared-versus-observed checks for action/review-control semantics beyond provider/model metadata;
-- deployed MCP server;
-- hosted ingestion/auth/batching/idempotency.
+- deployed MCP server.
 
-Transport remains deliberately downstream of validating the browser workflow/reconciliation tests rather than being selected simply because the model-call smoke test passed.
+Durable storage/auth/workspaces remain deliberately downstream of accepting the transport semantics rather than being allowed to define them.
 
 ## Current phase
 
-`0.1-beta` real-world piloting plus a bounded pipeline-integration spike whose contract path and first live-provider path are now implemented.
+`0.1-beta` real-world piloting plus a bounded pipeline/transport spike. The runtime, reconciliation and storage-free write-contract paths are now implemented; durable service infrastructure is intentionally not.
 
 The thin application covers enough of the intended pilot loop to run structured dry-runs with real organisational examples:
 
@@ -144,15 +155,22 @@ purpose
 The automated path now reaches:
 
 ```text
-AI framework / OpenTelemetry
+AI application / framework
   → bounded runtime metadata
-  → Run / Event
+  → crux-ingest/0.1
+  → Run / Event / Observation
   → declared-versus-observed reconciliation
   → observed Trace
   → review-required receipt proposal
 
+OpenTelemetry / OTLP
+  → strict GenAI metadata mapping
+  → crux-ingest/0.1
+  → same CRUX semantic boundary
+
 CI / eval tool
   → EvidenceEnvelope
+  → crux-ingest/0.1
   → idempotent evidence import
   → explicit later Claim ↔ Evidence review
 ```
@@ -161,7 +179,7 @@ The operating rule remains:
 
 > **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
 
-The next useful evidence should come from exercising the deployed Workflow and Declared-versus-observed browser tests, then structured organisational dry-runs and non-author comprehension testing. See `docs/PILOT.md` and `docs/PIPELINE_INTEGRATION.md`.
+The next useful evidence should come from human acceptance of browser Test 4, then structured organisational dry-runs and non-author comprehension testing. Only after that should the beta spike choose durable persistence and producer authentication. See `docs/PILOT.md`, `docs/PIPELINE_INTEGRATION.md` and `docs/TRANSPORT_DECISION.md`.
 
 ## Product boundary
 
