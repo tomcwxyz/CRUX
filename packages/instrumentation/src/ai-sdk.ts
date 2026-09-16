@@ -1,33 +1,33 @@
 import type { CruxInstrumentationSession } from "./session.js";
 
 export type AISdkUsageLike = {
-  inputTokens?: number;
-  outputTokens?: number;
-  totalTokens?: number;
-  promptTokens?: number;
-  completionTokens?: number;
+  inputTokens?: number | undefined;
+  outputTokens?: number | undefined;
+  totalTokens?: number | undefined;
+  promptTokens?: number | undefined;
+  completionTokens?: number | undefined;
 };
 
 export type AISdkStepObservation = {
-  finishReason?: string;
-  usage?: AISdkUsageLike;
+  finishReason?: string | undefined;
+  usage?: AISdkUsageLike | undefined;
   /**
    * Current AI SDK step metadata exposes the model that produced the step here.
    * Keeping this structural avoids a runtime dependency on `ai` in CRUX core.
    */
   model?: {
-    provider?: string;
-    modelId?: string;
-  };
+    provider?: string | undefined;
+    modelId?: string | undefined;
+  } | undefined;
   /**
    * Older/current response metadata may also expose an id and model. Retained
    * for compatibility with framework versions and provider adapters that do so.
    */
   response?: {
-    id?: string;
-    model?: string;
-  };
-  toolCalls?: Array<{ toolName?: string }>;
+    id?: string | undefined;
+    model?: string | undefined;
+  } | undefined;
+  toolCalls?: Array<{ toolName?: string | undefined }> | undefined;
 };
 
 export type AISdkStepRefs = {
