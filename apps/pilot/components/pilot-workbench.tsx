@@ -11,12 +11,13 @@ import {
 } from "@crux/formats";
 import type { AIAgency, AIInfluence } from "@crux/schemas";
 import { appendAIUse } from "../lib/authoring";
+import { observedBehaviourForVersion } from "../lib/observed";
 import { createStarterBundle } from "../lib/starter";
 import { AuthorityEditor } from "./authority-editor";
 import { AuthoritySummary } from "./authority-summary";
 import { EvidenceEditor } from "./evidence-editor";
 
-type Tab = "overview" | "claims" | "receipts" | "edit";
+type Tab = "overview" | "claims" | "observed" | "receipts" | "edit";
 type Lens = "working" | "public" | "affected_party";
 
 type DisplayClaim = {
@@ -158,6 +159,10 @@ export function PilotWorkbench() {
     : versions[0];
   const projectedVersion = projection?.system_versions.find((version) => version.id === currentVersion?.id);
   const processNodes = projectedVersion?.process.nodes ?? currentVersion?.process.nodes ?? [];
+  const observedBehaviour = useMemo(
+    () => observedBehaviourForVersion(bundle, currentVersion?.id),
+    [bundle, currentVersion?.id],
+  );
 
   const schemaIssues = structural.success
     ? []
@@ -287,6 +292,7 @@ export function PilotWorkbench() {
         {([
           ["overview", "Overview"],
           ["claims", "Claims & evidence"],
+          ["observed", "Observed behaviour"],
           ["receipts", "Receipts"],
           ["edit", "Guided edit"],
         ] as Array<[Tab, string]>).map(([id, label]) => (
@@ -296,7 +302,7 @@ export function PilotWorkbench() {
             className={`tab ${tab === id ? "active" : ""}`}
             onClick={() => {
               setTab(id);
-              if (id === "edit") setLens("working");
+              if (id === "edit" || id === "observed") setLens("working");
             }}
             role="tab"
             aria-selected={tab === id}
@@ -424,6 +430,67 @@ export function PilotWorkbench() {
                   </div>
                 </div>
               )) : <div className="empty">Nothing here yet. CRUX should make missing evidence obvious rather than quietly upgrading a declaration.</div>}
+            </article>
+          </div>
+        ) : null}
+
+        {tab === "observed" ? (
+          <div className="grid">
+            <article className="card wide">
+              <div className="kicker">Declared ↔ observed · working record only</div>
+              <h2>What actually ran?</h2>
+              <p className="body-copy muted">
+                CRUX compares bounded runtime metadata with the exact SystemVersion it belongs to. A divergence is something to inspect, not a trust or safety judgement.
+              </p>
+              <div className="pill-row">
+                <span className="pill">Version: {currentVersion?.version ?? "none selected"}</span>
+                {observedBehaviour.divergenceCount > 0
+                  ? <span className="pill rust">{observedBehaviour.divergenceCount} divergence{observedBehaviour.divergenceCount === 1 ? "" : "s"}</span>
+                  : observedBehaviour.observationCount > 0
+                    ? <span className="pill moss">No model/provider divergence observed</span>
+                    : <span className="pill">No runtime observations</span>}
+              </div>
+            </article>
+            <StatCard label="AI observations" value={observedBehaviour.observationCount} note="For this exact system version" />
+            <StatCard label="Comparable" value={observedBehaviour.comparableCount} note="Mapped to a declared model component" />
+            <StatCard label="Divergences" value={observedBehaviour.divergenceCount} note="Descriptive, not a score" />
+
+            <article className="card full">
+              <div className="kicker">Observed model/provider metadata</div>
+              {observedBehaviour.comparisons.length ? observedBehaviour.comparisons.map((comparison) => {
+                const divergent = comparison.fields.some((field) => field.status === "divergence");
+                const incomplete = comparison.fields.some((field) => field.status === "declared_unknown" || field.status === "observed_missing");
+                const label = !comparison.comparable
+                  ? "not comparable"
+                  : divergent
+                    ? "divergence"
+                    : incomplete
+                      ? "incomplete"
+                      : "match";
+                return (
+                  <div className="claim" key={comparison.eventRef ?? `${comparison.runRef}-${comparison.occurredAt}`}>
+                    <div>
+                      <div className="pill-row" style={{ marginTop: 0 }}>
+                        <span className={`pill ${divergent ? "rust" : label === "match" ? "moss" : ""}`}>{label}</span>
+                        <span className="pill">{comparison.componentName ?? comparison.componentRef ?? "Unmapped model component"}</span>
+                        {comparison.occurredAt ? <span className="pill">{new Date(comparison.occurredAt).toLocaleString("en-GB")}</span> : null}
+                      </div>
+                      {comparison.fields.length ? comparison.fields.map((field) => (
+                        <div className="reason" key={field.field}>
+                          {field.field === "model_identifier" ? "Model" : "Provider"}: declared <strong>{field.declared ?? "unknown"}</strong> · observed <strong>{field.observed ?? "not reported"}</strong> · {field.status.replaceAll("_", " ")}
+                        </div>
+                      )) : (
+                        <div className="reason">The event could not be mapped to a declared model component for this version.</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div className="empty">No bounded AI runtime observations are recorded for this exact SystemVersion yet.</div>
+              )}
+              <div className="notice" style={{ marginTop: 16 }}>
+                Runtime observations do not rewrite the declaration. A fallback, mismatch or missing value stays visible until someone reviews what happened and, if necessary, publishes a new SystemVersion.
+              </div>
             </article>
           </div>
         ) : null}

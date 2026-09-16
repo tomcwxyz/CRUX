@@ -1,7 +1,7 @@
 # CRUX architecture
 
-**Status:** initial direction  
-**Updated:** 15 September 2026
+**Status:** active beta architecture  
+**Updated:** 16 September 2026
 
 ## Boundary
 
@@ -62,9 +62,35 @@ CRUX follows the current sibling build preference where it helps consistency:
 
 The schema package is the first canonical implementation surface. Application/database choices should follow the schema rather than define it.
 
+## Package ownership
+
+The beta now uses these boundaries:
+
+```text
+@crux/schemas
+canonical portable contracts
+      ↓
+@crux/core
+evidence resolution · disclosure semantics · trace consistency
+proposal-first learning · declared ↔ observed reconciliation
+      ↓
+@crux/formats
+portable bundles · disclosure artefacts · EvidenceEnvelope import
+      ↓
+@crux/cli
+standalone file workflows
+
+@crux/instrumentation
+runtime observation adapters · metadata collection · receipt proposals
+      ↓
+canonical Run / Event contracts
+```
+
+Adapters report observations. `@crux/core` owns the semantics of reconciling an observation with an organisational declaration. This prevents Vercel AI SDK, OpenTelemetry or any future provider adapter from defining CRUX truth.
+
 ## Evidence spine
 
-The initial neutral contracts are:
+The neutral contracts are:
 
 ```text
 Claim
@@ -86,7 +112,7 @@ CRUX import/review
 
 An `EvidenceEnvelope` is intentionally neutral. It can be emitted by RACK, Ship Check, a CI job, an eval platform, a human audit or a bespoke script.
 
-CRUX-specific claim linking may be added on import, but an external evidence producer is not required to know CRUX internals.
+The beta importer is deliberately evidence-only. Automated ingestion may add and validate an external evidence record, but it does not silently create `EvidenceLink` relationships or upgrade a claim.
 
 ## TOPO
 
@@ -160,23 +186,37 @@ Software-backed systems should be able to provide model/provider identity, actua
 
 CRUX should consume existing GenAI observability where possible rather than create a competing raw telemetry layer. OpenTelemetry-style instrumentation can describe technical operations; CRUX maps those operations to organisational SystemVersions, process nodes, decisions, claims and receipts.
 
-The canonical machine integration should therefore be API/event contracts first. High-volume runtime events belong in an SDK/API/telemetry bridge rather than MCP.
+The beta runtime path is metadata-first. `packages/instrumentation` creates canonical Run/Event records and maps bounded Vercel AI SDK and OpenTelemetry metadata. `@crux/core` then reconciles observed provider/model metadata against the exact declared SystemVersion. The pilot exposes that reconciliation only in the working/internal lens at present.
+
+An observed causal event chain can also become a `crux-receipt-proposal/0.1`. The proposal can state safe observed facts and trace references, but it deliberately leaves final authority, actual outcome, AI effect and challenge route unresolved until the application or a human can supply that organisational meaning.
+
+Content-bearing telemetry is excluded by default. Prompt text, completions, reasoning, retrieved documents, tool arguments/results and OpenTelemetry input/output message attributes are not required for CRUX provenance and should remain opt-in if ever supported.
+
+The canonical machine integration remains API/event contracts first. High-volume runtime events belong in an SDK/API/telemetry bridge rather than MCP.
 
 MCP is an optional agent-facing interface over the same contracts: useful for reading current system transparency, evidence and receipts, and for low-frequency tools such as submitting evidence or explicitly recording a human review/decision. It is not the canonical persistence or telemetry protocol.
 
+CRUX instrumentation should normally be **inline but observe-only**, not an availability dependency. Organisations may separately choose to enforce specific evidence/verification conditions in CI or deployment policy.
+
 See `docs/PIPELINE_INTEGRATION.md` for the detailed design and implementation sequence.
 
-## Future application shape
+## Package shape
 
-Later packages should retain these separations:
+Current package boundaries:
 
 - `packages/schemas` — canonical interchange/runtime contracts;
-- `packages/core` — claim/evidence resolution, status derivation, versioning and disclosure policy;
-- `packages/formats` — portable import/export and public representations;
-- `packages/cli` — validate, inspect and redact workflows;
-- `apps/web` or equivalent — guided authoring and public publishing;
-- `packages/sdk` — optional runtime/event instrumentation after beta validation;
-- optional adapters — OpenTelemetry, Vercel AI SDK, RACK, TOPO, Ship Check and generic eval providers;
-- optional MCP server — an agent-facing view/tool layer over public CRUX contracts.
+- `packages/core` — claim/evidence resolution, status derivation, declared/observed reconciliation, versioning and disclosure policy;
+- `packages/formats` — portable import/export, EvidenceEnvelope ingestion and public representations;
+- `packages/cli` — validate, inspect, redact and evidence-ingestion workflows;
+- `packages/instrumentation` — beta runtime Run/Event collection, telemetry mapping and receipt proposals;
+- `apps/pilot` — guided authoring, disclosure viewing, declared/observed inspection and pilot testing.
 
-Adapters should depend on public contracts, never the other way round.
+Later supported infrastructure may add:
+
+- HTTP/OTLP ingestion and exporters around the existing instrumentation contracts;
+- review/action-control reconciliation beyond provider/model metadata;
+- framework-specific adapter packages where structural mapping is insufficient;
+- optional RACK, TOPO, Ship Check and generic eval adapters;
+- optional MCP server as an agent-facing view/tool layer over public CRUX contracts.
+
+The remaining beta integration acceptance step before transport design is one metadata-only smoke test against a real external model provider. Adapters should depend on public contracts and core semantics, never the other way round. A future supported SDK should evolve the proven `@crux/instrumentation` boundary rather than introduce a second runtime event model.

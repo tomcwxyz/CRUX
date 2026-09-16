@@ -6,7 +6,9 @@
   "description": "Open evidence and provenance for organisational AI.",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.15.0",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "build": "turbo run build",
     "check": "turbo run check",

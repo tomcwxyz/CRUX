@@ -20,6 +20,10 @@
     "./projection": {
       "types": "./dist/projection.d.ts",
       "default": "./dist/projection.js"
+    },
+    "./observed": {
+      "types": "./dist/observed.d.ts",
+      "default": "./dist/observed.js"
     }
   },
   "files": ["dist"],

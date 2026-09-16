@@ -1,0 +1,43 @@
+{
+  "name": "@crux/instrumentation",
+  "version": "0.1.0-beta.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./ai-sdk": {
+      "types": "./dist/ai-sdk.d.ts",
+      "default": "./dist/ai-sdk.js"
+    },
+    "./opentelemetry": {
+      "types": "./dist/opentelemetry.d.ts",
+      "default": "./dist/opentelemetry.js"
+    },
+    "./compare": {
+      "types": "./dist/compare.d.ts",
+      "default": "./dist/compare.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "pnpm typecheck && pnpm test",
+    "dogfood": "pnpm build && node examples/pipeline-dogfood.mjs",
+    "smoke:gateway": "pnpm build && node examples/live-gateway-smoke.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@crux/core": "workspace:*",
+    "@crux/schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "ai": "^7.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.10"
+  }
+}
