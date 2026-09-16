@@ -102,7 +102,9 @@ describe("CRUX ingest test route", () => {
   });
 
   it("rejects free-text event summaries at the default HTTP boundary", async () => {
-    const unsafe = batch();
+    const unsafe = batch() as ReturnType<typeof batch> & {
+      events: Array<ReturnType<typeof batch>["events"][number] & { summary?: string }>;
+    };
     unsafe.events[0] = {
       ...unsafe.events[0]!,
       summary: "A free-text runtime summary that should require an explicit broader policy.",
