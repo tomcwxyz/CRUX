@@ -27,6 +27,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "pnpm typecheck && pnpm test",
     "dogfood": "pnpm build && node examples/pipeline-dogfood.mjs",
+    "smoke:gateway": "pnpm build && node examples/live-gateway-smoke.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
