@@ -97,58 +97,25 @@ The batch still has to target the exact canonical `SystemVersion` for runtime re
 
 ## First persistence shape
 
-The first Postgres adapter should optimise for correctness and portability rather than application-query convenience.
+The first Postgres adapter optimises for correctness and portability rather than application-query convenience.
 
 ### `crux_scopes`
 
 Stores one validated portable canonical bundle per service scope plus an optimistic revision number.
 
-Suggested fields:
-
-```text
-scope_ref         text primary key
-bundle            jsonb not null
-revision          bigint not null default 0
-created_at        timestamptz not null
-updated_at        timestamptz not null
-```
-
 ### `crux_ingest_requests`
 
-Durable request/idempotency ledger.
-
-```text
-scope_ref         text not null
-producer_ref      text not null
-request_id        text not null
-principal_ref     text not null
-canonical_batch   jsonb not null
-accepted_at       timestamptz not null
-revision_after    bigint not null
-primary key (scope_ref, producer_ref, request_id)
-```
+Stores the durable `(scope_ref, producer_ref, request_id)` request/idempotency ledger, authenticated principal, canonical batch and resulting revision.
 
 ### `crux_ingest_acceptances`
 
-Per-record provenance returned by the semantic ingestion function.
+Stores the per-record provenance/acceptance result returned by the semantic ingestion function.
 
-```text
-scope_ref         text not null
-producer_ref      text not null
-request_id        text not null
-record_kind       text not null
-record_id         text not null
-status            text not null
-accepted_at       timestamptz not null
-```
-
-The initial adapter may store the canonical bundle as JSONB rather than normalising every CRUX domain object. That prevents the database schema from becoming a second domain model before the beta contracts have stabilised.
-
-Read-optimised projections or normalised indexes can be added later without changing the portable contract.
+The canonical bundle remains JSONB rather than normalising every CRUX domain object. That prevents the database schema becoming a second domain model before the beta contracts have stabilised.
 
 ## Transaction
 
-A durable commit should behave approximately as:
+A durable commit behaves approximately as:
 
 ```text
 BEGIN
@@ -157,17 +124,16 @@ BEGIN
 2. check (scope, producer, request_id)
    ├ same request + same bounded batch → return stored result
    └ same request + changed batch → reject
-3. read/lock scope revision + canonical bundle
+3. read scope revision + canonical bundle
 4. apply pure ingestCruxBatch(...)
-5. persist updated validated bundle
-6. increment scope revision
-7. persist request ledger
-8. persist per-record acceptance ledger
+5. compare-and-swap bundle using expected revision
+6. persist request ledger
+7. persist per-record acceptance ledger
 
 COMMIT
 ```
 
-An optimistic implementation may compute the pure ingestion result outside the transaction, then perform an atomic compare-and-swap on `revision`. A revision conflict must retry from the latest canonical state; it must never overwrite another accepted batch.
+A revision conflict retries from the latest canonical state; it must never overwrite another accepted batch.
 
 ## Why portable bundle JSONB first
 
@@ -192,39 +158,49 @@ Those are acceptable once real usage demonstrates which indexes/projections matt
 
 ## Hosted database choice
 
-The adapter should target ordinary PostgreSQL semantics and remain provider-neutral. A Neon-hosted Postgres deployment is a natural first operational target for the managed beta, but Neon must not become part of the interchange contracts or core package dependencies.
-
-Suggested package boundary:
+The adapter targets ordinary PostgreSQL semantics and remains provider-neutral. Neon-hosted Postgres is the first managed beta target, but Neon is not part of the interchange contracts or core package dependencies.
 
 ```text
 @crux/transport
     pure contracts + durable-store interface
 
-adapters/postgres
-    PostgreSQL implementation + migrations
+@crux/adapter-postgres
+    driver-neutral PostgreSQL implementation + migrations
 
 managed deployment
     Neon connection/auth configuration
 ```
 
+## Real Neon acceptance · 16 September 2026
+
+A dedicated isolated Neon project (`CRUX beta ingress`, eu-west-2, PostgreSQL 17) was created for synthetic acceptance testing. No real organisational data was used.
+
+Migration `001_durable_ingress.sql` applied successfully and the database-level transactional guarantees were exercised directly against Neon:
+
+1. **First commit passed.** A synthetic scope began at revision `0`; bundle update + request ledger + two acceptance records committed atomically and revision became `1`.
+2. **Reconnect/replay state passed.** A fresh read recovered revision `1`, the original canonical request, principal, two acceptance records, and the expected persisted Run/Event counts. This is the state the adapter uses to return an exact replay without another commit.
+3. **Changed request-key conflict passed.** Reusing `(scope_ref, producer_ref, request_id)` with changed batch content hit the database uniqueness boundary. The service layer additionally detects the differing canonical batch and reports an idempotency conflict rather than treating it as replay.
+4. **Optimistic concurrency passed.** A stale compare-and-swap using expected revision `0` after revision `1` updated zero rows. Retrying against the fresh revision succeeded and advanced the scope to revision `2`.
+5. **Rollback passed.** A deliberately failing transaction first changed the bundle/revision and inserted a request row, then triggered a duplicate-key failure. After rollback, revision remained `1`, the temporary bundle field was absent and the request row did not exist. Bundle and ledger therefore did not partially commit.
+
+This acceptance proves the migration and PostgreSQL transaction semantics on real Neon. The driver-neutral adapter remains covered by repository contract tests; the next hosted acceptance point is to route a deployed CRUX ingestion endpoint through `@crux/adapter-postgres` against this database and verify the same behaviours end-to-end through HTTP.
+
 ## Retention and privacy
 
 Metadata-only is still the default after persistence exists.
 
-The durable service should not interpret persistence as permission to retain everything indefinitely. Before public beta, define at least:
+Before public beta, define at least:
 
 - retention period for internal Run/Event records;
 - whether receipt-supporting traces are retained longer;
 - deletion behaviour when an organisation removes a system/version;
 - treatment of external response IDs and other correlators;
 - public/affected-person publication as a separate deliberate projection;
-- whether raw OTLP delivery is ever retained (default recommendation: no; translate then discard).
+- whether raw OTLP delivery is ever retained (default: translate then discard).
 
 ## Delivery posture
 
 CRUX instrumentation should normally remain observe-only and failure-independent.
-
-Recommended production flow:
 
 ```text
 AI workflow
@@ -240,7 +216,7 @@ If CRUX is unavailable, the AI workflow should normally continue and the produce
 
 ## Current implementation
 
-Implemented:
+Implemented and tested:
 
 - `DurableIngestStore` abstraction;
 - `ingestCruxBatchDurably(...)` service function;
@@ -248,13 +224,16 @@ Implemented:
 - authenticated principal separate from producer provenance;
 - `runtime:write` and `evidence:write` capabilities;
 - request-level idempotency and conflict semantics;
-- optimistic revision semantics in the store contract;
-- tests for commit, replay, changed-request conflict, unauthorised producer, missing capability and missing scope.
+- optimistic revision semantics;
+- driver-neutral `@crux/adapter-postgres`;
+- PostgreSQL migration;
+- repository contract tests;
+- real Neon migration + transaction/concurrency/rollback acceptance.
 
 Next:
 
-1. PostgreSQL adapter and migration;
-2. transaction/concurrency tests against real Postgres;
-3. producer credential/OIDC registration model;
-4. managed beta wiring behind the existing browser test surface;
-5. retention and asynchronous retry policy.
+1. wire a deployed authenticated ingress route through `@crux/adapter-postgres` to the isolated Neon database;
+2. repeat accept/replay/conflict through HTTP rather than direct SQL;
+3. define producer credential/OIDC registration and tenancy resolution;
+4. define retention/deletion and asynchronous retry policy;
+5. only then consider productionising queues/rate limiting or additional query projections.
