@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   compareDeclaredAndObservedModel,
   createInstrumentationSession,
+  proposeReceiptFromObservedRun,
   recordOpenTelemetryGenAI,
 } from "../dist/index.js";
 
@@ -175,7 +176,9 @@ crux.finish("completed", "2026-09-15T15:00:22Z");
 
 const snapshot = crux.snapshot();
 const comparison = compareDeclaredAndObservedModel(systemVersion, modelEvent);
+const receiptProposal = proposeReceiptFromObservedRun(snapshot.run, snapshot.events);
 const serialised = JSON.stringify(snapshot);
+const proposalSerialised = JSON.stringify(receiptProposal);
 
 assert.equal(snapshot.run.capture_mode, "metadata_only");
 assert.deepEqual(snapshot.events.map((event) => event.type), [
@@ -187,10 +190,32 @@ assert.deepEqual(snapshot.events.map((event) => event.type), [
 assert.equal(comparison.fields.find((field) => field.field === "model_identifier")?.status, "divergence");
 assert.equal(serialised.includes("SENSITIVE APPLICATION CONTENT"), false);
 assert.equal(serialised.includes("SENSITIVE MODEL OUTPUT"), false);
+assert.deepEqual(receiptProposal.trace.steps.map((step) => step.relationship_to_previous), [
+  "starts",
+  "reviews",
+  "decides",
+  "executes",
+]);
+assert.deepEqual(receiptProposal.proposal.questions_to_resolve.map((item) => item.field), [
+  "ai_involvement",
+  "effect_of_ai",
+  "human_involvement",
+  "final_authority",
+  "outcome",
+  "challenge",
+]);
+assert.equal(receiptProposal.proposal.source_content_included, false);
+assert.equal(proposalSerialised.includes("Funding officer decided that the application was eligible."), false);
+assert.equal(proposalSerialised.includes("Application progressed to assessment."), false);
 
 console.log("CRUX instrumentation pipeline dogfood passed.");
 console.log(JSON.stringify({
   run: snapshot.run.id,
   events: snapshot.events.map((event) => event.type),
   declaredObserved: comparison,
+  receiptProposal: {
+    trace: receiptProposal.trace.id,
+    observed: receiptProposal.proposal.observed,
+    questionsToResolve: receiptProposal.proposal.questions_to_resolve.map((item) => item.field),
+  },
 }, null, 2));
