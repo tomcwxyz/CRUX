@@ -31,6 +31,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@crux/core": "workspace:*",
     "@crux/schemas": "workspace:*"
   },
   "devDependencies": {
