@@ -33,6 +33,18 @@ const getClient = () => {
   return sqlClient;
 };
 
+const normaliseJsonbParams = (text: string, params: readonly unknown[]) =>
+  params.map((param, index) => {
+    const placeholder = `$${index + 1}::jsonb`;
+    if (!text.includes(placeholder) || typeof param !== "string") return param;
+
+    try {
+      return JSON.parse(param) as unknown;
+    } catch {
+      return param;
+    }
+  });
+
 const wrapQuery = (client: QueryClient): PostgresQuery => {
   const query: PostgresQuery = async <
     Row extends Record<string, unknown> = Record<string, unknown>,
@@ -40,7 +52,11 @@ const wrapQuery = (client: QueryClient): PostgresQuery => {
     text: string,
     params: readonly unknown[] = [],
   ) => {
-    const rows = await client.unsafe(text, [...params]);
+    // postgres.js serialises a string bound directly to a json/jsonb parameter as
+    // a JSON scalar string. The driver-neutral CRUX adapter deliberately passes
+    // canonical JSON text, so convert only parameters explicitly cast to jsonb
+    // back to structured values at this driver boundary.
+    const rows = await client.unsafe(text, normaliseJsonbParams(text, params));
     return {
       rows: rows as unknown as Row[],
       rowCount: rows.count ?? rows.length,
