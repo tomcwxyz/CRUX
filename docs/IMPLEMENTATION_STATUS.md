@@ -2,30 +2,29 @@
 
 **Updated:** 16 September 2026
 
-CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the foundation, a deliberately thin pilot authoring/viewer surface sits directly on top of the portable bundle, and the beta branch now proves the path from live AI execution through bounded telemetry, reconciliation, semantic transport and the first durable-ingress abstraction.
+CRUX is at `0.1-beta.0`. The portable contracts and standalone tooling remain the foundation; the pilot app now sits on top of the same canonical bundle while the runtime path has been proven from live AI execution through bounded telemetry, semantic transport and durable PostgreSQL persistence.
+
+The operating rule remains:
+
+> **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
 
 ## Implemented
 
-### Evidence spine
+### Evidence and organisational model
 
 - Claim / Evidence / EvidenceLink
 - EvaluationDefinition / EvaluationRun
 - neutral EvidenceEnvelope
-- provider-neutral external evidence contracts
-
-### Organisational/process model
-
 - Organisation / AIUse / System / SystemVersion
 - influence and agency as separate concepts
 - process graphs, components and data sources
 - multiple human roles and local decision authority
-- bounded actions
-- risks and safeguards
-- explicit unknown/not-disclosed/withheld supplier states
+- bounded actions, risks and safeguards
+- explicit unknown / withheld / supplier-undisclosed states
 
 ### Evidence resolution
 
-- declared/supported/qualified/contradicted/stale/unknown
+- `declared | supported | qualified | contradicted | stale | unknown`
 - version and organisational scope resolution
 - broad/narrow evidence handling
 - freshness and review windows
@@ -42,8 +41,8 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - trace/run/event/receipt consistency validation
 - affected-person receipt representation
 - privacy-safe trace projections with hidden-context signals
-- proposal-first EvaluationCase promotion from receipts/incidents
-- review-required `crux-receipt-proposal/0.1` derived from observed event paths without inventing organisational outcome/authority/effect/challenge information
+- proposal-first EvaluationCase promotion
+- review-required `crux-receipt-proposal/0.1` from observed causal paths without inventing organisational outcome, authority, effect or challenge information
 
 ### Portable tooling
 
@@ -56,102 +55,93 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - `crux redact`
 - `crux ingest-evidence`
 - `crux schema`
-- idempotent `EvidenceEnvelope` import with evidence-ID conflict detection
-- internal-target validation for imported evidence
-- automatic evidence ingestion does not create an `EvidenceLink` or upgrade a claim without explicit review
+- idempotent EvidenceEnvelope import with conflict detection
+- automatic evidence ingestion does not create an EvidenceLink or upgrade a claim
 - explicit version/migration policy
 - worked portable examples
-- CI dogfooding of standalone CLI validation, evidence ingestion/replay and disclosure projection
+- CI dogfooding of validation, evidence ingestion/replay and disclosure projection
 
 ### Beta pilot surface
 
 - `apps/pilot` Next.js application
-- open/import a local canonical CRUX JSON bundle
+- local canonical CRUX JSON open/import
 - working/public/affected-person disclosure lenses
 - organisation, AI-use, system/process, claim/evidence and receipt views
 - guided multi-use authoring
-- explicit influence and agency authoring
+- explicit influence/agency authoring
 - multiple accountable human roles
-- decision-point authoring with consequence, final authority, AI influence, responsible role, review-before-effect and challenge route
-- bounded action authoring with initiator, approval requirement, reversibility, scope and escalation
-- process graph decision/action nodes kept aligned with canonical authority records
+- decision-point authoring with consequence, authority, AI influence, responsible role, review-before-effect and challenge route
+- bounded-action authoring with initiator, approval, reversibility, scope and escalation
+- process graph alignment with canonical authority/action records
 - manual evidence authoring with relationship, disclosure and limitations
-- metadata-first specific-case receipt authoring producing a valid Run → Event → Trace → Receipt chain
-- receipt authoring stores no source content by default and requires explicit human involvement when human/hybrid final authority is claimed
+- metadata-first specific-case receipt authoring producing Run → Event → Trace → Receipt
 - questions-to-resolve prompts without a score
-- declared-versus-observed provider/model view scoped to the exact SystemVersion
-- observed-behaviour view restricted to working/internal lens with bounded provider/model metadata
-- validated `examples/observed-divergence/crux.json`
-- browser-first `/test` surface with model-call, workflow, declared-versus-observed and transport-boundary tests
-- downloadable pilot-session sheet
+- declared-versus-observed provider/model view scoped to exact SystemVersion
+- browser `/test` surface for live model, workflow, declared-versus-observed, transport and durable-ingress acceptance
+- structured pilot-session sheet
 - canonical/public/affected-person JSON export
-- no account/database requirement for the standalone pilot
 - validation before canonical/disclosure export
 
-### Beta pipeline integration · accepted browser path
+### Pipeline integration · accepted
 
-Implemented on `beta/pipeline-instrumentation`:
-
-- `packages/instrumentation` framework-independent metadata-first runtime collector;
-- canonical Run/Event generation with no hosted CRUX dependency;
-- Vercel AI SDK mapping and actual `generateText()` lifecycle test;
-- real external-provider browser smoke test through Vercel AI Gateway;
-- prompt/model output excluded while provider/model/token metadata retained;
-- OpenTelemetry GenAI mapping using a strict metadata allow-list;
-- prompt/output/reasoning/tool-argument content excluded by default;
-- declared-versus-observed provider/model reconciliation in `@crux/core` scoped to exact SystemVersion;
-- consequential pipeline dogfood: model → human review → decision → action;
-- CI/eval EvidenceEnvelope import and replay;
-- observed trace → review-required receipt proposal;
-- human acceptance of browser Workflow and Declared-versus-observed tests.
+- `@crux/instrumentation` framework-independent metadata-first collector
+- canonical Run/Event generation with no hosted CRUX dependency
+- Vercel AI SDK mapping and real `generateText()` lifecycle test
+- real external-provider call through Vercel AI Gateway
+- prompt/output excluded while bounded provider/model/token metadata is retained
+- OpenTelemetry GenAI mapping with a strict metadata allow-list
+- declared-versus-observed reconciliation in `@crux/core` scoped to exact SystemVersion
+- consequential workflow dogfood: model → human review → decision → bounded action
+- CI/eval EvidenceEnvelope import and replay
+- observed trace → review-required receipt proposal
+- browser Workflow and Declared-versus-observed tests human-accepted
 
 ### Transport contract · accepted
 
-- `packages/transport` as the storage-free semantic write boundary;
-- versioned `crux-ingest/0.1` batches for Run/Event/Observation/EvidenceEnvelope;
-- exact SystemVersion targeting;
-- producer identity and per-record acceptance provenance;
-- identical record replay is idempotent;
-- same-ID/different-record conflicts rejected;
-- duplicate Run event sequence conflicts rejected;
-- default metadata-only transport policy rejects subject refs, free-text event summaries and non-allow-listed runtime attributes;
-- payload/record-count boundaries;
-- EvidenceEnvelope enters through the same boundary without silent EvidenceLink creation;
-- OTLP/HTTP JSON GenAI bridge → existing OTel mapper → same ingestion contract;
-- OTLP regression fixture proves input/output message fields do not enter the CRUX batch;
-- stateless `/api/ingest-test` route returns updated portable bundle + acceptance ledger with no persistence;
-- browser Test 4 human-accepted: first ingestion accepted, exact replay safe, stable-ID conflict rejected, free-text runtime field rejected, OTLP metadata accepted, prompt/output excluded.
+- `@crux/transport` storage-free semantic write boundary
+- versioned `crux-ingest/0.1` batches for Run/Event/Observation/EvidenceEnvelope
+- exact SystemVersion targeting
+- producer identity and per-record acceptance provenance
+- identical replay idempotency
+- same-ID/different-record conflict rejection
+- duplicate Run event-sequence rejection
+- metadata-only content policy and strict runtime allow-list
+- payload/record-count boundaries
+- EvidenceEnvelope through the same boundary without silent EvidenceLink creation
+- OTLP/HTTP GenAI bridge into the same ingestion contract
+- regression fixture proving input/output message content is excluded
+- stateless `/api/ingest-test`
+- browser Test 4 human-accepted
 
-### Durable ingress · active
+### Durable ingress · accepted beta path
 
-- `DurableIngestStore` abstraction around the pure semantic ingestion function;
-- `ingestCruxBatchDurably(...)` service layer;
-- in-memory reference store for local/CI contract tests;
-- request idempotency key `(scope_ref, producer_ref, request_id)`;
-- exact request replay returns the original acceptance ledger without a second commit;
-- changed batch under the same request key is rejected;
-- authenticated principal/context separated from self-declared producer provenance;
-- explicit `runtime:write` and `evidence:write` authorisation capabilities;
-- optimistic scope revision contract for concurrency;
-- `docs/DURABLE_INGRESS.md` records the service/storage boundary;
-- first PostgreSQL migration stores portable bundle JSONB, scope revision, request ledger and acceptance ledger;
-- `@crux/adapter-postgres` driver-neutral adapter package started, so managed Neon deployment does not become a core CRUX dependency.
-
-Not yet implemented/proven:
-
-- real PostgreSQL/Neon transaction test against the migration;
-- managed producer credential/OIDC registration and scope resolution;
-- retry loop/policy for competing revision updates;
-- retention/deletion policy for internal runtime provenance;
-- asynchronous batching/delivery guarantees and rate limiting;
-- declared-versus-observed checks for action/review-control semantics beyond provider/model metadata;
-- deployed MCP server.
+- `DurableIngestStore` around the pure semantic ingestion function
+- `ingestCruxBatchDurably(...)` service layer
+- in-memory reference store for local/CI tests
+- durable request key `(scope_ref, producer_ref, request_id)`
+- exact request replay returns the original acceptance ledger without a second commit
+- changed batch under the same request key is rejected
+- authenticated principal/context separated from producer provenance
+- explicit `runtime:write` and `evidence:write` capabilities
+- optimistic scope revision contract
+- driver-neutral `@crux/adapter-postgres`
+- PostgreSQL migration storing canonical bundle JSONB, revision, request ledger and acceptance ledger
+- real Neon migration and transaction acceptance
+- reconnect/replay recovery on fresh reads
+- optimistic concurrency conflict and fresh retry proven
+- forced rollback proven atomic
+- production-safe synthetic `/api/durable-ingest-test`
+- production Test 5 human-run through HTTP
+- Test 5 proved commit → replay → changed-request conflict end-to-end
+- persisted production-test state remained one scope revision, one request ledger entry, one Run and one Event
+- production `postgres.js` JSONB binding bug discovered by Test 5 and fixed without weakening schema constraints
+- browser test now surfaces non-JSON server errors rather than hiding them behind JSON parse failures
 
 ## Current phase
 
-`0.1-beta` real-world piloting plus durable-ingress implementation around accepted pipeline and transport contracts.
+The main beta uncertainty has moved from infrastructure to usefulness and comprehension.
 
-The human-authored path remains:
+Human-authored path:
 
 ```text
 purpose
@@ -163,7 +153,7 @@ purpose
   → working / public / affected-person views
 ```
 
-The automated path now reaches:
+Automated path:
 
 ```text
 AI framework / OpenTelemetry
@@ -173,14 +163,9 @@ AI framework / OpenTelemetry
   → declared-versus-observed reconciliation
   → observed Trace
   → review-required receipt proposal
-
-CI / eval tool
-  → EvidenceEnvelope
-  → same semantic transport
-  → explicit later Claim ↔ Evidence review
 ```
 
-The durable service path is now being proved as:
+Durable service path:
 
 ```text
 authenticated principal
@@ -190,11 +175,26 @@ authenticated principal
   → transactional portable bundle + acceptance ledger
 ```
 
-The operating rule remains:
+The next beta work is defined in `docs/BETA_LEARNING_PROTOCOL.md` and centres on three contrasting case shapes:
 
-> **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
+1. low-consequence productivity (`examples/writing-assistant`);
+2. consequential human decision (`examples/funding-review`);
+3. bounded agentic action (browser Workflow/runtime path).
 
-The next infrastructure acceptance point is a real PostgreSQL transaction test of commit/replay/conflict/concurrency using the new adapter and migration. In parallel, organisational dry-runs and non-author comprehension testing remain essential product evidence.
+For each, test authoring friction, non-author comprehension, disclosure quality and declared-versus-observed interpretation before expanding the schema.
+
+## Still deliberately deferred
+
+These are not prerequisites for the first organisational learning cycle:
+
+- production producer credential/OIDC registration and tenancy resolution
+- retention/deletion policy for internal runtime provenance
+- asynchronous batching, delivery guarantees and rate limiting
+- hosted MCP server
+- richer declared-versus-observed checks for action/review-control semantics beyond the current bounded metadata
+- accounts/workspaces and broader hosted-product architecture
+
+Those should be designed from pilot evidence rather than speculative infrastructure needs.
 
 ## Product boundary
 
