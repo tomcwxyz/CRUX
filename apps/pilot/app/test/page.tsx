@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DurableTestPanel } from "../../components/durable-test-panel";
 import { RuntimeTestPanel } from "../../components/runtime-test-panel";
 import { TransportTestPanel } from "../../components/transport-test-panel";
 
@@ -19,7 +20,7 @@ export default function RuntimeTestPage() {
           <h1>What did CRUX actually see?</h1>
         </div>
         <p className="hero-copy">
-          Run a safe demo or a real model call in the browser, follow an AI-mediated workflow, then test how bounded observations cross the CRUX transport boundary.
+          Run a safe demo or a real model call in the browser, follow an AI-mediated workflow, test bounded transport, then prove the same request survives a real durable database boundary.
         </p>
       </section>
 
@@ -27,6 +28,7 @@ export default function RuntimeTestPage() {
         <div className="panel">
           <RuntimeTestPanel />
           <TransportTestPanel />
+          <DurableTestPanel />
         </div>
       </section>
 
