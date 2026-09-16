@@ -1,0 +1,55 @@
+{
+  "schema_version": "0.1",
+  "generated_at": "2026-09-16T08:30:00+00:00",
+  "producer": {
+    "name": "crux-ci-demo",
+    "version": "0.1.0",
+    "uri": "https://github.com/tomcwxyz/CRUX/actions"
+  },
+  "evidence": {
+    "schema_version": "0.1",
+    "id": "evidence:ci:funding-regression-demo",
+    "kind": "evaluation",
+    "title": "Funding assistant regression check",
+    "summary": "A CI evaluation suite exercised bounded regression cases for the funding assistant system version.",
+    "source": {
+      "kind": "external_tool",
+      "producer": {
+        "name": "crux-ci-demo",
+        "version": "0.1.0",
+        "uri": "https://github.com/tomcwxyz/CRUX/actions"
+      },
+      "source_ref": "https://github.com/tomcwxyz/CRUX/actions"
+    },
+    "targets": [
+      {
+        "kind": "system_version",
+        "ref": "system-version:funding-assistant:2.3"
+      }
+    ],
+    "freshness": {
+      "observed_at": "2026-09-16T08:29:00+00:00"
+    },
+    "result": {
+      "outcome": "pass",
+      "summary": "All configured regression cases passed in this demonstration run.",
+      "metrics": [
+        {
+          "name": "configured_cases_passed",
+          "value": 12,
+          "unit": "cases"
+        }
+      ]
+    },
+    "limitations": [
+      "This is a portable CI ingestion example, not evidence that the system is safe, fair or effective in all real-world cases."
+    ],
+    "external_refs": [
+      "https://github.com/tomcwxyz/CRUX/actions"
+    ],
+    "disclosure": "trusted"
+  },
+  "external_refs": [
+    "https://github.com/tomcwxyz/CRUX/actions"
+  ]
+}
