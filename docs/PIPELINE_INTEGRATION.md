@@ -1,7 +1,7 @@
 # CRUX in AI pipelines
 
 **Status:** active `0.1-beta` integration spike  
-**Updated:** 15 September 2026
+**Updated:** 16 September 2026
 
 CRUX should not become a manually maintained AI register that drifts away from production reality.
 
@@ -26,16 +26,20 @@ Manual authoring remains important because instrumentation cannot reliably infer
 
 ## Current beta implementation
 
-`packages/instrumentation` now provides the first runtime implementation of this design on the `beta/pipeline-instrumentation` branch.
+`packages/instrumentation` provides the first runtime implementation of this design on the `beta/pipeline-instrumentation` branch, while the semantics of declared-versus-observed reconciliation now live in `@crux/core`.
 
-It currently proves four things:
+The beta path currently proves that:
 
 1. a live process can create canonical CRUX Run/Event records without a CRUX server;
-2. Vercel AI SDK step metadata can be mapped into a bounded `ai_invocation` event without importing the AI SDK into CRUX core;
-3. OpenTelemetry GenAI metadata can be mapped through a strict allow-list while content-bearing input/output attributes are ignored;
-4. observed model/provider metadata can be compared with the exact declared SystemVersion and surfaced as a match/divergence without mutating either side.
+2. Vercel AI SDK step metadata can be mapped into a bounded `ai_invocation` event without importing the AI SDK into CRUX canonical/core contracts;
+3. an actual AI SDK `generateText()` lifecycle can feed CRUX through `onStepFinish` using the SDK's mock model, while prompt and generated content stay out of the CRUX snapshot;
+4. OpenTelemetry GenAI metadata can be mapped through a strict allow-list while content-bearing input/output attributes are ignored;
+5. observed model/provider metadata can be compared with the exact declared SystemVersion and surfaced as match/divergence without mutating either side;
+6. a CI/eval `EvidenceEnvelope` can be imported idempotently into a portable CRUX bundle without automatically creating a claim relationship;
+7. an observed causal event path can become a review-required receipt proposal without inventing organisational outcome, final authority, challenge route or the actual effect of AI;
+8. the pilot can show declared-versus-observed provider/model behaviour in the working/internal lens using the same core reconciliation semantics.
 
-This package is deliberately transport-free. The next test is one real small AI pipeline. HTTP/OTLP ingestion, batching, authentication and idempotency come after the event mapping survives that test.
+The package remains deliberately transport-free. The remaining beta integration acceptance step is one smoke test against a real external model provider with content capture still disabled. HTTP/OTLP ingestion, batching, authentication and idempotency come after that test rather than before it.
 
 ## Where CRUX sits
 
@@ -93,7 +97,7 @@ That file would reference a stable CRUX System/SystemVersion and selected declar
 
 ## 2. CI and pre-deployment
 
-CRUX should be able to ingest evidence before a version goes live.
+CRUX can now ingest portable evidence before a version goes live.
 
 Examples:
 
@@ -116,6 +120,8 @@ CI / eval tool / RACK / Ship Check
              ↓
  Claim ↔ evidence ↔ SystemVersion
 ```
+
+The beta file/CLI path is deliberately conservative: `crux ingest-evidence` adds the evidence record, validates internal targets and treats exact replay as idempotent. It does **not** silently create an `EvidenceLink` or upgrade a claim because an external test passed. Claim/evidence relationship remains an explicit reviewed act.
 
 CRUX may expose whether required evidence exists, is stale, contradicts a claim or belongs to an older version.
 
@@ -162,22 +168,22 @@ informed eligibility Decision A,
 and is relevant to Claim B
 ```
 
-The beta mapper currently allow-lists metadata such as operation name, provider, request/response model, response ID, token counts, finish reason and workflow name. It deliberately drops GenAI input/output message content.
+The beta mapper allow-lists metadata such as operation name, provider, request/response model, response ID, token counts, finish reason and workflow name. It deliberately drops GenAI input/output message content.
 
 ### Framework adapters
 
-Framework-specific adapters improve ergonomics while keeping the core provider-neutral.
+Framework-specific adapters improve ergonomics while keeping the canonical model provider-neutral.
 
-The first AI SDK mapper accepts a small callback-shaped object rather than importing `ai`. That keeps framework churn outside CRUX canonical packages while still allowing `onStepFinish`/runtime metadata to become CRUX events.
+The AI SDK integration is structural: CRUX does not make the AI SDK a canonical dependency. The beta now exercises the adapter through the actual `generateText()`/`onStepFinish` lifecycle using the SDK's mock model. That proves the framework callback contract and privacy boundary; it is intentionally distinct from the remaining external-provider smoke test.
 
 Likely later adapters:
 
 - OpenTelemetry Collector / OTLP;
-- richer Vercel AI SDK integration if the structural mapper is insufficient;
+- richer Vercel AI SDK integration if needed by real pipelines;
 - OpenAI / Anthropic SDK wrappers only where useful;
 - generic HTTP/event exporter.
 
-Adapters depend on CRUX public contracts. CRUX core never depends on a framework adapter.
+Adapters report observations. `@crux/core` owns the semantics of comparing those observations with declarations.
 
 ## 4. Outcome, receipt and learning
 
@@ -197,11 +203,18 @@ decision
 action
 ```
 
-From this, CRUX can create a **receipt proposal**.
+The beta now produces a portable **`crux-receipt-proposal/0.1`** from that observed path. It can safely state bounded facts such as how many AI invocations, human review events, decisions, actions or escalations were observed, and it can construct a causal Trace from event references.
 
-For consequential systems, application code may be able to provide the final outcome and authority explicitly. CRUX can then generate most of the receipt automatically.
+It deliberately does not fill a canonical Receipt simply to satisfy the schema. The proposal leaves questions to resolve for:
 
-Where meaning is ambiguous, the generated receipt remains a draft requiring review.
+- AI's organisational role/influence in the case;
+- what actually happened because of the AI output;
+- substance of human review;
+- final authority;
+- actual outcome;
+- challenge/appeal/correction route.
+
+For consequential systems, application code may later provide some of these values explicitly. CRUX can then make receipt completion easier while preserving review and provenance.
 
 Production observations can also become evidence:
 
@@ -277,7 +290,7 @@ GET  /v1/receipts/{id}
 
 High-volume runtime telemetry should support batching and idempotency.
 
-The contracts also remain usable without a CRUX server: local files, CLI pipes and direct library calls are valid standalone paths. The beta instrumentation package proves the direct-library path first.
+The contracts also remain usable without a CRUX server: local files, CLI pipes and direct library calls are valid standalone paths. The beta instrumentation package and EvidenceEnvelope CLI import prove those standalone paths first.
 
 ## MCP
 
@@ -350,7 +363,11 @@ CRUX
 Claim contradicted by observed production evidence
 ```
 
-The beta package currently implements the first comparison at event level for declared provider/model versus observed provider/model. Review/action-control comparison remains a later spike.
+The beta implements the first comparison at event level for declared provider/model versus observed provider/model. Reconciliation lives in `@crux/core`, and the pilot scopes observations through Runs to the exact SystemVersion before comparing them. `examples/observed-divergence/crux.json` is a validated portable fixture for this behaviour.
+
+The pilot currently exposes this metadata only in the working/internal lens. Public or affected-person publication of observed runtime metadata should be a deliberate disclosure decision rather than an accidental consequence of instrumentation.
+
+Review/action-control comparison remains a later spike.
 
 CRUX surfaces divergence without automatically deciding why it happened or whether the system is unethical.
 
@@ -376,18 +393,18 @@ Before building a hosted ingestion service:
 
 - ✅ define a minimal runtime collection layer around existing Run/Event schemas;
 - ✅ map OpenTelemetry GenAI metadata into CRUX;
-- ✅ map one Vercel AI SDK callback shape into CRUX;
-- ✅ detect basic declared-versus-observed provider/model divergence;
-- ⬜ exercise the package against one small real AI pipeline;
-- ⬜ ingest a CI/eval EvidenceEnvelope automatically;
-- ⬜ generate a receipt proposal from a real trace;
-- ⬜ display declared-versus-observed divergence in the pilot viewer.
+- ✅ map and exercise the Vercel AI SDK callback lifecycle using a mock model;
+- ✅ detect basic declared-versus-observed provider/model divergence using core semantics;
+- ✅ ingest and replay a CI/eval EvidenceEnvelope automatically without silent claim linkage;
+- ✅ generate a review-required receipt proposal from an observed causal trace;
+- ✅ display exact-version declared-versus-observed divergence in the pilot working lens;
+- ⬜ run one metadata-only smoke test against a real external model provider.
 
-This uses local/in-memory records first.
+This uses local/in-memory/file records first.
 
-### After the beta proves the contracts
+### After the external-provider smoke test
 
-Build:
+Decide from the observed integration needs, rather than assuming transport shape, then build the minimum useful combination of:
 
 - HTTP ingestion API/exporter around the proven instrumentation model;
 - batching/idempotency/auth;
