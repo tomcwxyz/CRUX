@@ -70,7 +70,8 @@ Implemented pilot capabilities:
 - inspect declared-versus-observed provider/model behaviour for the exact SystemVersion in the working lens;
 - prevent canonical/disclosure export while an in-progress draft fails schema or reference validation;
 - surface questions-to-resolve without creating a score;
-- download a structured pilot-session sheet for comparable authoring/comprehension observations.
+- download a structured pilot-session sheet for comparable authoring/comprehension observations;
+- use a browser-first runtime test surface for live model calls, workflow provenance and declared-versus-observed reconciliation.
 
 See `docs/PILOT.md` for the pilot protocol and `docs/PIPELINE_INTEGRATION.md` for how CRUX should participate in live AI systems.
 
@@ -81,8 +82,8 @@ The next work should improve the pilot as a learning instrument and validate the
 1. **Structured dry-runs** — author several real or realistic organisational cases end-to-end, including one genuinely consequential process and one non-consequential productivity use.
 2. **Questions to resolve** — test whether missing-transparency prompts are useful and proportionate rather than adding a completeness/trust score.
 3. **Non-author comprehension** — test the public and affected-person views with people who did not create the record; record misunderstanding as product/schema evidence.
-4. **Declared versus observed tension** — implementation now exists; use the portable divergence example and real pilot records to test whether people correctly understand a mismatch as an observation requiring review rather than a trust/safety judgement.
-5. **Pipeline integration spike · contract path implemented** — prove runtime/eval telemetry can populate CRUX automatically before building a hosted ingestion service.
+4. **Declared versus observed tension** — implementation now exists; use the portable divergence example, deployed browser test and real pilot records to test whether people correctly understand a mismatch as an observation requiring review rather than a trust/safety judgement.
+5. **Pipeline integration spike · contract + first live path implemented** — prove runtime/eval telemetry can populate CRUX automatically before building a hosted ingestion service.
    - ✅ framework-independent metadata-first `@crux/instrumentation` collector;
    - ✅ canonical Run/Event production from live observations;
    - ✅ OpenTelemetry GenAI metadata mapping with content-bearing fields ignored by default;
@@ -92,8 +93,12 @@ The next work should improve the pilot as a learning instrument and validate the
    - ✅ idempotent CI/eval `EvidenceEnvelope` ingestion through library + CLI without silently creating an `EvidenceLink`;
    - ✅ review-required `crux-receipt-proposal/0.1` generated from an observed causal trace without inventing outcome, authority, challenge or AI effect;
    - ✅ declared-versus-observed divergence shown in the pilot working lens, with a validated portable example;
-   - ⬜ run one smoke test against a real external model provider, keeping content capture disabled;
-   - ⬜ only after that external-provider smoke test, decide whether the next transport should be HTTP ingestion, OTLP/Collector integration or both.
+   - ✅ real external-provider smoke test through Vercel AI Gateway, with prompt/output absent from the CRUX snapshot;
+   - ✅ browser Workflow test implemented: real AI invocation → synthetic human review → decision → bounded action → Trace + receipt proposal;
+   - ✅ browser Declared-versus-observed test implemented using an actual declared SystemVersion and `@crux/core` reconciliation;
+   - ⬜ human-review the deployed Workflow test output and confirm the trace/proposal communicates the right boundary;
+   - ⬜ human-review the deployed Declared-versus-observed test and confirm divergence is understood descriptively;
+   - ⬜ only after those browser acceptance tests, decide whether the next transport should be HTTP ingestion, OTLP/Collector integration or both.
 6. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before adding persistence/accounts/workspaces.
 7. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
 
