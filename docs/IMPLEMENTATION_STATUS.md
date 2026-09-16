@@ -1,8 +1,8 @@
 # CRUX implementation status
 
-**Updated:** 15 September 2026
+**Updated:** 16 September 2026
 
-CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the foundation, a deliberately thin pilot authoring/viewer surface sits directly on top of the portable bundle, and a first metadata-only runtime instrumentation spike is being tested against the same canonical Run/Event contracts.
+CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the foundation, a deliberately thin pilot authoring/viewer surface sits directly on top of the portable bundle, and the first metadata-only runtime/evidence integration path is now implemented and dogfooded against the same canonical contracts.
 
 ## Implemented
 
@@ -43,6 +43,7 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - affected-person receipt representation
 - privacy-safe trace projections with hidden-context signals
 - proposal-first EvaluationCase promotion from receipts/incidents
+- review-required `crux-receipt-proposal/0.1` derived from observed event paths without inventing organisational outcome/authority/effect/challenge information
 
 ### Portable tooling
 
@@ -53,10 +54,14 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - `crux validate`
 - `crux inspect`
 - `crux redact`
+- `crux ingest-evidence`
 - `crux schema`
+- idempotent `EvidenceEnvelope` import with evidence-ID conflict detection
+- internal-target validation for imported evidence
+- automatic evidence ingestion does not create an `EvidenceLink` or upgrade a claim without explicit review
 - explicit version/migration policy
 - worked portable examples
-- CI dogfooding of the standalone CLI
+- CI dogfooding of standalone CLI validation, evidence ingestion/replay and disclosure projection
 
 ### Beta pilot surface
 
@@ -74,6 +79,9 @@ CRUX is now at `0.1-beta.0`. The standalone contract/tooling layer remains the f
 - metadata-first specific-case receipt authoring that creates a valid Run → Event → Trace → Receipt chain
 - receipt authoring stores no source content by default and requires explicit human involvement when human/hybrid final authority is claimed
 - questions-to-resolve prompts that surface missing transparency without a score
+- declared-versus-observed provider/model view scoped to the exact SystemVersion
+- observed-behaviour view is currently restricted to the working/internal lens and displays only bounded provider/model metadata
+- validated `examples/observed-divergence/crux.json` for manual pilot testing
 - downloadable pilot-session sheet for comparable authoring and comprehension testing
 - canonical/public/affected-person JSON export
 - no account, database or hidden application-only canonical state
@@ -87,30 +95,32 @@ Implemented on `beta/pipeline-instrumentation` for validation before merge:
 
 - `packages/instrumentation` as a framework-independent metadata-first runtime collector;
 - canonical Run/Event generation with no hosted CRUX dependency;
-- Vercel AI SDK step-callback mapping without importing the `ai` package into CRUX core;
+- Vercel AI SDK structural mapping without importing the `ai` package into CRUX canonical/runtime core;
+- actual AI SDK `generateText()` lifecycle test using `MockLanguageModelV4`, proving framework integration while keeping an external live-provider call separate;
 - OpenTelemetry GenAI span mapping using a strict allow-list of metadata attributes;
 - prompt/output/reasoning/tool-argument content excluded by default even when source telemetry contains it;
-- declared-versus-observed model/provider comparison against the exact SystemVersion;
+- declared-versus-observed provider/model reconciliation moved into `@crux/core` rather than owned by an adapter;
+- exact-SystemVersion scoping for observed comparisons;
 - divergence is surfaced for review rather than silently mutating the declaration;
 - tests for canonical event production, content leakage prevention and fallback-model divergence;
 - credential-free consequential pipeline dogfood that runs fallback model → human review → decision → action through the real instrumentation package;
-- CI asserts the runtime dogfood records the model divergence while synthetic sensitive input/output content never enters the CRUX snapshot.
+- CI asserts runtime divergence while synthetic sensitive input/output content never enters the CRUX snapshot;
+- CI/eval `EvidenceEnvelope` import and replay dogfooded through the standalone CLI;
+- receipt-proposal generation dogfooded from the observed event chain without copying event summaries into the proposal.
 
-Not yet implemented:
+Not yet implemented/proven:
 
-- a live AI provider/framework pipeline test;
+- one smoke test against a real external model provider;
 - HTTP/OTLP transport or persistence;
-- CI EvidenceEnvelope automatic ingestion;
-- automatic trace-to-receipt proposal generation from live telemetry;
-- declared-versus-observed presentation in the pilot viewer;
+- declared-versus-observed checks for action/review-control semantics beyond provider/model metadata;
 - deployed MCP server;
 - hosted ingestion/auth/batching/idempotency.
 
-Those remain deliberately downstream of proving the runtime mapping contract.
+Those remain deliberately downstream of validating the bounded local contracts and the external-provider smoke test.
 
 ## Current phase
 
-`0.1-beta` real-world piloting plus a bounded pipeline-integration spike.
+`0.1-beta` real-world piloting plus a bounded pipeline-integration spike whose local contract path is now implemented.
 
 The thin application covers enough of the intended pilot loop to run structured dry-runs with real organisational examples:
 
@@ -124,21 +134,27 @@ purpose
   → working / public / affected-person views
 ```
 
-In parallel, the pipeline spike tests the complementary automated path:
+The automated path now reaches:
 
 ```text
-live AI framework / OpenTelemetry
+AI framework / OpenTelemetry
   → bounded runtime metadata
   → Run / Event
-  → declared-versus-observed comparison
-  → later: Trace / receipt proposal / production evidence
+  → declared-versus-observed reconciliation
+  → observed Trace
+  → review-required receipt proposal
+
+CI / eval tool
+  → EvidenceEnvelope
+  → idempotent evidence import
+  → explicit later Claim ↔ Evidence review
 ```
 
-The operating rule is:
+The operating rule remains:
 
 > **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
 
-The next useful evidence should come from structured dry-runs, non-author comprehension tests and one small live instrumented AI pipeline rather than speculative schema expansion. See `docs/PILOT.md` and `docs/PIPELINE_INTEGRATION.md`.
+The next useful evidence should come from structured dry-runs, non-author comprehension tests and one small external-provider smoke test rather than speculative schema or transport expansion. See `docs/PILOT.md` and `docs/PIPELINE_INTEGRATION.md`.
 
 ## Product boundary
 
