@@ -31,14 +31,16 @@ Integrations are optional, explicit and replaceable. CRUX owns its canonical tra
 
 ## What exists now
 
-CRUX currently has six implementation layers:
+CRUX currently has eight implementation layers:
 
 - `packages/schemas` — strict canonical contracts for organisations, AI uses, systems, versions, claims, evidence, evaluations, runs, events, traces and receipts;
 - `packages/core` — evidence scope/freshness resolution, disclosure projection, trace consistency, declared-versus-observed reconciliation and proposal-first learning;
 - `packages/formats` — the portable `crux-bundle/0.1` format, cross-reference validation, disclosure exports, JSON Schema and EvidenceEnvelope import;
 - `packages/cli` — standalone validation, inspection, disclosure projection, evidence ingestion and schema export;
-- `packages/instrumentation` — beta metadata-first runtime collection, AI SDK/OpenTelemetry mapping and receipt proposals;
-- `apps/pilot` — a deliberately thin, file-first authoring and viewing surface for the `0.1-beta` organisational pilot.
+- `packages/instrumentation` — metadata-first runtime collection, AI SDK/OpenTelemetry mapping and receipt proposals;
+- `packages/transport` — provider-neutral `crux-ingest/0.1`, bounded metadata policy, idempotency and durable-store semantics;
+- `adapters/postgres` — driver-neutral PostgreSQL persistence for canonical bundle + request/acceptance ledgers;
+- `apps/pilot` — a deliberately thin authoring, viewing and browser-acceptance surface for the `0.1-beta` organisational pilot.
 
 The contracts are provider-neutral. RACK, Ship Check, external eval tools, custom test suites, research, audits, observability systems and human evaluations can contribute evidence or observations without becoming CRUX dependencies.
 
@@ -72,15 +74,32 @@ CRUX should not become a manually maintained AI register that drifts away from p
 
 Manual authoring remains appropriate for organisational purpose, people affected, consequence, accountability, challenge routes, public claims and disclosure decisions. Runtime systems can automatically report facts they can actually observe: deployed SystemVersion, model/provider used, fallback behaviour, event sequence, errors and deliberately annotated reviews/decisions/actions.
 
-`packages/instrumentation` is the beta runtime boundary. It produces canonical CRUX Run/Event records and maps bounded metadata from AI SDK callbacks and OpenTelemetry GenAI spans. Content-bearing telemetry is ignored by default. `@crux/core` then compares observed provider/model metadata with the exact declared SystemVersion rather than letting an adapter define that meaning.
+`packages/instrumentation` is the runtime boundary. It produces canonical CRUX Run/Event records and maps bounded metadata from AI SDK callbacks and OpenTelemetry GenAI spans. Content-bearing telemetry is ignored by default. `@crux/core` then compares observed provider/model metadata with the exact declared SystemVersion rather than letting an adapter define that meaning.
 
 Observed causal paths can become review-required `crux-receipt-proposal/0.1` artefacts. They deliberately leave final authority, actual outcome, AI effect and challenge routes unresolved until the application or a human can provide that organisational meaning.
 
 See [CRUX in AI pipelines](docs/PIPELINE_INTEGRATION.md) for the design and implementation sequence.
 
+## Durable ingestion
+
+The beta durable path is now proven end-to-end:
+
+```text
+browser / producer
+  → crux-ingest/0.1
+  → authenticated principal + authorised producer/scope
+  → semantic ingestion
+  → PostgreSQL transaction
+  → canonical bundle + request/acceptance ledger
+```
+
+Production Test 5 proved first commit, exact replay and changed-request conflict against real Neon persistence. The accepted design remains provider-neutral and keeps Neon as a deployment choice rather than part of the CRUX interchange contract.
+
+See [durable ingress](docs/DURABLE_INGRESS.md).
+
 ## Beta pilot app
 
-The pilot UI does not introduce a second database model. It edits and reads the same portable CRUX bundle used by the CLI.
+The pilot UI does not introduce a second application-only domain model. It edits and reads the same portable CRUX bundle used by the CLI.
 
 ```bash
 pnpm install
@@ -98,11 +117,26 @@ The pilot surface can:
 - switch between working, public and affected-person disclosure lenses;
 - export canonical, public and affected-person JSON;
 - keep incomplete edits as an explicit draft and block canonical/disclosure export until schema and reference validation pass;
-- download a structured pilot-session sheet for authoring and comprehension tests.
+- download a structured pilot-session sheet for authoring and comprehension tests;
+- run browser acceptance tests for live provider calls, causal workflow provenance, transport and durable ingress.
 
 `examples/observed-divergence/crux.json` is a small portable example for trying the observed-behaviour view.
 
-It intentionally does **not** have accounts, hosted persistence or a separate application-only source of truth. The beta is designed to learn what the eventual guided product genuinely needs.
+The authoring pilot intentionally remains usable without accounts or hosted persistence. The hosted test routes exist to prove integration boundaries, not to redefine the standalone source of truth.
+
+## Beta learning
+
+The main beta uncertainty is now human usefulness rather than basic infrastructure.
+
+The first structured learning cycle uses three contrasting case shapes:
+
+- `examples/writing-assistant` — low-consequence productivity;
+- `examples/funding-review` — consequential human decision-making;
+- browser Workflow/runtime records — bounded agentic action.
+
+For each, CRUX tests authoring friction, non-author comprehension, disclosure quality and declared-versus-observed interpretation before making broader schema changes.
+
+See [beta learning protocol](docs/BETA_LEARNING_PROTOCOL.md) and [pilot plan](docs/PILOT.md).
 
 ## Standalone CLI
 
@@ -165,6 +199,8 @@ pnpm --filter @crux/schemas test
 pnpm --filter @crux/core test
 pnpm --filter @crux/formats test
 pnpm --filter @crux/instrumentation test
+pnpm --filter @crux/transport test
+pnpm --filter @crux/adapter-postgres test
 pnpm --filter @crux/pilot test
 ```
 
@@ -184,9 +220,11 @@ pnpm --filter @crux/pilot test
 
 ## Status
 
-CRUX is at **0.1-beta.0**. The open contracts, evidence-resolution core, provenance foundations, portable bundle and CLI are implemented. A thin pilot authoring/viewer surface is available for organisational testing. On `beta/pipeline-instrumentation`, the bounded local automation path now covers AI SDK/OpenTelemetry runtime metadata, exact-version declared-versus-observed reconciliation, idempotent EvidenceEnvelope ingestion, and review-required receipt proposals. The remaining integration acceptance step before transport design is a metadata-only smoke test against a real external model provider.
+CRUX is at **0.1-beta.0**. The open contracts, evidence-resolution core, provenance model, portable bundle and CLI are implemented. The runtime pipeline, transport boundary and durable PostgreSQL ingress path have all been accepted through live browser/production tests, including metadata-only external provider calls and production Test 5 against Neon.
 
-See the [specification](docs/specification.md), [roadmap](docs/roadmap.md), [architecture](docs/architecture.md), [pilot plan](docs/PILOT.md), [pipeline integration design](docs/PIPELINE_INTEGRATION.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [versioning policy](docs/VERSIONING.md).
+The immediate beta focus is now organisational learning: can authors describe real AI use without specialist schema knowledge, and can non-authors correctly understand AI involvement, authority, evidence, unknowns and specific-case outcomes from CRUX disclosures?
+
+See the [specification](docs/specification.md), [roadmap](docs/roadmap.md), [architecture](docs/architecture.md), [pilot plan](docs/PILOT.md), [beta learning protocol](docs/BETA_LEARNING_PROTOCOL.md), [pipeline integration design](docs/PIPELINE_INTEGRATION.md), [durable ingress design](docs/DURABLE_INGRESS.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [versioning policy](docs/VERSIONING.md).
 
 ## Licence
 
