@@ -31,4 +31,8 @@ jobs:
           node packages/cli/dist/index.js inspect examples/funding-review/crux.json --as-of 2026-09-15T12:00:00+00:00
           node packages/cli/dist/index.js redact examples/funding-review/crux.json --level public -o /tmp/crux-public.json
           node packages/cli/dist/index.js redact examples/funding-review/crux.json --level affected_party -o /tmp/crux-affected.json
+          node packages/cli/dist/index.js ingest-evidence examples/funding-review/crux.json examples/evidence/ci-eval-envelope.json -o /tmp/crux-with-ci-evidence.json
+          node packages/cli/dist/index.js validate /tmp/crux-with-ci-evidence.json
+          node packages/cli/dist/index.js ingest-evidence /tmp/crux-with-ci-evidence.json examples/evidence/ci-eval-envelope.json -o /tmp/crux-with-ci-evidence-replayed.json
+          node packages/cli/dist/index.js validate /tmp/crux-with-ci-evidence-replayed.json
           node packages/cli/dist/index.js schema -o /tmp/crux-bundle.schema.json
