@@ -71,9 +71,9 @@ Implemented pilot capabilities:
 - prevent canonical/disclosure export while an in-progress draft fails schema or reference validation;
 - surface questions-to-resolve without creating a score;
 - download a structured pilot-session sheet for comparable authoring/comprehension observations;
-- use a browser-first `/test` surface for live provider calls, causal workflow provenance, declared-versus-observed reconciliation and transport-boundary testing.
+- use a browser-first `/test` surface for live provider calls, causal workflow provenance, declared-versus-observed reconciliation, transport-boundary testing and durable-ingress acceptance.
 
-See `docs/PILOT.md`, `docs/PIPELINE_INTEGRATION.md` and `docs/TRANSPORT_DECISION.md`.
+See `docs/PILOT.md`, `docs/PIPELINE_INTEGRATION.md`, `docs/TRANSPORT_DECISION.md` and `docs/DURABLE_INGRESS.md`.
 
 ### Immediate beta work
 
@@ -109,7 +109,7 @@ The next work should improve CRUX as a learning instrument while turning the acc
    - ✅ OTLP fixture proves input/output message content is excluded;
    - ✅ stateless `/api/ingest-test` route with no persistence;
    - ✅ browser Test 4 demonstrates accept → replay → conflict/policy rejection and OTLP adaptation;
-   - ✅ browser Test 4 human-accepted: the direct semantic and OTLP paths were understandable, idempotent replay was visible, stable-ID conflict was rejected, free-text runtime content was rejected, and prompt/output fields remained outside CRUX.
+   - ✅ browser Test 4 human-accepted.
 7. **Durable ingress · active** — wrap the accepted transport contract in persistence/auth semantics without changing `crux-ingest/0.1`.
    - ✅ storage abstraction added around the pure ingestion function;
    - ✅ request-level idempotency key is `(scope, producer, request_id)`;
@@ -118,12 +118,17 @@ The next work should improve CRUX as a learning instrument while turning the acc
    - ✅ authenticated principal/context is separate from self-declared `producer.id` provenance;
    - ✅ explicit `runtime:write` and `evidence:write` capabilities;
    - ✅ in-memory reference store for local/CI contract tests;
-   - ⬜ choose and implement the first Postgres persistence adapter and migrations;
-   - ⬜ producer credential/OIDC model and scope resolution;
-   - ⬜ transactional request + acceptance ledger in durable storage;
-   - ⬜ retry/concurrency behaviour around revision conflicts;
+   - ✅ driver-neutral `@crux/adapter-postgres` and migration implemented;
+   - ✅ transactional request + acceptance ledger validated against an isolated real Neon/PostgreSQL database;
+   - ✅ optimistic revision conflict and retry behaviour validated on real Neon;
+   - ✅ forced rollback proved bundle + request ledger never partially commit;
+   - ✅ preview-only `/api/durable-ingest-test` route and browser Test 5 implemented;
+   - ✅ full workspace CI and Vercel preview build pass with the Postgres-backed route included;
+   - ⬜ attach the isolated Neon `DATABASE_URL` to the CRUX Vercel **Preview** environment;
+   - ⬜ human-run Test 5 through HTTP: commit → reconnect-safe replay → changed-request conflict;
+   - ⬜ production producer credential/OIDC model and scope/tenancy resolution;
    - ⬜ retention and deletion policy for internal runtime provenance;
-   - ⬜ asynchronous delivery/queue posture for production instrumentation.
+   - ⬜ asynchronous delivery/queue and rate-limiting posture for production instrumentation.
 8. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before broader persistence/accounts/workspaces work.
 9. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
 
