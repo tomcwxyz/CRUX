@@ -60,16 +60,12 @@ const makeBatch = (requestId: string, changed = false) => {
 };
 
 export async function POST(request: Request) {
-  if (process.env.VERCEL_ENV === "production" && process.env.CRUX_DURABLE_TEST_ENABLED !== "true") {
-    return response({ ok: false, code: "preview_only" }, 403);
-  }
-
   if (!process.env.DATABASE_URL) {
     return response(
       {
         ok: false,
         code: "database_not_configured",
-        message: "Add DATABASE_URL to the CRUX preview environment to run the durable ingress test.",
+        message: "Add DATABASE_URL to the CRUX deployment environment to run the durable ingress test.",
       },
       503,
     );
