@@ -4,6 +4,15 @@ import {
   type PostgresQuery,
 } from "@crux/adapter-postgres";
 
+type QueryClient = {
+  unsafe: (text: string, params?: unknown[]) => Promise<{
+    [key: string]: unknown;
+    length: number;
+    count?: number;
+  } & Array<Record<string, unknown>>>;
+  begin?: <T>(callback: (transaction: QueryClient) => Promise<T>) => Promise<T>;
+};
+
 let sqlClient: ReturnType<typeof postgres> | null = null;
 
 const getClient = () => {
@@ -24,20 +33,32 @@ const getClient = () => {
   return sqlClient;
 };
 
-const wrapQuery = (client: ReturnType<typeof postgres>): PostgresQuery =>
-  async (text, params = []) => {
+const wrapQuery = (client: QueryClient): PostgresQuery => {
+  const query: PostgresQuery = async <
+    Row extends Record<string, unknown> = Record<string, unknown>,
+  >(
+    text: string,
+    params: readonly unknown[] = [],
+  ) => {
     const rows = await client.unsafe(text, [...params]);
     return {
-      rows: rows as unknown as Record<string, unknown>[],
+      rows: rows as unknown as Row[],
       rowCount: rows.count ?? rows.length,
     };
   };
 
+  return query;
+};
+
 export const createPilotPostgresStore = () => {
-  const client = getClient();
+  const client = getClient() as unknown as QueryClient;
+  if (!client.begin) {
+    throw new Error("Configured PostgreSQL client does not support transactions.");
+  }
+
   return new PostgresDurableIngestStore({
     query: wrapQuery(client),
-    transaction: async (callback) =>
-      client.begin(async (transaction) => callback(wrapQuery(transaction))),
+    transaction: async <T>(callback: (query: PostgresQuery) => Promise<T>) =>
+      client.begin!((transaction) => callback(wrapQuery(transaction))),
   });
 };
