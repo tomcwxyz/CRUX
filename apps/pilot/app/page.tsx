@@ -30,13 +30,13 @@ export default function HomePage() {
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
         <Link className="btn primary" href="/test">Run browser runtime test</Link>
         <a className="btn" href="/crux-pilot-session.md" download>
-          Download pilot session sheet
+          Download learning-session sheet
         </a>
       </div>
 
       <footer className="footer-note">
         <span>CRUX keeps the portable bundle as the source of truth.</span>
-        <span>No account · no database · no hidden app-only state.</span>
+        <span>Standalone authoring needs no account or hosted database.</span>
       </footer>
     </main>
   );
