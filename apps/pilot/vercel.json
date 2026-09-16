@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd ../.. && npx --yes pnpm@10.15.0 install",
-  "buildCommand": "cd ../.. && npx --yes pnpm@10.15.0 --filter @crux/pilot build"
+  "buildCommand": "cd ../.. && npx --yes pnpm@10.15.0 exec turbo run build --filter=@crux/pilot"
 }
