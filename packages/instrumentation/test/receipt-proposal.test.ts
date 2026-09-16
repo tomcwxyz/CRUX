@@ -22,7 +22,7 @@ describe("observed receipt proposals", () => {
     session.record({
       type: "human_review",
       occurredAt: "2026-09-16T08:00:02Z",
-      humanRoleRef: "human-role:eligibility-officer",
+      humanRoleRef: "role:eligibility-officer",
       summary: "Human review completed.",
     });
     session.record({
