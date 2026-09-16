@@ -24,6 +24,8 @@ jobs:
       - run: pnpm build
       - name: Dogfood runtime instrumentation
         run: node packages/instrumentation/examples/pipeline-dogfood.mjs
+      - name: Validate external-provider smoke harness
+        run: node packages/instrumentation/examples/live-gateway-smoke.mjs
       - name: Dogfood standalone CLI
         run: |
           node packages/cli/dist/index.js validate examples/funding-review/crux.json
