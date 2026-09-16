@@ -51,9 +51,9 @@ Implemented:
 
 Acceptance met: CRUX bundles can be authored, validated, inspected and safely projected without an account or hosted service.
 
-## 0.1-beta — real-world schema pilot · active
+## 0.1-beta — real-world schema + automation pilot · active
 
-The beta has a deliberately thin, file-first pilot surface. It is not the future hosted product architecture: its purpose is to expose the existing portable contracts to real authors and readers without introducing a second canonical data model.
+The beta has a deliberately thin, file-first pilot surface. It is not the future hosted product architecture: its purpose is to expose the portable contracts to real authors, readers and AI pipelines without introducing a second canonical data model.
 
 Implemented pilot capabilities:
 
@@ -71,36 +71,48 @@ Implemented pilot capabilities:
 - prevent canonical/disclosure export while an in-progress draft fails schema or reference validation;
 - surface questions-to-resolve without creating a score;
 - download a structured pilot-session sheet for comparable authoring/comprehension observations;
-- use a browser-first runtime test surface for live model calls, workflow provenance and declared-versus-observed reconciliation.
+- use a browser-first `/test` surface for live provider calls, causal workflow provenance, declared-versus-observed reconciliation and transport-boundary testing.
 
-See `docs/PILOT.md` for the pilot protocol and `docs/PIPELINE_INTEGRATION.md` for how CRUX should participate in live AI systems.
+See `docs/PILOT.md`, `docs/PIPELINE_INTEGRATION.md` and `docs/TRANSPORT_DECISION.md`.
 
 ### Immediate beta work
 
-The next work should improve the pilot as a learning instrument and validate the now-implemented automation boundary rather than expanding CRUX into generic CRUD:
+The next work should improve CRUX as a learning instrument and validate the implemented automation boundary rather than expanding into generic CRUD.
 
-1. **Structured dry-runs** — author several real or realistic organisational cases end-to-end, including one genuinely consequential process and one non-consequential productivity use.
+1. **Structured organisational dry-runs** — author several real or realistic cases end-to-end, including one genuinely consequential process and one non-consequential productivity use.
 2. **Questions to resolve** — test whether missing-transparency prompts are useful and proportionate rather than adding a completeness/trust score.
-3. **Non-author comprehension** — test the public and affected-person views with people who did not create the record; record misunderstanding as product/schema evidence.
-4. **Declared versus observed tension** — implementation now exists; use the portable divergence example, deployed browser test and real pilot records to test whether people correctly understand a mismatch as an observation requiring review rather than a trust/safety judgement.
-5. **Pipeline integration spike · contract + first live path implemented** — prove runtime/eval telemetry can populate CRUX automatically before building a hosted ingestion service.
+3. **Non-author comprehension** — test public and affected-person views with people who did not create the record; record misunderstanding as product/schema evidence.
+4. **Declared versus observed tension** — browser acceptance now proves provider/model reconciliation; test the same concept with real pilot records and non-authors so divergence is understood as an observation requiring review rather than a trust/safety judgement.
+5. **Pipeline integration · contract + live path accepted**
    - ✅ framework-independent metadata-first `@crux/instrumentation` collector;
-   - ✅ canonical Run/Event production from live observations;
+   - ✅ canonical Run/Event production from observations;
    - ✅ OpenTelemetry GenAI metadata mapping with content-bearing fields ignored by default;
-   - ✅ Vercel AI SDK structural adapter, plus an actual `generateText()` lifecycle test using the SDK's mock model;
-   - ✅ declared-versus-observed model/provider reconciliation moved into `@crux/core`, scoped to the exact SystemVersion;
-   - ✅ credential-free consequential pipeline dogfood in CI: fallback model → human review → decision → action, with leakage assertions;
-   - ✅ idempotent CI/eval `EvidenceEnvelope` ingestion through library + CLI without silently creating an `EvidenceLink`;
-   - ✅ review-required `crux-receipt-proposal/0.1` generated from an observed causal trace without inventing outcome, authority, challenge or AI effect;
-   - ✅ declared-versus-observed divergence shown in the pilot working lens, with a validated portable example;
-   - ✅ real external-provider smoke test through Vercel AI Gateway, with prompt/output absent from the CRUX snapshot;
-   - ✅ browser Workflow test implemented: real AI invocation → synthetic human review → decision → bounded action → Trace + receipt proposal;
-   - ✅ browser Declared-versus-observed test implemented using an actual declared SystemVersion and `@crux/core` reconciliation;
-   - ⬜ human-review the deployed Workflow test output and confirm the trace/proposal communicates the right boundary;
-   - ⬜ human-review the deployed Declared-versus-observed test and confirm divergence is understood descriptively;
-   - ⬜ only after those browser acceptance tests, decide whether the next transport should be HTTP ingestion, OTLP/Collector integration or both.
-6. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before adding persistence/accounts/workspaces.
-7. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
+   - ✅ Vercel AI SDK adapter and real `generateText()` lifecycle test;
+   - ✅ real external-provider call through Vercel AI Gateway with prompt/output absent from CRUX;
+   - ✅ declared-versus-observed reconciliation in `@crux/core`, scoped to the exact SystemVersion;
+   - ✅ consequential pipeline dogfood: model → human review → decision → action;
+   - ✅ idempotent EvidenceEnvelope ingestion without silent claim linkage;
+   - ✅ review-required receipt proposal from an observed causal trace;
+   - ✅ browser Workflow test human-accepted;
+   - ✅ browser Declared-versus-observed test human-accepted.
+6. **Transport contract · implemented, browser acceptance pending**
+   - ✅ `@crux/transport` storage-free semantic write boundary;
+   - ✅ versioned `crux-ingest/0.1` batch for Run/Event/Observation/EvidenceEnvelope;
+   - ✅ exact SystemVersion targeting;
+   - ✅ producer identity and per-record acceptance provenance;
+   - ✅ idempotent identical replay and same-ID/different-record conflict rejection;
+   - ✅ duplicate event-sequence rejection;
+   - ✅ default metadata-only content policy with a strict runtime attribute allow-list;
+   - ✅ payload and record-count bounds;
+   - ✅ EvidenceEnvelope through the same boundary without automatic EvidenceLink creation;
+   - ✅ OTLP/HTTP JSON GenAI bridge → existing OTel mapper → same ingestion contract;
+   - ✅ OTLP fixture proves input/output message content is excluded;
+   - ✅ stateless `/api/ingest-test` route with no persistence;
+   - ✅ browser Test 4 demonstrating accept → replay → conflict/policy rejection and OTLP adaptation;
+   - ⬜ human-review Test 4 and confirm the transport explanation is understandable and proportionate.
+7. **After Test 4 acceptance: durable ingress design** — choose persistence and producer authentication around the proven contract, without changing the canonical CRUX model to suit the database. First questions are transactional ingestion ledger, producer identity/authorisation, organisation/workspace tenancy, retention, asynchronous delivery and failure independence.
+8. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before broader persistence/accounts/workspaces work.
+9. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
 
 Core questions remain:
 
@@ -112,12 +124,13 @@ Core questions remain:
 - Are public/affected-person disclosures useful as well as safe?
 - Does CRUX remain useful when TOPO, RACK and Ship Check are absent?
 - Can technical observations automatically improve CRUX without allowing telemetry to invent organisational meaning?
+- Can CRUX receive runtime evidence without becoming a general-purpose observability store or content sink?
 
 Do not expand the schema because participants use different terminology. Add concepts only where the current model cannot faithfully represent something important.
 
 ## Phase 1 — standalone transparency product
 
-After the schema pilot, build the durable organisation/workspace, AI-use authoring, system/process explorer, claims/evidence views, evaluation history, disclosure controls, immutable publication and human/machine-readable public pages.
+After the schema/transport pilot, build the durable organisation/workspace, AI-use authoring, system/process explorer, claims/evidence views, evaluation history, disclosure controls, immutable publication and human/machine-readable public pages.
 
 Primary test:
 
@@ -131,13 +144,14 @@ Primary test:
 
 > Can a reader distinguish an organisational assertion from evidence supporting or challenging it?
 
-## Phase 3 — provenance and instrumentation
+## Phase 3 — provenance and supported instrumentation
 
-Turn the validated beta instrumentation package into supported infrastructure:
+Turn the validated beta instrumentation and transport packages into supported infrastructure:
 
-- evolve `@crux/instrumentation` into the stable runtime SDK boundary rather than starting again with a second event model;
-- HTTP ingestion API with batching, idempotency and explicit identity/authority;
-- OpenTelemetry/OTLP mapping or Collector bridge;
+- evolve `@crux/instrumentation` as the stable runtime SDK boundary;
+- evolve `@crux/transport` as the stable semantic ingestion contract;
+- durable HTTP ingestion with batching, transactional idempotency and explicit producer identity/authority;
+- OpenTelemetry/OTLP Collector bridge using the proven mapping path;
 - framework adapters such as Vercel AI SDK where useful;
 - declared-versus-observed comparisons across models, actions and review controls;
 - receipt proposal generation;
@@ -147,7 +161,7 @@ Metadata is captured by default; content capture remains explicit and opt-in. Ru
 
 ## Phase 4 — generic evaluation interoperability
 
-Add REST and webhook ingestion around the now-proven file/CLI `EvidenceEnvelope` import, then test provider adapters without embedding vendor semantics in core CRUX contracts.
+Add REST/webhook producer integrations around the proven EvidenceEnvelope + transport boundary without embedding vendor semantics in core CRUX contracts.
 
 Add an optional MCP server as an agent-facing interface over CRUX resources and meaningful low-frequency tools. MCP should not become the canonical high-volume runtime telemetry transport.
 
@@ -189,3 +203,4 @@ Publish/discover `/.well-known/ai-transparency.json` and open representations fo
 - Schema changes require deliberate version review.
 - Application/database convenience must not dictate interchange contracts.
 - Runtime automation may report behaviour but may not silently define organisational purpose, accountability or disclosure policy.
+- Transport failures should not normally fail the AI workflow itself.
