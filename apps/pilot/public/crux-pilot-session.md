@@ -1,6 +1,8 @@
 # CRUX pilot session sheet
 
-Use this sheet alongside a CRUX `0.1-beta` authoring or comprehension session. The aim is to record what people understand, misunderstand or cannot represent — not to score the organisation.
+Use this sheet alongside a CRUX `0.1-beta` authoring or comprehension session. The aim is to record what people understand, misunderstand or cannot represent — not to score the organisation or produce an overall CRUX score.
+
+See `docs/BETA_LEARNING_PROTOCOL.md` for the shared session method.
 
 ## Session
 
@@ -11,6 +13,9 @@ Use this sheet alongside a CRUX `0.1-beta` authoring or comprehension session. T
 - Reader / comprehension participant:
 - CRUX bundle filename:
 - AI use(s) tested:
+- Case shape: productivity / consequential human decision / bounded agentic action / other
+- Lens tested: working / public / affected person
+- Participant relationship to the process:
 
 ## Authoring observations
 
@@ -35,51 +40,22 @@ Problem types: **language**, **interaction**, **representation**, **comprehensio
 
 ## Non-author comprehension test
 
-Give the participant the disclosure without coaching first. Record their answer in their own words.
+Give the participant the disclosure without coaching first. Record their answer in their own words, then mark the interpretation as **correct**, **partial** or **incorrect**. Keep those question-level observations separate; do not aggregate them into a single score.
 
-1. Where is AI involved?
+| Question | Participant answer / notes | Interpretation |
+| --- | --- | --- |
+| 1. Where is AI involved? | | correct / partial / incorrect |
+| 2. What does the AI actually do? | | correct / partial / incorrect |
+| 3. What information or data does it use? | | correct / partial / incorrect |
+| 4. Can it make or trigger consequential decisions or actions? | | correct / partial / incorrect |
+| 5. Where is human judgement or authority? | | correct / partial / incorrect |
+| 6. What claims is the organisation making? | | correct / partial / incorrect |
+| 7. Which claims have evidence, and what kind? | | correct / partial / incorrect |
+| 8. What remains unknown, withheld, stale, limited or contradictory? | | correct / partial / incorrect |
+| 9. What happened in the specific case, if a receipt exists? | | correct / partial / incorrect |
+| 10. Can the affected person question or challenge the outcome? | | correct / partial / incorrect |
 
-   Notes:
-
-2. What does the AI actually do?
-
-   Notes:
-
-3. What information or data does it use?
-
-   Notes:
-
-4. Can it make or trigger consequential decisions or actions?
-
-   Notes:
-
-5. Where is human judgement or authority?
-
-   Notes:
-
-6. What claims is the organisation making?
-
-   Notes:
-
-7. Which claims have evidence, and what kind?
-
-   Notes:
-
-8. Is any evidence stale, qualified, limited or contradictory?
-
-   Notes:
-
-9. What changed between system versions, if anything?
-
-   Notes:
-
-10. For a specific receipt, what did AI contribute and what happened because of it?
-
-    Notes:
-
-11. Can the affected person question or challenge the outcome?
-
-    Notes:
+Most important misunderstanding to preserve verbatim:
 
 ## Affected-person receipt test
 
@@ -98,6 +74,27 @@ Could the reader identify, without extra explanation:
 
 Misunderstandings / missing information:
 
+## Declared-versus-observed review
+
+Use this section when runtime evidence exists.
+
+Can the participant distinguish, in their own words:
+
+| Concept | Participant explanation | Clear? |
+| --- | --- | --- |
+| What the organisation declared | | yes / partly / no |
+| What the runtime actually observed | | yes / partly / no |
+| A divergence that needs review | | yes / partly / no |
+| Something CRUX still cannot know automatically | | yes / partly / no |
+
+Did any provider/model divergence get interpreted as a trust, safety or compliance judgement?
+
+Notes:
+
+Did automatic evidence make the record clearer, noisier or neither?
+
+Notes:
+
 ## Disclosure test
 
 Compare the canonical, public and affected-person views.
@@ -114,6 +111,12 @@ Did redaction make any explanation technically safe but practically meaningless?
 
 Notes:
 
+### Useful after redaction
+
+What remained genuinely useful to the reader?
+
+Notes:
+
 ## Questions to resolve
 
 Which CRUX prompts were useful?
@@ -124,15 +127,31 @@ Which were unclear?
 
 What important question did CRUX fail to ask?
 
+## Learning classification
+
+For each material issue, decide what kind of change it suggests before treating it as a schema problem.
+
+- [ ] explanatory copy
+- [ ] authoring scaffolding/example
+- [ ] disclosure projection
+- [ ] derived interpretation in `@crux/core`
+- [ ] genuine canonical schema gap
+- [ ] instrumentation/transport issue
+- [ ] no change — needs more evidence
+
 ## Schema signal
 
 Only use this section when the existing CRUX model genuinely cannot faithfully represent something important.
 
 What could not be represented?
 
-Why is this structural rather than a wording or interaction problem?
+Why is this structural rather than a wording, interaction or disclosure problem?
+
+Which existing fields/relationships were considered and why were they insufficient?
 
 Possible model change to investigate:
+
+Has the same structural gap appeared in another session? yes / no / unknown
 
 ## Session outcome
 
@@ -140,9 +159,9 @@ Possible model change to investigate:
 
 What worked particularly well?
 
-### Change
+### Change next
 
-What should change before the next session?
+What is the smallest useful change before the next session?
 
 ### Do not change yet
 
@@ -155,6 +174,7 @@ What was awkward but needs more evidence before changing CRUX?
 - [ ] affected-person receipt
 - [ ] schema / contracts
 - [ ] evidence resolution
+- [ ] declared-versus-observed interpretation
 - [ ] integration / instrumentation
 - [ ] documentation
 - [ ] no change
