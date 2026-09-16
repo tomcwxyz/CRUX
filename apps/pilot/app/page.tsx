@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PilotWorkbench } from "../components/pilot-workbench";
 
 export default function HomePage() {
@@ -8,7 +9,10 @@ export default function HomePage() {
           <span className="wordmark">CRUX</span>
           <span className="beta">0.1 beta pilot</span>
         </div>
-        <div className="top-note">Open evidence and provenance for organisational AI.</div>
+        <div className="toolbar-group">
+          <Link className="btn ghost" href="/test">Run a test</Link>
+          <div className="top-note">Open evidence and provenance for organisational AI.</div>
+        </div>
       </header>
 
       <section className="hero">
@@ -23,7 +27,8 @@ export default function HomePage() {
 
       <PilotWorkbench />
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+        <Link className="btn primary" href="/test">Run browser runtime test</Link>
         <a className="btn" href="/crux-pilot-session.md" download>
           Download pilot session sheet
         </a>
