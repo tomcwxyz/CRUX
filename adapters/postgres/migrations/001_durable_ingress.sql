@@ -21,6 +21,7 @@ create table if not exists crux_ingest_requests (
   request_id text not null,
   principal_ref text not null,
   canonical_batch jsonb not null,
+  canonical_batch_text text not null,
   accepted_at timestamptz not null,
   revision_after bigint not null check (revision_after > 0),
   created_at timestamptz not null default now(),
