@@ -1,7 +1,7 @@
 # CRUX roadmap
 
 **Status:** active  
-**Updated:** 15 September 2026
+**Updated:** 16 September 2026
 
 ## Direction
 
@@ -67,6 +67,7 @@ Implemented pilot capabilities:
 - author a metadata-first specific-case receipt as a valid Run → Event → Trace → Receipt chain;
 - require explicit human involvement where a manually authored receipt claims human/hybrid final authority;
 - inspect working, public and affected-person projections;
+- inspect declared-versus-observed provider/model behaviour for the exact SystemVersion in the working lens;
 - prevent canonical/disclosure export while an in-progress draft fails schema or reference validation;
 - surface questions-to-resolve without creating a score;
 - download a structured pilot-session sheet for comparable authoring/comprehension observations.
@@ -75,24 +76,24 @@ See `docs/PILOT.md` for the pilot protocol and `docs/PIPELINE_INTEGRATION.md` fo
 
 ### Immediate beta work
 
-The next work should improve the pilot as a learning instrument and prove the automation boundary rather than expanding CRUX into generic CRUD:
+The next work should improve the pilot as a learning instrument and validate the now-implemented automation boundary rather than expanding CRUX into generic CRUD:
 
 1. **Structured dry-runs** — author several real or realistic organisational cases end-to-end, including one genuinely consequential process and one non-consequential productivity use.
 2. **Questions to resolve** — test whether missing-transparency prompts are useful and proportionate rather than adding a completeness/trust score.
 3. **Non-author comprehension** — test the public and affected-person views with people who did not create the record; record misunderstanding as product/schema evidence.
-4. **Declared versus observed tension** — use receipts and imported evidence to test how CRUX exposes divergence between the declared process and what happened in practice without silently rewriting either.
-5. **Pipeline integration spike · in progress** — prove that runtime/eval telemetry can populate CRUX automatically before building a hosted ingestion service.
+4. **Declared versus observed tension** — implementation now exists; use the portable divergence example and real pilot records to test whether people correctly understand a mismatch as an observation requiring review rather than a trust/safety judgement.
+5. **Pipeline integration spike · contract path implemented** — prove runtime/eval telemetry can populate CRUX automatically before building a hosted ingestion service.
    - ✅ framework-independent metadata-first `@crux/instrumentation` collector;
    - ✅ canonical Run/Event production from live observations;
    - ✅ OpenTelemetry GenAI metadata mapping with content-bearing fields ignored by default;
-   - ✅ Vercel AI SDK step-callback metadata mapping without coupling CRUX core to the AI SDK package;
-   - ✅ declared-versus-observed model/provider comparison;
+   - ✅ Vercel AI SDK structural adapter, plus an actual `generateText()` lifecycle test using the SDK's mock model;
+   - ✅ declared-versus-observed model/provider reconciliation moved into `@crux/core`, scoped to the exact SystemVersion;
    - ✅ credential-free consequential pipeline dogfood in CI: fallback model → human review → decision → action, with leakage assertions;
-   - ⬜ run the adapter against one small live AI provider/framework pipeline;
-   - ⬜ ingest a CI/eval `EvidenceEnvelope` automatically;
-   - ⬜ generate a receipt proposal from an observed trace;
-   - ⬜ show declared-versus-observed divergence in the pilot viewer;
-   - ⬜ only then design HTTP/OTLP transport, batching, auth and idempotency.
+   - ✅ idempotent CI/eval `EvidenceEnvelope` ingestion through library + CLI without silently creating an `EvidenceLink`;
+   - ✅ review-required `crux-receipt-proposal/0.1` generated from an observed causal trace without inventing outcome, authority, challenge or AI effect;
+   - ✅ declared-versus-observed divergence shown in the pilot working lens, with a validated portable example;
+   - ⬜ run one smoke test against a real external model provider, keeping content capture disabled;
+   - ⬜ only after that external-provider smoke test, decide whether the next transport should be HTTP ingestion, OTLP/Collector integration or both.
 6. **Authoring friction** — identify where plain-language authoring needs better scaffolding, examples or terminology before adding persistence/accounts/workspaces.
 7. **Disclosure quality** — test whether redacted views remain genuinely explanatory when internal model, supplier or security details are hidden.
 
@@ -141,7 +142,7 @@ Metadata is captured by default; content capture remains explicit and opt-in. Ru
 
 ## Phase 4 — generic evaluation interoperability
 
-Add file/CLI import, REST and webhook ingestion around the neutral `EvidenceEnvelope`, then test provider adapters without embedding vendor semantics in core CRUX contracts.
+Add REST and webhook ingestion around the now-proven file/CLI `EvidenceEnvelope` import, then test provider adapters without embedding vendor semantics in core CRUX contracts.
 
 Add an optional MCP server as an agent-facing interface over CRUX resources and meaningful low-frequency tools. MCP should not become the canonical high-volume runtime telemetry transport.
 
