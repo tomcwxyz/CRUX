@@ -66,3 +66,7 @@ See `docs/DURABLE_INGRESS.md`.
 ## Managed deployment
 
 A Neon-hosted PostgreSQL database is a natural first managed deployment target, but Neon-specific connection/auth code should live in deployment configuration or a thin integration wrapper. It must not enter CRUX interchange contracts or core packages.
+
+## Current acceptance boundary
+
+The driver-neutral adapter and migration are implemented and compile as part of the CRUX workspace. The next acceptance step is **not another mocked SQL layer**: run the migration against an isolated PostgreSQL/Neon test database and exercise real transaction behaviour for commit, exact request replay, changed-request conflict and competing scope revisions.
