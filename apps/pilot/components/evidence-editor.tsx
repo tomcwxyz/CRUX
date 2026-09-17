@@ -7,7 +7,7 @@ import type {
   EvidenceKind,
   EvidenceRelationship,
 } from "@crux/schemas";
-import { appendManualEvidence } from "../lib/authoring";
+import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 
 const evidenceKinds: Array<{ value: EvidenceKind; label: string }> = [
   { value: "human_review", label: "Human review" },
@@ -49,6 +49,7 @@ export function EvidenceEditor({
   onBundleChange: (bundle: CruxPortableBundle) => void;
 }) {
   const [sourceMode, setSourceMode] = useState<ManualSource>("review");
+  const [sourceUri, setSourceUri] = useState("");
   const [summary, setSummary] = useState("");
   const [kind, setKind] = useState<EvidenceKind>("human_review");
   const [relationship, setRelationship] = useState<EvidenceRelationship>("supports");
@@ -69,17 +70,19 @@ export function EvidenceEditor({
   const chooseSourceMode = (mode: ManualSource) => {
     setSourceMode(mode);
     setKind(mode === "review" ? "human_review" : "policy");
+    if (mode === "review") setSourceUri("");
     setError(null);
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      const result = appendManualEvidence(bundle, claimId, {
+      const result = appendManualEvidenceWithSource(bundle, claimId, {
         summary,
         kind,
         relationship,
         disclosure,
+        ...(sourceMode === "record" && sourceUri.trim() ? { sourceUri } : {}),
         limitations: limitations
           .split("\n")
           .map((value) => value.trim())
@@ -87,6 +90,7 @@ export function EvidenceEditor({
       });
       onBundleChange(result.bundle);
       setSummary("");
+      setSourceUri("");
       setLimitations("");
       setError(null);
     } catch (caught) {
@@ -107,6 +111,9 @@ export function EvidenceEditor({
                 <span className="pill">{evidence.disclosure.replaceAll("_", " ")}</span>
                 <span className="pill">Observed {new Date(evidence.freshness.observed_at).toLocaleDateString("en-GB")}</span>
               </div>
+              {evidence.source.source_ref ? (
+                <div className="reason">Source: <a href={evidence.source.source_ref} target="_blank" rel="noreferrer">{evidence.source.source_ref}</a></div>
+              ) : null}
               {evidence.limitations.map((limitation) => (
                 <div className="reason" key={limitation}>Limitation: {limitation}</div>
               ))}
@@ -142,6 +149,21 @@ export function EvidenceEditor({
       </div>
 
       <form onSubmit={submit}>
+        {sourceMode === "record" ? (
+          <div className="field">
+            <label htmlFor={`evidence-source-${claimId}`}>Link to the source · optional</label>
+            <input
+              id={`evidence-source-${claimId}`}
+              className="input"
+              type="url"
+              value={sourceUri}
+              onChange={(event) => setSourceUri(event.target.value)}
+              placeholder="https://…"
+            />
+            <div className="small muted" style={{ marginTop: 6 }}>CRUX stores the reference, not a copy of the document.</div>
+          </div>
+        ) : null}
+
         <div className="field">
           <label htmlFor={`evidence-summary-${claimId}`}>
             {sourceMode === "review" ? "What did you check, and what did you find?" : "What does the record show?"}
