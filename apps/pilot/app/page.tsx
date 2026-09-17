@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LearningCasePicker } from "../components/learning-case-picker";
 import { PilotWorkbench } from "../components/pilot-workbench";
 
 export default function HomePage() {
@@ -25,6 +26,7 @@ export default function HomePage() {
         </p>
       </section>
 
+      <LearningCasePicker />
       <PilotWorkbench />
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
