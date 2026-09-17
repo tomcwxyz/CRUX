@@ -57,6 +57,14 @@ const loadThroughExistingFilePath = (learningCase: LearningCase) => {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
+const focusWorkbench = () => {
+  window.requestAnimationFrame(() => {
+    document
+      .querySelector<HTMLElement>('[aria-label="CRUX pilot workbench"]')
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+};
+
 export function LearningCasePicker() {
   const [loaded, setLoaded] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +74,7 @@ export function LearningCasePicker() {
       loadThroughExistingFilePath(learningCase);
       setLoaded(learningCase.id);
       setError(null);
+      focusWorkbench();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load this learning case.");
     }
