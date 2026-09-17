@@ -1,11 +1,12 @@
 {
   "format": "crux-bundle/0.1",
-  "generated_at": "2026-09-15T10:00:00+00:00",
+  "generated_at": "2026-09-17T06:20:00+00:00",
   "organisations": [
     {
       "schema_version": "0.1",
       "id": "organisation:example",
       "name": "Example Foundation",
+      "description": "A fictional grant-maker used to test consequential AI transparency.",
       "disclosure": "public",
       "external_refs": [],
       "created_at": "2026-09-15T10:00:00+00:00"
@@ -17,8 +18,8 @@
       "id": "ai-use:funding-review",
       "organisation_ref": "organisation:example",
       "name": "Funding review",
-      "purpose": "Help staff find eligibility evidence.",
-      "public_summary": "AI helps staff find evidence but does not decide awards.",
+      "purpose": "Help staff find eligibility evidence in funding applications.",
+      "public_summary": "AI helps staff find evidence but does not decide whether an application is eligible or receives funding.",
       "status": "active",
       "people_affected": ["funding applicants"],
       "consequential": true,
@@ -33,7 +34,7 @@
       "schema_version": "0.1",
       "id": "system:funding-assistant",
       "name": "Funding Assistant",
-      "description": "Extracts eligibility evidence for staff review.",
+      "description": "Extracts eligibility evidence for staff review before a funding officer makes the eligibility decision.",
       "ai_use_refs": ["ai-use:funding-review"],
       "influence": ["informational"],
       "agency": "none",
@@ -53,36 +54,129 @@
       "effective_from": "2026-09-15T10:00:00+00:00",
       "process": {
         "id": "process:funding-review",
-        "name": "Funding review",
+        "name": "Funding eligibility review",
         "nodes": [
           {
             "id": "node:application",
             "type": "input",
-            "name": "Application",
+            "name": "Funding application",
             "disclosure": "public"
           },
           {
-            "id": "node:review-output",
+            "id": "node:eligibility-extraction",
+            "type": "ai",
+            "name": "AI eligibility evidence extraction",
+            "component_ref": "component:eligibility-extractor",
+            "purpose": "Identify passages that may be relevant to the published eligibility criteria.",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:funding-officer-review",
+            "type": "human",
+            "name": "Funding officer review",
+            "human_role_ref": "role:funding-officer",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:eligibility-decision",
+            "type": "decision",
+            "name": "Eligibility decision",
+            "decision_ref": "decision:eligibility",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:eligibility-outcome",
             "type": "output",
-            "name": "Evidence findings",
+            "name": "Eligibility outcome",
             "disclosure": "public"
           }
         ],
         "edges": [
           {
             "from": "node:application",
-            "to": "node:review-output",
-            "carries": []
+            "to": "node:eligibility-extraction",
+            "carries": ["application information"]
+          },
+          {
+            "from": "node:eligibility-extraction",
+            "to": "node:funding-officer-review",
+            "carries": ["candidate eligibility evidence"]
+          },
+          {
+            "from": "node:funding-officer-review",
+            "to": "node:eligibility-decision",
+            "carries": ["reviewed application and evidence"]
+          },
+          {
+            "from": "node:eligibility-decision",
+            "to": "node:eligibility-outcome",
+            "carries": ["human eligibility decision"]
           }
         ]
       },
-      "components": [],
+      "components": [
+        {
+          "id": "component:eligibility-extractor",
+          "kind": "model",
+          "name": "Eligibility evidence extractor",
+          "purpose": "Identify potentially relevant eligibility evidence for staff review.",
+          "model_identifier": {
+            "status": "unknown"
+          },
+          "externally_provided": true,
+          "disclosure": "public",
+          "external_refs": []
+        }
+      ],
       "data_sources": [],
-      "human_roles": [],
-      "decisions": [],
+      "human_roles": [
+        {
+          "id": "role:funding-officer",
+          "name": "Funding officer",
+          "responsibilities": [
+            "Review the original application and AI-identified evidence",
+            "Make the eligibility decision"
+          ],
+          "can_override_ai": true,
+          "sees_original_source": true,
+          "disclosure": "public"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "decision:eligibility",
+          "name": "Eligibility decision",
+          "consequence": "Determines whether the application is treated as eligible to continue through the funding process.",
+          "authority": "human",
+          "ai_influence": ["informational"],
+          "review_before_effect": true,
+          "responsible_role_refs": ["role:funding-officer"],
+          "challenge": {
+            "available": true,
+            "description": "Applicants can contact the foundation to ask how the eligibility decision was reached or to raise a concern."
+          },
+          "disclosure": "public"
+        }
+      ],
       "actions": [],
-      "risks": [],
-      "safeguards": [],
+      "risks": [
+        {
+          "id": "risk:missed-eligibility-evidence",
+          "description": "The AI may fail to identify relevant evidence or may highlight misleading passages.",
+          "affects": ["funding applicants"],
+          "related_node_refs": ["node:eligibility-extraction", "node:funding-officer-review"],
+          "disclosure": "public"
+        }
+      ],
+      "safeguards": [
+        {
+          "id": "safeguard:funding-officer-review",
+          "description": "A funding officer reviews the original application and retains final authority for eligibility.",
+          "mitigates": ["risk:missed-eligibility-evidence"],
+          "applies_to": ["decision:eligibility"],
+          "disclosure": "public"
+        }
+      ],
       "disclosure": "public",
       "external_refs": [],
       "published_at": "2026-09-15T10:00:00+00:00"
@@ -93,7 +187,7 @@
       "schema_version": "0.1",
       "id": "claim:no-autonomous-rejection",
       "type": "control",
-      "statement": "AI cannot independently reject a funding application.",
+      "statement": "AI cannot independently reject or declare a funding application ineligible.",
       "applies_to": [
         {
           "kind": "system_version",
@@ -110,7 +204,7 @@
       "schema_version": "0.1",
       "id": "evidence:decision-authority:1",
       "kind": "system_configuration",
-      "summary": "The configured process contains no AI rejection action.",
+      "summary": "The declared process assigns eligibility authority to a funding officer and contains no AI rejection action.",
       "source": {
         "kind": "native",
         "producer": {
@@ -124,9 +218,9 @@
         }
       ],
       "freshness": {
-        "observed_at": "2026-09-15T10:00:00+00:00"
+        "observed_at": "2026-09-17T06:20:00+00:00"
       },
-      "limitations": [],
+      "limitations": ["Configuration evidence describes the intended process; a specific receipt is needed to show what happened in an individual case."],
       "external_refs": [],
       "disclosure": "public"
     }
@@ -165,10 +259,10 @@
       "sequence": 1,
       "occurred_at": "2026-09-15T10:00:03+00:00",
       "type": "ai_invocation",
-      "summary": "AI extracted eligibility evidence.",
-      "attributes": {
-        "internal_route": "provider-route-a"
-      },
+      "process_node_ref": "node:eligibility-extraction",
+      "component_ref": "component:eligibility-extractor",
+      "summary": "AI extracted candidate eligibility evidence.",
+      "attributes": {},
       "disclosure": "internal"
     },
     {
@@ -178,7 +272,23 @@
       "sequence": 2,
       "occurred_at": "2026-09-15T10:00:08+00:00",
       "type": "human_review",
-      "summary": "A funding officer reviewed the original application.",
+      "process_node_ref": "node:funding-officer-review",
+      "human_role_ref": "role:funding-officer",
+      "summary": "A funding officer reviewed the original application and the AI-identified evidence.",
+      "attributes": {},
+      "disclosure": "affected_party"
+    },
+    {
+      "schema_version": "0.1",
+      "id": "event:funding:24861:decision",
+      "run_ref": "run:funding:24861",
+      "sequence": 3,
+      "occurred_at": "2026-09-15T10:00:10+00:00",
+      "type": "decision",
+      "process_node_ref": "node:eligibility-decision",
+      "decision_ref": "decision:eligibility",
+      "human_role_ref": "role:funding-officer",
+      "summary": "The funding officer made the eligibility decision.",
       "attributes": {},
       "disclosure": "affected_party"
     }
@@ -198,9 +308,13 @@
         {
           "event_ref": "event:funding:24861:review",
           "relationship_to_previous": "reviews"
+        },
+        {
+          "event_ref": "event:funding:24861:decision",
+          "relationship_to_previous": "decides"
         }
       ],
-      "summary": "AI evidence extraction led to human review.",
+      "summary": "AI evidence extraction was reviewed by a funding officer, who then made the eligibility decision.",
       "disclosure": "affected_party"
     }
   ],
@@ -213,11 +327,15 @@
       "system_version_ref": "system-version:funding-assistant:2.3",
       "occurred_at": "2026-09-15T10:00:12+00:00",
       "ai_involvement": ["informational"],
-      "ai_summary": "AI identified eligibility evidence.",
-      "effect_of_ai": "The findings prompted human review.",
-      "human_involvement": "A funding officer checked the original application.",
+      "ai_summary": "AI identified passages that might be relevant to eligibility.",
+      "effect_of_ai": "The AI-identified evidence was included in the material reviewed by the funding officer.",
+      "human_involvement": "A funding officer reviewed the original application and AI-identified evidence, then made the eligibility decision.",
       "final_authority": "human",
       "outcome": "The funding officer made the eligibility decision.",
+      "challenge": {
+        "available": true,
+        "description": "The applicant can contact the foundation to ask how the eligibility decision was reached or to raise a concern."
+      },
       "source_content_included": false,
       "disclosure": "affected_party",
       "external_refs": []
