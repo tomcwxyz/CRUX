@@ -10,6 +10,8 @@ type LearningCase = {
   name: string;
   label: string;
   description: string;
+  signals: string[];
+  suggestedLens: string;
   bundle: unknown;
 };
 
@@ -19,6 +21,8 @@ const cases: LearningCase[] = [
     name: "Writing assistant",
     label: "Low consequence · productivity",
     description: "AI suggests edits; staff remain responsible for what is sent or published.",
+    signals: ["Declared claim", "No linked evidence", "No receipt"],
+    suggestedLens: "Start with the public view: can a reader understand assistance without over-interpreting the unevidenced claim?",
     bundle: writingAssistant,
   },
   {
@@ -26,6 +30,8 @@ const cases: LearningCase[] = [
     name: "Funding review",
     label: "Consequential · human decision",
     description: "AI identifies eligibility evidence; a funding officer retains final authority.",
+    signals: ["Evidence-backed control", "Human authority", "Affected-person receipt"],
+    suggestedLens: "Use the affected-person view: can a reader see what AI contributed, who decided, and how to challenge the outcome?",
     bundle: fundingReview,
   },
   {
@@ -33,6 +39,8 @@ const cases: LearningCase[] = [
     name: "Bounded action",
     label: "Workflow · review → decision → action",
     description: "AI recommends a follow-up; staff review and approve before one bounded action executes.",
+    signals: ["Evidence-backed control", "Bounded action", "Runtime receipt"],
+    suggestedLens: "Compare working and affected-person views: can a reader separate observed behaviour from organisational authority?",
     bundle: boundedAction,
   },
 ];
@@ -85,7 +93,7 @@ export function LearningCasePicker() {
       <div className="kicker">Beta learning cases</div>
       <h2 id="learning-cases-heading" style={{ marginTop: 6 }}>Open a case in one click</h2>
       <p className="body-copy muted" style={{ maxWidth: 820 }}>
-        These three fixtures are deliberately different. Use them to compare authoring, public and affected-person comprehension before changing the CRUX model.
+        These cases are deliberately different. The contrast matters: one exposes an organisational declaration without linked evidence, one tests evidence-backed human decision authority, and one tests a bounded action with runtime provenance.
       </p>
 
       <div className="grid" style={{ marginTop: 18 }}>
@@ -94,6 +102,14 @@ export function LearningCasePicker() {
             <div className="kicker">{learningCase.label}</div>
             <h3>{learningCase.name}</h3>
             <p className="small muted">{learningCase.description}</p>
+            <div className="pill-row">
+              {learningCase.signals.map((signal) => (
+                <span className="pill" key={signal}>{signal}</span>
+              ))}
+            </div>
+            <p className="small muted" style={{ marginTop: 12 }}>
+              <strong>Try:</strong> {learningCase.suggestedLens}
+            </p>
             <button
               className={`btn ${loaded === learningCase.id ? "primary" : ""}`}
               type="button"
