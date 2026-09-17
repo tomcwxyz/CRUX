@@ -1,11 +1,12 @@
 {
   "format": "crux-bundle/0.1",
-  "generated_at": "2026-09-15T10:00:00+00:00",
+  "generated_at": "2026-09-17T06:25:00+00:00",
   "organisations": [
     {
       "schema_version": "0.1",
       "id": "organisation:example-charity",
       "name": "Example Charity",
+      "description": "A fictional charity used to test low-consequence AI transparency.",
       "disclosure": "public",
       "external_refs": [],
       "created_at": "2026-09-15T10:00:00+00:00"
@@ -18,7 +19,7 @@
       "organisation_ref": "organisation:example-charity",
       "name": "Writing support",
       "purpose": "Help staff edit and improve draft internal and external text.",
-      "public_summary": "Staff may use AI to suggest edits to text. Staff remain responsible for what is sent or published.",
+      "public_summary": "Staff may use AI to suggest edits to text. Staff review the suggestions and remain responsible for what is sent or published.",
       "status": "active",
       "people_affected": [],
       "consequential": false,
@@ -33,7 +34,7 @@
       "schema_version": "0.1",
       "id": "system:writing-assistant",
       "name": "Writing Assistant",
-      "description": "Produces suggested edits that a member of staff may accept, change or ignore.",
+      "description": "Produces suggested edits that a member of staff may accept, change or ignore before using the text.",
       "ai_use_refs": ["ai-use:writing-support"],
       "influence": ["assistive"],
       "agency": "none",
@@ -53,7 +54,7 @@
       "effective_from": "2026-09-15T10:00:00+00:00",
       "process": {
         "id": "process:writing-support",
-        "name": "Writing support",
+        "name": "Staff writing support",
         "nodes": [
           {
             "id": "node:draft-text",
@@ -62,23 +63,74 @@
             "disclosure": "public"
           },
           {
-            "id": "node:suggested-text",
+            "id": "node:ai-edit-suggestions",
+            "type": "ai",
+            "name": "AI edit suggestions",
+            "component_ref": "component:writing-model",
+            "purpose": "Suggest possible edits to wording, structure or tone.",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:staff-review-writing",
+            "type": "human",
+            "name": "Staff review",
+            "human_role_ref": "role:staff-author",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:final-text",
             "type": "output",
-            "name": "Suggested edits",
+            "name": "Staff-approved text",
             "disclosure": "public"
           }
         ],
         "edges": [
           {
             "from": "node:draft-text",
-            "to": "node:suggested-text",
-            "carries": []
+            "to": "node:ai-edit-suggestions",
+            "carries": ["draft text"]
+          },
+          {
+            "from": "node:ai-edit-suggestions",
+            "to": "node:staff-review-writing",
+            "carries": ["suggested edits"]
+          },
+          {
+            "from": "node:staff-review-writing",
+            "to": "node:final-text",
+            "carries": ["accepted, changed or rejected suggestions"]
           }
         ]
       },
-      "components": [],
+      "components": [
+        {
+          "id": "component:writing-model",
+          "kind": "model",
+          "name": "Writing model",
+          "purpose": "Suggest edits to staff-authored text.",
+          "model_identifier": {
+            "status": "unknown"
+          },
+          "externally_provided": true,
+          "disclosure": "public",
+          "external_refs": []
+        }
+      ],
       "data_sources": [],
-      "human_roles": [],
+      "human_roles": [
+        {
+          "id": "role:staff-author",
+          "name": "Staff author",
+          "responsibilities": [
+            "Review AI suggestions",
+            "Decide what wording to use",
+            "Remain responsible for text that is sent or published"
+          ],
+          "can_override_ai": true,
+          "sees_original_source": true,
+          "disclosure": "public"
+        }
+      ],
       "decisions": [],
       "actions": [],
       "risks": [],
