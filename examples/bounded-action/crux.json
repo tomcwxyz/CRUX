@@ -1,0 +1,377 @@
+{
+  "format": "crux-bundle/0.1",
+  "generated_at": "2026-09-17T06:00:00+00:00",
+  "organisations": [
+    {
+      "schema_version": "0.1",
+      "id": "organisation:example-service",
+      "name": "Example Service",
+      "description": "A fictional service organisation used to test bounded AI-assisted actions.",
+      "disclosure": "public",
+      "external_refs": [],
+      "created_at": "2026-09-17T06:00:00+00:00"
+    }
+  ],
+  "ai_uses": [
+    {
+      "schema_version": "0.1",
+      "id": "ai-use:support-follow-up",
+      "organisation_ref": "organisation:example-service",
+      "name": "Support follow-up",
+      "purpose": "Help staff review support requests and send an approved follow-up message.",
+      "public_summary": "AI can recommend a follow-up, but a staff member reviews the recommendation before any message is sent.",
+      "status": "active",
+      "people_affected": ["people asking for support"],
+      "consequential": true,
+      "system_refs": ["system:support-follow-up"],
+      "disclosure": "public",
+      "external_refs": [],
+      "created_at": "2026-09-17T06:00:00+00:00"
+    }
+  ],
+  "systems": [
+    {
+      "schema_version": "0.1",
+      "id": "system:support-follow-up",
+      "name": "Support Follow-up Assistant",
+      "description": "Produces a follow-up recommendation, presents it for staff review, and can execute the approved bounded action.",
+      "ai_use_refs": ["ai-use:support-follow-up"],
+      "influence": ["advisory"],
+      "agency": "human_approval_required",
+      "status": "active",
+      "current_version_ref": "system-version:support-follow-up:1.0",
+      "disclosure": "public",
+      "external_refs": [],
+      "created_at": "2026-09-17T06:00:00+00:00"
+    }
+  ],
+  "system_versions": [
+    {
+      "schema_version": "0.1",
+      "id": "system-version:support-follow-up:1.0",
+      "system_ref": "system:support-follow-up",
+      "version": "1.0",
+      "effective_from": "2026-09-17T06:00:00+00:00",
+      "process": {
+        "id": "process:support-follow-up",
+        "name": "Reviewed support follow-up",
+        "nodes": [
+          {
+            "id": "node:support-request",
+            "type": "input",
+            "name": "Support request",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:ai-recommendation",
+            "type": "ai",
+            "name": "AI recommendation",
+            "component_ref": "component:support-agent",
+            "purpose": "Recommend whether a standard follow-up message is appropriate.",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:staff-review",
+            "type": "human",
+            "name": "Staff review",
+            "human_role_ref": "role:support-worker",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:follow-up-decision",
+            "type": "decision",
+            "name": "Approve follow-up",
+            "decision_ref": "decision:approve-follow-up",
+            "disclosure": "public"
+          },
+          {
+            "id": "node:send-follow-up",
+            "type": "action",
+            "name": "Send approved follow-up",
+            "action_ref": "action:send-follow-up",
+            "disclosure": "public"
+          }
+        ],
+        "edges": [
+          {
+            "from": "node:support-request",
+            "to": "node:ai-recommendation",
+            "carries": []
+          },
+          {
+            "from": "node:ai-recommendation",
+            "to": "node:staff-review",
+            "carries": ["follow-up recommendation"]
+          },
+          {
+            "from": "node:staff-review",
+            "to": "node:follow-up-decision",
+            "carries": ["reviewed recommendation"]
+          },
+          {
+            "from": "node:follow-up-decision",
+            "to": "node:send-follow-up",
+            "carries": ["approval"],
+            "condition": "A staff member approves the follow-up."
+          }
+        ]
+      },
+      "components": [
+        {
+          "id": "component:support-agent",
+          "kind": "agent",
+          "name": "Support recommendation agent",
+          "purpose": "Produces a bounded follow-up recommendation for staff review.",
+          "externally_provided": false,
+          "disclosure": "public",
+          "external_refs": []
+        }
+      ],
+      "data_sources": [],
+      "human_roles": [
+        {
+          "id": "role:support-worker",
+          "name": "Support worker",
+          "responsibilities": ["Review the AI recommendation", "Approve, change or reject the proposed follow-up"],
+          "can_override_ai": true,
+          "sees_original_source": true,
+          "disclosure": "public"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "decision:approve-follow-up",
+          "name": "Approve follow-up",
+          "consequence": "Determines whether the service sends a follow-up message to the person asking for support.",
+          "authority": "human",
+          "ai_influence": ["advisory"],
+          "review_before_effect": true,
+          "responsible_role_refs": ["role:support-worker"],
+          "challenge": {
+            "available": true,
+            "description": "The recipient can reply to the service and ask for the follow-up or underlying decision to be reviewed."
+          },
+          "disclosure": "public"
+        }
+      ],
+      "actions": [
+        {
+          "id": "action:send-follow-up",
+          "name": "Send approved follow-up",
+          "description": "Send one approved standard follow-up message through the service messaging channel.",
+          "initiated_by": "hybrid",
+          "human_approval_required": true,
+          "reversibility": "partly",
+          "scope": {
+            "summary": "One follow-up message to the person associated with the current support request.",
+            "limits": {
+              "maximum_messages": 1,
+              "new_case_decision_allowed": false,
+              "human_approval_required": true
+            }
+          },
+          "escalation": "If the recommendation falls outside the standard follow-up pattern, no action is executed and the request remains with staff.",
+          "disclosure": "public"
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk:inappropriate-follow-up",
+          "description": "A follow-up could be inappropriate if the AI recommendation misreads the request.",
+          "affects": ["people asking for support"],
+          "related_node_refs": ["node:ai-recommendation", "node:send-follow-up"],
+          "disclosure": "public"
+        }
+      ],
+      "safeguards": [
+        {
+          "id": "safeguard:human-approval",
+          "description": "A support worker must review and approve the recommendation before the message can be sent.",
+          "mitigates": ["risk:inappropriate-follow-up"],
+          "applies_to": ["decision:approve-follow-up", "action:send-follow-up"],
+          "disclosure": "public"
+        }
+      ],
+      "disclosure": "public",
+      "external_refs": [],
+      "published_at": "2026-09-17T06:00:00+00:00"
+    }
+  ],
+  "claims": [
+    {
+      "schema_version": "0.1",
+      "id": "claim:human-approval-before-action",
+      "type": "control",
+      "statement": "A follow-up message cannot be sent until a staff member has reviewed and approved the AI recommendation.",
+      "applies_to": [
+        {
+          "kind": "system_version",
+          "ref": "system-version:support-follow-up:1.0"
+        }
+      ],
+      "status": "active",
+      "disclosure": "public",
+      "created_at": "2026-09-17T06:00:00+00:00"
+    }
+  ],
+  "evidence": [
+    {
+      "schema_version": "0.1",
+      "id": "evidence:bounded-action-config:1",
+      "kind": "system_configuration",
+      "summary": "The declared action requires human approval and is limited to one follow-up message.",
+      "source": {
+        "kind": "native",
+        "producer": {
+          "name": "crux"
+        }
+      },
+      "targets": [
+        {
+          "kind": "system_version",
+          "ref": "system-version:support-follow-up:1.0"
+        }
+      ],
+      "freshness": {
+        "observed_at": "2026-09-17T06:00:00+00:00"
+      },
+      "limitations": ["This configuration evidence does not prove that every real-world execution followed the intended process."],
+      "external_refs": [],
+      "disclosure": "public"
+    }
+  ],
+  "evidence_links": [
+    {
+      "schema_version": "0.1",
+      "id": "evidence-link:human-approval:1",
+      "claim_ref": "claim:human-approval-before-action",
+      "evidence_ref": "evidence:bounded-action-config:1",
+      "relationship": "supports",
+      "created_at": "2026-09-17T06:00:00+00:00"
+    }
+  ],
+  "evaluation_definitions": [],
+  "evaluation_runs": [],
+  "evaluation_cases": [],
+  "runs": [
+    {
+      "schema_version": "0.1",
+      "id": "run:support-follow-up:001",
+      "system_version_ref": "system-version:support-follow-up:1.0",
+      "started_at": "2026-09-17T06:15:00+00:00",
+      "completed_at": "2026-09-17T06:15:18+00:00",
+      "status": "completed",
+      "capture_mode": "metadata_only",
+      "disclosure": "internal",
+      "external_refs": []
+    }
+  ],
+  "events": [
+    {
+      "schema_version": "0.1",
+      "id": "event:support-follow-up:001:ai",
+      "run_ref": "run:support-follow-up:001",
+      "sequence": 1,
+      "occurred_at": "2026-09-17T06:15:04+00:00",
+      "type": "recommendation",
+      "process_node_ref": "node:ai-recommendation",
+      "component_ref": "component:support-agent",
+      "summary": "AI recommended a standard follow-up.",
+      "attributes": {},
+      "disclosure": "affected_party"
+    },
+    {
+      "schema_version": "0.1",
+      "id": "event:support-follow-up:001:review",
+      "run_ref": "run:support-follow-up:001",
+      "sequence": 2,
+      "occurred_at": "2026-09-17T06:15:09+00:00",
+      "type": "human_review",
+      "process_node_ref": "node:staff-review",
+      "human_role_ref": "role:support-worker",
+      "summary": "A support worker reviewed the recommendation and the original request.",
+      "attributes": {},
+      "disclosure": "affected_party"
+    },
+    {
+      "schema_version": "0.1",
+      "id": "event:support-follow-up:001:decision",
+      "run_ref": "run:support-follow-up:001",
+      "sequence": 3,
+      "occurred_at": "2026-09-17T06:15:13+00:00",
+      "type": "decision",
+      "process_node_ref": "node:follow-up-decision",
+      "decision_ref": "decision:approve-follow-up",
+      "human_role_ref": "role:support-worker",
+      "summary": "The support worker approved the follow-up.",
+      "attributes": {},
+      "disclosure": "affected_party"
+    },
+    {
+      "schema_version": "0.1",
+      "id": "event:support-follow-up:001:action",
+      "run_ref": "run:support-follow-up:001",
+      "sequence": 4,
+      "occurred_at": "2026-09-17T06:15:16+00:00",
+      "type": "action_executed",
+      "process_node_ref": "node:send-follow-up",
+      "action_ref": "action:send-follow-up",
+      "summary": "The approved follow-up message was sent.",
+      "attributes": {},
+      "disclosure": "affected_party"
+    }
+  ],
+  "traces": [
+    {
+      "schema_version": "0.1",
+      "id": "trace:support-follow-up:001",
+      "run_ref": "run:support-follow-up:001",
+      "system_version_ref": "system-version:support-follow-up:1.0",
+      "generated_at": "2026-09-17T06:15:18+00:00",
+      "steps": [
+        {
+          "event_ref": "event:support-follow-up:001:ai",
+          "relationship_to_previous": "starts"
+        },
+        {
+          "event_ref": "event:support-follow-up:001:review",
+          "relationship_to_previous": "reviews"
+        },
+        {
+          "event_ref": "event:support-follow-up:001:decision",
+          "relationship_to_previous": "decides"
+        },
+        {
+          "event_ref": "event:support-follow-up:001:action",
+          "relationship_to_previous": "executes"
+        }
+      ],
+      "summary": "AI recommendation was reviewed by staff, approved by a human decision, and then executed as a bounded follow-up action.",
+      "disclosure": "affected_party"
+    }
+  ],
+  "receipts": [
+    {
+      "schema_version": "0.1",
+      "id": "receipt:support-follow-up:001",
+      "run_ref": "run:support-follow-up:001",
+      "trace_ref": "trace:support-follow-up:001",
+      "system_version_ref": "system-version:support-follow-up:1.0",
+      "occurred_at": "2026-09-17T06:15:18+00:00",
+      "ai_involvement": ["advisory"],
+      "ai_summary": "AI recommended sending a standard follow-up message.",
+      "effect_of_ai": "The recommendation was presented to a support worker for review.",
+      "human_involvement": "A support worker reviewed the recommendation and original request, then approved the follow-up.",
+      "final_authority": "human",
+      "outcome": "One approved follow-up message was sent.",
+      "challenge": {
+        "available": true,
+        "description": "The recipient can reply to the service and ask for the follow-up or underlying decision to be reviewed."
+      },
+      "source_content_included": false,
+      "disclosure": "affected_party",
+      "external_refs": []
+    }
+  ],
+  "observations": []
+}
