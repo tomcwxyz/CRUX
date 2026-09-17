@@ -23,52 +23,68 @@ Use the same three contrasting cases throughout the first beta learning cycle.
 
 Source: `examples/writing-assistant/crux.json`
 
-Purpose: test a common, low-consequence productivity use where AI drafts or transforms content but does not hold organisational decision authority.
+Purpose: test a common, low-consequence productivity use where AI suggests edits but does not hold organisational decision authority.
+
+Deliberate evidence posture: the case includes an organisational claim that staff remain responsible for what they send or publish, but no linked evidence. CRUX should leave that as a declaration rather than silently upgrading it.
 
 What this case should expose:
 
 - whether purpose can be understood before model/provider detail;
 - whether readers can distinguish assistance from agency;
+- whether a declaration can remain visibly different from evidence-backed claims;
 - whether claims and evidence remain proportionate for an everyday use;
 - whether CRUX feels useful rather than bureaucratic when the consequences are low.
+
+Suggested first lens: **public**.
 
 ### Case B — funding review
 
 Source: `examples/funding-review/crux.json`
 
-Purpose: test a consequential process where AI can influence a decision affecting another person or organisation but human authority remains explicit.
+Purpose: test a consequential process where AI identifies potentially relevant eligibility evidence, a funding officer reviews the original application and AI contribution, and human authority remains explicit.
+
+Deliberate evidence posture: the control claim that AI cannot independently reject or declare an application ineligible is linked to configuration/process evidence, while the specific receipt separately records what happened in one case.
 
 What this case should expose:
 
 - whether readers can identify where AI influence begins and ends;
-- whether different decision points and human authorities remain understandable;
-- whether an affected person can understand the process and challenge route;
+- whether the funding officer's decision authority remains understandable;
+- whether an affected person can distinguish intended control evidence from a specific-case receipt;
+- whether the challenge route is visible and meaningful;
 - whether evidence applying to one SystemVersion is distinguishable from broader organisational claims;
 - whether receipts explain a specific case without exposing sensitive source content.
 
+Suggested first lens: **affected person**.
+
 ### Case C — bounded-action workflow
 
-Source: browser Workflow test plus the runtime records produced through `@crux/instrumentation`.
+Source: `examples/bounded-action/crux.json`
 
-Canonical shape:
+The canonical example is aligned with the runtime Workflow test and uses this shape:
 
 ```text
-model invocation
+AI recommendation
   → human review
-  → decision
+  → human decision
   → bounded action
-  → Run / Event / Trace
-  → review-required receipt proposal
+  → Run / Event / Trace / Receipt
 ```
 
-Purpose: test the boundary between observed behaviour and organisational meaning in a partially automated workflow.
+Purpose: test the boundary between observed behaviour and organisational meaning in a partially automated workflow where an action can execute only after explicit human approval.
+
+Deliberate evidence posture: the action boundary is supported by declared configuration evidence, while the Run/Event/Trace/Receipt chain records a specific synthetic execution. Those are different kinds of evidence and should remain distinguishable.
 
 What this case should expose:
 
 - whether automatic runtime evidence improves transparency without inventing purpose or authority;
-- whether readers understand that an observed model/provider/action is evidence, not an organisational claim;
-- whether a receipt proposal is clearly incomplete until outcome, AI effect, final authority and challenge information are reviewed;
-- whether bounded actions and reversibility are understandable without turning CRUX into an observability product.
+- whether readers understand that an observed recommendation/action is evidence about behaviour, not the source of organisational policy;
+- whether human approval, action scope and reversibility remain understandable;
+- whether the receipt explains the concrete execution without implying that every execution followed the same path;
+- whether bounded actions can be explained without turning CRUX into an observability product.
+
+Suggested first comparison: **working → affected person**.
+
+The browser Workflow test remains useful for testing proposal-first automation: an observed causal path can generate a review-required receipt proposal whose outcome, AI effect, final authority and challenge route remain unresolved until reviewed. The canonical bounded-action fixture represents the corresponding reviewed organisational record.
 
 ## Session pattern
 
@@ -160,10 +176,11 @@ Run at least six sessions before broad schema change:
 
 - two sessions using the writing-assistant case;
 - two sessions using the funding-review case;
-- two sessions using the bounded-action workflow;
+- two sessions using the bounded-action case;
 - in each pair, include at least one non-author reader;
 - include at least one affected-person-style reading of the funding case;
-- include at least one declared-versus-observed divergence in the bounded-action case.
+- include at least one working-versus-affected-person comparison for the bounded-action case;
+- separately exercise the browser declared-versus-observed test with at least one real divergence so participants encounter observation requiring review rather than only matched behaviour.
 
 The cases may be replaced by real organisational records as soon as suitable pilot partners are available, but retain the three case shapes: low-consequence productivity, consequential human decision, and bounded agentic action.
 
