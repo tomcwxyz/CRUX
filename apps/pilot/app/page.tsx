@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { LearningCasePicker } from "../components/learning-case-picker";
-import { PilotWorkbench } from "../components/pilot-workbench";
+import { OrganisationalWorkbench } from "../components/organisational-workbench";
 
 export default function HomePage() {
   return (
@@ -22,12 +22,12 @@ export default function HomePage() {
           <h1>See where AI matters.</h1>
         </div>
         <p className="hero-copy">
-          Document how AI is used, what it can influence, what evidence exists, and what actually happened — without reducing trust to a score.
+          Describe where AI is used, show why people should believe important claims, and record what happened in consequential cases.
         </p>
       </section>
 
       <LearningCasePicker />
-      <PilotWorkbench />
+      <OrganisationalWorkbench />
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
         <Link className="btn primary" href="/test">Run browser runtime test</Link>
