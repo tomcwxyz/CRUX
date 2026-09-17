@@ -31,9 +31,13 @@ jobs:
           node packages/cli/dist/index.js validate examples/funding-review/crux.json
           node packages/cli/dist/index.js validate examples/writing-assistant/crux.json
           node packages/cli/dist/index.js validate examples/observed-divergence/crux.json
+          node packages/cli/dist/index.js validate examples/bounded-action/crux.json
           node packages/cli/dist/index.js inspect examples/funding-review/crux.json --as-of 2026-09-15T12:00:00+00:00
+          node packages/cli/dist/index.js inspect examples/bounded-action/crux.json --as-of 2026-09-17T07:00:00+00:00
           node packages/cli/dist/index.js redact examples/funding-review/crux.json --level public -o /tmp/crux-public.json
           node packages/cli/dist/index.js redact examples/funding-review/crux.json --level affected_party -o /tmp/crux-affected.json
+          node packages/cli/dist/index.js redact examples/bounded-action/crux.json --level affected_party -o /tmp/crux-bounded-affected.json
+          node packages/cli/dist/index.js validate /tmp/crux-bounded-affected.json
           node packages/cli/dist/index.js ingest-evidence examples/funding-review/crux.json examples/evidence/ci-eval-envelope.json -o /tmp/crux-with-ci-evidence.json
           node packages/cli/dist/index.js validate /tmp/crux-with-ci-evidence.json
           node packages/cli/dist/index.js ingest-evidence /tmp/crux-with-ci-evidence.json examples/evidence/ci-eval-envelope.json -o /tmp/crux-with-ci-evidence-replayed.json
