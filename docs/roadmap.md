@@ -90,9 +90,10 @@ Ship Check is the first source-code discovery producer, not a dependency. The sa
 - [ ] observe whether a person can recognise the candidate without CRUX terminology;
 - [ ] confirm the candidate with minimal human questions;
 - [ ] attach the smallest runtime integration after confirmation;
-- [ ] repeat with a materially different source type or application.
+- [x] pass a real gateway/runtime observation through the same discovery contract and onboarding without source-code evidence;
+- [ ] build the actual account/platform connection for a non-source-code producer (gateway or workflow platform) and test discovery from that live connector.
 
-The first real discovery run found two candidate uses from executable Open Recs evidence — `chat.search` and `source.extract` — plus shared AI SDK/provider infrastructure. The final regression deliberately excludes Markdown and test/spec evidence and caps the report at 12 high-signal items.\n\nThe test is not whether CRUX can detect every AI call. It is whether an ordinary user can go from **connect something they already use** to **a useful, accurate AI-use record** with very little technical configuration.
+The first real discovery run found two candidate uses from executable Open Recs evidence — `chat.search` and `source.extract` — plus shared AI SDK/provider infrastructure. The final regression deliberately excludes Markdown and test/spec evidence and caps the report at 12 high-signal items.\n\nA second producer-contract test uses the real provider/model metadata observed during the production runtime smoke (`gateway` → `anthropic/claude-3-haiku`). It passes through the same `crux-discovery/0.1` candidate and confirmation flow with no repository paths. This validates the abstraction boundary, **not** a finished AI Gateway account connector.\n\nThe test is not whether CRUX can detect every AI call. It is whether an ordinary user can go from **connect something they already use** to **a useful, accurate AI-use record** with very little technical configuration.
 
 ## P0 — safe disclosure boundary
 
