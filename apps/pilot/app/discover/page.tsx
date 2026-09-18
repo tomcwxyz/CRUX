@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DiscoveryOnboarding } from "../../components/discovery-onboarding";
+import { GithubDiscoveryExperience } from "../../components/github-discovery-experience";
 
 export default function DiscoverPage() {
   return (
@@ -13,8 +13,8 @@ export default function DiscoverPage() {
         <p className="hero-copy">CRUX should begin with evidence from the tools and workflows you already use. It discovers technical signals, then asks people to supply only the meaning technology cannot know.</p>
       </section>
       <div style={{display:"flex",justifyContent:"flex-end",margin:"0 0 14px"}}><Link className="btn ghost" href="/discover/runtime">Compare with runtime discovery →</Link></div>
-      <DiscoveryOnboarding />
-      <footer className="footer-note"><span>This pilot uses Open Recommendations Local as the first real discovery target.</span><span>Discovery evidence is metadata-only and is not a declaration until a person confirms it.</span></footer>
+      <GithubDiscoveryExperience />
+      <footer className="footer-note"><span>The hosted pilot accepts public GitHub repositories; Open Recommendations Local remains the first regression target.</span><span>Discovery evidence is metadata-only and is not a declaration until a person confirms it.</span></footer>
     </main>
   );
 }
