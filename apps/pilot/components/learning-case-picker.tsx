@@ -21,8 +21,8 @@ const cases: LearningCase[] = [
     name: "Writing assistant",
     label: "Low consequence · productivity",
     description: "AI suggests edits; staff remain responsible for what is sent or published.",
-    signals: ["Declared claim", "No linked evidence", "No receipt"],
-    suggestedLens: "Start with the public view: can a reader understand assistance without over-interpreting the unevidenced claim?",
+    signals: ["SAYS: staff remain responsible", "SHOWS: nothing linked yet", "HAPPENED: not needed"],
+    suggestedLens: "Start with Where is AI? and What power does it have? Notice that an ordinary assistive use can stay lightweight.",
     bundle: writingAssistant,
   },
   {
@@ -30,8 +30,8 @@ const cases: LearningCase[] = [
     name: "Funding review",
     label: "Consequential · human decision",
     description: "AI identifies eligibility evidence; a funding officer retains final authority.",
-    signals: ["Evidence-backed control", "Human authority", "Affected-person receipt"],
-    suggestedLens: "Use the affected-person view: can a reader see what AI contributed, who decided, and how to challenge the outcome?",
+    signals: ["SAYS: AI cannot reject", "SHOWS: control evidence", "HAPPENED: one case"],
+    suggestedLens: "Follow all four questions. This is the main teaching example for separating AI contribution, human authority, evidence and a specific outcome.",
     bundle: fundingReview,
   },
   {
@@ -39,20 +39,15 @@ const cases: LearningCase[] = [
     name: "Bounded action",
     label: "Workflow · review → decision → action",
     description: "AI recommends a follow-up; staff review and approve before one bounded action executes.",
-    signals: ["Evidence-backed control", "Bounded action", "Runtime receipt"],
-    suggestedLens: "Compare working and affected-person views: can a reader separate observed behaviour from organisational authority?",
+    signals: ["SAYS: action is bounded", "SHOWS: configuration evidence", "HAPPENED: runtime case"],
+    suggestedLens: "Focus on What power does it have? Then compare SHOWS with HAPPENED: a control is different from evidence of one execution.",
     bundle: boundedAction,
   },
 ];
 
 const loadThroughExistingFilePath = (learningCase: LearningCase) => {
-  const input = document.querySelector<HTMLInputElement>(
-    'input[type="file"][accept*=".json"]',
-  );
-
-  if (!input) {
-    throw new Error("The CRUX bundle loader is not available on this page.");
-  }
+  const input = document.querySelector<HTMLInputElement>('input[type="file"][accept*=".json"]');
+  if (!input) throw new Error("The CRUX record loader is not available on this page.");
 
   const file = new File(
     [`${JSON.stringify(learningCase.bundle, null, 2)}\n`],
@@ -67,9 +62,7 @@ const loadThroughExistingFilePath = (learningCase: LearningCase) => {
 
 const focusWorkbench = () => {
   window.requestAnimationFrame(() => {
-    document
-      .querySelector<HTMLElement>('[aria-label="CRUX pilot workbench"]')
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.querySelector<HTMLElement>('[aria-label="CRUX pilot workbench"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 };
 
@@ -90,10 +83,10 @@ export function LearningCasePicker() {
 
   return (
     <section className="panel" aria-labelledby="learning-cases-heading" style={{ marginBottom: 18 }}>
-      <div className="kicker">Beta learning cases</div>
-      <h2 id="learning-cases-heading" style={{ marginTop: 6 }}>Open a case in one click</h2>
-      <p className="body-copy muted" style={{ maxWidth: 820 }}>
-        These cases are deliberately different. The contrast matters: one exposes an organisational declaration without linked evidence, one tests evidence-backed human decision authority, and one tests a bounded action with runtime provenance.
+      <div className="kicker">Learn the questions through examples</div>
+      <h2 id="learning-cases-heading" style={{ marginTop: 6 }}>Three different kinds of AI use</h2>
+      <p className="body-copy muted" style={{ maxWidth: 840 }}>
+        Do not start by learning CRUX terminology. Open a case and ask four ordinary questions: where is AI involved, what power does it have, why should you believe what is said, and what happened in a specific case?
       </p>
 
       <div className="grid" style={{ marginTop: 18 }}>
@@ -102,20 +95,14 @@ export function LearningCasePicker() {
             <div className="kicker">{learningCase.label}</div>
             <h3>{learningCase.name}</h3>
             <p className="small muted">{learningCase.description}</p>
-            <div className="pill-row">
-              {learningCase.signals.map((signal) => (
-                <span className="pill" key={signal}>{signal}</span>
-              ))}
+            <div className="example-signals">
+              {learningCase.signals.map((signal) => {
+                const [prefix, ...rest] = signal.split(":");
+                return <div key={signal}><strong>{prefix}</strong><span>{rest.join(":").trim()}</span></div>;
+              })}
             </div>
-            <p className="small muted" style={{ marginTop: 12 }}>
-              <strong>Try:</strong> {learningCase.suggestedLens}
-            </p>
-            <button
-              className={`btn ${loaded === learningCase.id ? "primary" : ""}`}
-              type="button"
-              onClick={() => load(learningCase)}
-              style={{ marginTop: 10 }}
-            >
+            <p className="small muted" style={{ marginTop: 14 }}><strong>Try:</strong> {learningCase.suggestedLens}</p>
+            <button className={`btn ${loaded === learningCase.id ? "primary" : ""}`} type="button" onClick={() => load(learningCase)} style={{ marginTop: 10 }}>
               {loaded === learningCase.id ? "Loaded" : `Open ${learningCase.name}`}
             </button>
           </article>
