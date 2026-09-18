@@ -51,6 +51,49 @@ No external participant evidence yet supports a claim that:
 
 Those are now the important questions.
 
+## Discovery before declaration — current product test
+
+CRUX should not usually begin with a blank transparency form.
+
+The preferred onboarding sequence is:
+
+```text
+CONNECT
+   ↓
+DISCOVER
+   ↓
+CONFIRM
+   ↓
+OBSERVE
+   ↓
+RECONCILE
+```
+
+**Connect** to where AI already lives: source code, a project export, an AI gateway, a workflow platform, a runtime or another bounded evidence source.
+
+**Discover** technical signals without inventing organisational meaning. A producer may report SDKs, providers, model-call boundaries, workflow/job names, human-review markers, decisions, actions or runtime observations using `crux-discovery/0.1`.
+
+**Confirm** turns one or more discovered signals into a human-recognised AI use. Purpose, affected people, authority, challenge routes and action limits stay unanswered until a person supplies or confirms them.
+
+**Observe** installs or enables the smallest appropriate runtime path for that environment.
+
+**Reconcile** keeps the human declaration and observed behaviour separate and makes meaningful differences visible.
+
+Ship Check is the first source-code discovery producer, not a dependency. The same discovery contract must work for gateway, workflow-platform and runtime producers.
+
+### First test
+
+- [x] define a producer-neutral `crux-discovery/0.1` contract;
+- [x] group discovery signals into reviewable AI-use candidates without creating canonical declarations;
+- [x] build a discovery-first onboarding surface;
+- [~] run Ship Check discovery against Open Recommendations Local and replace the example with captured real output;
+- [ ] observe whether a person can recognise the candidate without CRUX terminology;
+- [ ] confirm the candidate with minimal human questions;
+- [ ] attach the smallest runtime integration after confirmation;
+- [ ] repeat with a materially different source type or application.
+
+The test is not whether CRUX can detect every AI call. It is whether an ordinary user can go from **connect something they already use** to **a useful, accurate AI-use record** with very little technical configuration.
+
 ## P0 — safe disclosure boundary
 
 Before using CRUX with real organisational information:
@@ -252,6 +295,6 @@ Keep the EvidenceEnvelope and semantic transport contracts provider-neutral. Add
 
 ## Current product test
 
-> Can CRUX help an ordinary person think clearly about where AI matters, what power it has, why organisational claims should be believed, and what happened — without first teaching them CRUX?
+> Can someone connect a tool or project they already use, recognise the AI use CRUX discovers, add only the organisational meaning technology cannot know, and then understand how runtime evidence relates to that declaration — without first learning CRUX?
 
 Until we have evidence for that, this is the roadmap.
