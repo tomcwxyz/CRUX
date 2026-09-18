@@ -1,16 +1,13 @@
 name: live-runtime-production-smoke
 
 on:
-  push:
-    paths:
-      - .github/workflows/live-runtime-production-smoke.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   smoke:
-    if: github.event.head_commit.message == 'Exercise production live runtime slice'
     runs-on: ubuntu-latest
     steps:
       - name: Exercise deterministic runtime → review → affected-person path
@@ -62,12 +59,7 @@ jobs:
             -H 'content-type: application/json' \
             --data "$review_payload" \
             "$base" > reviewed.json
-          jq -e '
-            .ok == true and
-            .runtime.pending_case == null and
-            .runtime.reviewed_case != null and
-            ([.bundle.receipts[] | select(.run_ref == .runtime.latest_run_ref)] | length) >= 0
-          ' reviewed.json >/dev/null
+          jq -e '.ok == true and .runtime.pending_case == null and .runtime.reviewed_case != null' reviewed.json >/dev/null
           jq -e --arg runRef "$run_ref" '
             [.bundle.receipts[] | select(.run_ref == $runRef)] | length == 1
           ' reviewed.json >/dev/null
