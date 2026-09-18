@@ -38,6 +38,7 @@ type PendingCase = {
   };
 };
 type RuntimeInfo = {
+  live_provider_enabled: boolean;
   run_count: number;
   event_count: number;
   latest_run_ref: string | null;
@@ -209,7 +210,6 @@ export function LiveRuntimeWorkbench() {
   }
 
   const { use, system, version } = canonicalParts;
-  const finalAuthority = version?.decisions[0]?.authority ?? "not recorded";
   const latestRunReviewed = Boolean(state.runtime.reviewed_case);
 
   return (
@@ -260,10 +260,12 @@ export function LiveRuntimeWorkbench() {
             </div>
 
             <div className="live-actions">
-              <button className="btn primary" type="button" disabled={busy !== null} onClick={() => void mutate({ action: "run", mode: "live" }, "live")}>{busy === "live" ? "Running…" : "Run live check"}</button>
-              <button className="btn" type="button" disabled={busy !== null} onClick={() => void mutate({ action: "run", mode: "demo" }, "demo")}>{busy === "demo" ? "Running…" : "Run deterministic demo"}</button>
+              <button className="btn primary" type="button" disabled={busy !== null} onClick={() => void mutate({ action: "run", mode: "demo" }, "demo")}>{busy === "demo" ? "Running…" : "Run runtime demo"}</button>
+              {state.runtime.live_provider_enabled ? (
+                <button className="btn" type="button" disabled={busy !== null} onClick={() => void mutate({ action: "run", mode: "live" }, "live")}>{busy === "live" ? "Running…" : "Run real-provider probe"}</button>
+              ) : <span className="pill">Paid provider probe locked on public pilot</span>}
             </div>
-            <p className="live-note">The live check makes a real provider call with synthetic text only. CRUX records bounded metadata, not the prompt or model output. The human-review and decision steps are synthetic events for this Funding Review learning case.</p>
+            <p className="live-note">The interactive demo emits deterministic provider/model metadata, then passes through the real CRUX ingestion and Neon persistence path. The paid real-provider probe has been exercised in production but is disabled publicly by default. No prompt or model output is stored. Human-review and decision events are synthetic for this learning case.</p>
 
             <div className="vtitle"><h3>What CRUX observed</h3><span>Runtime evidence is attached to the exact declared system version.</span></div>
             <div className="flow">
@@ -287,7 +289,7 @@ export function LiveRuntimeWorkbench() {
             <div className="live-grid">
               <article className="live-card">
                 <h3>Declared ↔ observed</h3>
-                {!lastComparison ? <div className="unknown">Run a check to compare runtime model metadata with the declaration.</div> : lastComparison.fields.map((field) => (
+                {!lastComparison ? <div className="unknown">Run the demo to compare runtime model metadata with the declaration.</div> : lastComparison.fields.map((field) => (
                   <div className="compare-row" key={field.field}>
                     <span>{field.field.replaceAll("_", " ")}</span>
                     <div className="compare-values">
