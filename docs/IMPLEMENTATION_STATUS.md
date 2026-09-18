@@ -1,201 +1,146 @@
 # CRUX implementation status
 
-**Updated:** 16 September 2026
+**Updated:** 18 September 2026
 
-CRUX is at `0.1-beta.0`. The portable contracts and standalone tooling remain the foundation; the pilot app now sits on top of the same canonical bundle while the runtime path has been proven from live AI execution through bounded telemetry, semantic transport and durable PostgreSQL persistence.
+CRUX is at `0.1-beta.0`.
 
-The operating rule remains:
+The technical prototype can represent organisational declarations, evidence, observed behaviour and specific-case outcomes in a portable form. The main uncertainty is now whether real people can author and understand that transparency without learning the CRUX schema.
+
+> **CRUX is a guided way to think clearly about AI in an organisation. The schema is the durable, portable output of that thinking — not the user's mental model.**
+
+The underlying operating rule remains:
 
 > **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
 
-## Implemented
+## Human mental model
 
-### Evidence and organisational model
+The pilot is now organised around four questions:
 
-- Claim / Evidence / EvidenceLink
-- EvaluationDefinition / EvaluationRun
-- neutral EvidenceEnvelope
-- Organisation / AIUse / System / SystemVersion
-- influence and agency as separate concepts
-- process graphs, components and data sources
-- multiple human roles and local decision authority
-- bounded actions, risks and safeguards
-- explicit unknown / withheld / supplier-undisclosed states
+1. **Where is AI involved?**
+2. **What power does it have here?**
+3. **Why should I believe what the organisation says?**
+4. **What happened in this particular case?**
 
-### Evidence resolution
+The reader-facing reasoning language is:
 
-- `declared | supported | qualified | contradicted | stale | unknown`
-- version and organisational scope resolution
-- broad/narrow evidence handling
-- freshness and review windows
-- conflict preservation
-- unresolved/inapplicable evidence reporting
-- disclosure filtering
-- evidence summaries without a trust score
+- **SAYS** — an organisational declaration;
+- **SHOWS** — evidence supporting, qualifying or challenging it;
+- **HAPPENED** — a particular execution or outcome;
+- **UNKNOWN** — information that remains unresolved or unavailable.
 
-### Provenance and learning
+See `docs/PRODUCT_MENTAL_MODEL.md`.
 
-- Run / Event / Trace / Receipt / Observation
-- metadata-first capture
-- causal traces rather than raw-log-as-explanation
-- trace/run/event/receipt consistency validation
-- affected-person receipt representation
-- privacy-safe trace projections with hidden-context signals
-- proposal-first EvaluationCase promotion
-- review-required `crux-receipt-proposal/0.1` from observed causal paths without inventing organisational outcome, authority, effect or challenge information
+## Implemented in the prototype
 
-### Portable tooling
+The canonical model and standalone tooling currently cover:
 
-- canonical `crux-bundle/0.1`
-- cross-record reference validation
-- derived `crux-disclosure/0.1`
-- JSON Schema export
-- `crux validate`
-- `crux inspect`
-- `crux redact`
-- `crux ingest-evidence`
-- `crux schema`
-- idempotent EvidenceEnvelope import with conflict detection
-- automatic evidence ingestion does not create an EvidenceLink or upgrade a claim
-- explicit version/migration policy
-- worked portable examples
-- CI dogfooding of validation, evidence ingestion/replay and disclosure projection
+- Organisation / AIUse / System / SystemVersion;
+- process graphs, components and data sources;
+- human roles, decision authority and bounded actions;
+- Claim / Evidence / EvidenceLink;
+- evidence scope, freshness, conflict and version resolution;
+- explicit unknown / withheld / supplier-undisclosed states;
+- Run / Event / Trace / Receipt / Observation;
+- `crux-bundle/0.1` and derived `crux-disclosure/0.1`;
+- JSON Schema and CLI validation/inspection/redaction/evidence import;
+- metadata-first runtime instrumentation;
+- provider-neutral semantic ingestion and a PostgreSQL adapter;
+- worked low-consequence, consequential-decision and bounded-action examples.
 
-### Beta pilot surface
+None of those implementation facts should be read as evidence that the product is useful, understandable or suitable for organisational adoption yet.
 
-- `apps/pilot` Next.js application
-- local canonical CRUX JSON open/import
-- working/public/affected-person disclosure lenses
-- organisation, AI-use, system/process, claim/evidence and receipt views
-- guided multi-use authoring
-- explicit influence/agency authoring
-- multiple accountable human roles
-- decision-point authoring with consequence, authority, AI influence, responsible role, review-before-effect and challenge route
-- bounded-action authoring with initiator, approval, reversibility, scope and escalation
-- process graph alignment with canonical authority/action records
-- manual evidence authoring with relationship, disclosure and limitations
-- metadata-first specific-case receipt authoring producing Run → Event → Trace → Receipt
-- questions-to-resolve prompts without a score
-- declared-versus-observed provider/model view scoped to exact SystemVersion
-- browser `/test` surface for live model, workflow, declared-versus-observed, transport and durable-ingress acceptance
-- structured pilot-session sheet
-- canonical/public/affected-person JSON export
-- validation before canonical/disclosure export
+## Disclosure safety
 
-### Pipeline integration · accepted
+A critical review on 18 September identified that the original disclosure projector filtered whole objects but could preserve internal fields inside a visible object.
 
-- `@crux/instrumentation` framework-independent metadata-first collector
-- canonical Run/Event generation with no hosted CRUX dependency
-- Vercel AI SDK mapping and real `generateText()` lifecycle test
-- real external-provider call through Vercel AI Gateway
-- prompt/output excluded while bounded provider/model/token metadata is retained
-- OpenTelemetry GenAI mapping with a strict metadata allow-list
-- declared-versus-observed reconciliation in `@crux/core` scoped to exact SystemVersion
-- consequential workflow dogfood: model → human review → decision → bounded action
-- CI/eval EvidenceEnvelope import and replay
-- observed trace → review-required receipt proposal
-- browser Workflow and Declared-versus-observed tests human-accepted
+That class of bug has now been addressed in the prototype by:
 
-### Transport contract · accepted
+- constructing disclosure objects through explicit typed projections rather than spreading canonical records;
+- substituting `public_summary` for internal AI-use `purpose` in public/affected-person projections;
+- excluding internal owner/timestamp/detail fields from lower-disclosure AI-use projections;
+- strongly typing the main `CruxDisclosureBundle` collections instead of leaving them as `unknown[]`;
+- adding regression tests for field-level disclosure safety;
+- separating the pilot UI's canonical working view from its projection-only public/affected-person view model.
 
-- `@crux/transport` storage-free semantic write boundary
-- versioned `crux-ingest/0.1` batches for Run/Event/Observation/EvidenceEnvelope
-- exact SystemVersion targeting
-- producer identity and per-record acceptance provenance
-- identical replay idempotency
-- same-ID/different-record conflict rejection
-- duplicate Run event-sequence rejection
-- metadata-only content policy and strict runtime allow-list
-- payload/record-count boundaries
-- EvidenceEnvelope through the same boundary without silent EvidenceLink creation
-- OTLP/HTTP GenAI bridge into the same ingestion contract
-- regression fixture proving input/output message content is excluded
-- stateless `/api/ingest-test`
-- browser Test 4 human-accepted
+Disclosure remains a high-risk boundary and should continue to be tested as an allow-list projection problem, not as cosmetic redaction.
 
-### Durable ingress · accepted beta path
+## Technical paths exercised
 
-- `DurableIngestStore` around the pure semantic ingestion function
-- `ingestCruxBatchDurably(...)` service layer
-- in-memory reference store for local/CI tests
-- durable request key `(scope_ref, producer_ref, request_id)`
-- exact request replay returns the original acceptance ledger without a second commit
-- changed batch under the same request key is rejected
-- authenticated principal/context separated from producer provenance
-- explicit `runtime:write` and `evidence:write` capabilities
-- optimistic scope revision contract
-- driver-neutral `@crux/adapter-postgres`
-- PostgreSQL migration storing canonical bundle JSONB, revision, request ledger and acceptance ledger
-- real Neon migration and transaction acceptance
-- reconnect/replay recovery on fresh reads
-- optimistic concurrency conflict and fresh retry proven
-- forced rollback proven atomic
-- production-safe synthetic `/api/durable-ingest-test`
-- production Test 5 human-run through HTTP
-- Test 5 proved commit → replay → changed-request conflict end-to-end
-- persisted production-test state remained one scope revision, one request ledger entry, one Run and one Event
-- production `postgres.js` JSONB binding bug discovered by Test 5 and fixed without weakening schema constraints
-- browser test now surfaces non-JSON server errors rather than hiding them behind JSON parse failures
+The following paths have been exercised successfully in prototype tests. This language is deliberately narrower than “validated”, “accepted” or “proven”.
+
+### Runtime instrumentation
+
+Prototype checks have exercised:
+
+- canonical Run/Event generation;
+- Vercel AI SDK lifecycle mapping;
+- OpenTelemetry GenAI metadata mapping;
+- an external provider call through Vercel AI Gateway;
+- prompt/output exclusion from the bounded metadata path;
+- exact-SystemVersion provider/model comparison;
+- a synthetic model → human review → decision → bounded action workflow;
+- observed trace → review-required receipt proposal.
+
+These are developer-run technical checks, not external usability or governance validation.
+
+### Transport and durable ingress
+
+Prototype checks have exercised:
+
+- `crux-ingest/0.1` semantic writes;
+- request replay/idempotency and changed-request conflict rejection;
+- authenticated principal separation from producer provenance;
+- optimistic revisions;
+- PostgreSQL/Neon persistence;
+- commit → replay → changed-request rejection through a production Vercel endpoint;
+- reconnect, concurrency and rollback behaviour in the test path.
+
+These checks established that the path can work technically. They do not establish a need for, or validate the design of, a hosted CRUX service.
+
+## Pilot surface
+
+The current pilot intentionally translates the schema into the four human questions rather than exposing canonical object names as the primary navigation.
+
+It includes:
+
+- visual process stories showing where AI, people, decisions and actions appear;
+- plain-language explanation of what AI can influence or cause;
+- **SAYS / SHOWS / UNKNOWN** evidence reasoning;
+- **HAPPENED** specific-case explanations;
+- consequence-led progressive authoring;
+- embedded examples and “why we ask” guidance;
+- a Funding Review teaching example;
+- working/public/affected-person views;
+- public and affected-person views rendered from the disclosure projection rather than filtered canonical records.
+
+The canonical bundle remains the editable source of truth underneath.
+
+## What has not been validated
+
+As of 18 September 2026:
+
+- no claim is made that a non-author can reliably understand CRUX without coaching;
+- no claim is made that a service manager or domain owner can author a useful record unaided;
+- no organisational adoption claim has been established;
+- no regulator, auditor, procurement team or independent external tool has yet validated the interchange model as useful;
+- the first independent consumer of the CRUX disclosure contract has not yet been built;
+- the structured external learning cycle has not yet produced evidence sufficient to justify broad schema expansion.
+
+These are the important product questions now.
 
 ## Current phase
 
-The main beta uncertainty has moved from infrastructure to usefulness and comprehension.
+Infrastructure expansion is paused by default.
 
-Human-authored path:
+The next unit of work is human learning:
 
-```text
-purpose
-  → AI influence / agency
-  → human roles / decision authority / actions
-  → specific-case receipt
-  → claims
-  → evidence
-  → working / public / affected-person views
-```
-
-Automated path:
-
-```text
-AI framework / OpenTelemetry
-  → bounded runtime metadata
-  → Run / Event
-  → crux-ingest/0.1
-  → declared-versus-observed reconciliation
-  → observed Trace
-  → review-required receipt proposal
-```
-
-Durable service path:
-
-```text
-authenticated principal
-  → authorised producer + scope + capability
-  → request-level idempotency
-  → pure CRUX semantic ingestion
-  → transactional portable bundle + acceptance ledger
-```
-
-The next beta work is defined in `docs/BETA_LEARNING_PROTOCOL.md` and centres on three contrasting case shapes:
-
-1. low-consequence productivity (`examples/writing-assistant`);
-2. consequential human decision (`examples/funding-review`);
-3. bounded agentic action (browser Workflow/runtime path).
-
-For each, test authoring friction, non-author comprehension, disclosure quality and declared-versus-observed interpretation before expanding the schema.
-
-## Still deliberately deferred
-
-These are not prerequisites for the first organisational learning cycle:
-
-- production producer credential/OIDC registration and tenancy resolution
-- retention/deletion policy for internal runtime provenance
-- asynchronous batching, delivery guarantees and rate limiting
-- hosted MCP server
-- richer declared-versus-observed checks for action/review-control semantics beyond the current bounded metadata
-- accounts/workspaces and broader hosted-product architecture
-
-Those should be designed from pilot evidence rather than speculative infrastructure needs.
+1. make Funding Review an excellent teaching and comprehension example;
+2. run fast formative sessions with authors and non-authors;
+3. fix obvious copy, guidance and visual failures quickly;
+4. then run the more structured beta learning cycle;
+5. change the canonical schema only where observed use shows that it cannot faithfully represent something important;
+6. later build a deliberately independent CRUX reader as a real test of the open-contract claim.
 
 ## Product boundary
 
-CRUX remains standalone. TOPO, RACK, Ship Check and external evaluation/observability systems are optional context, practice or evidence producers/consumers. None is a CRUX runtime dependency.
+CRUX remains standalone. TOPO, RACK, Ship Check and external evaluation/observability systems are optional context, practice, evidence or observation producers/consumers. None is a CRUX runtime dependency.
