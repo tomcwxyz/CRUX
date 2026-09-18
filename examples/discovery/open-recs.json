@@ -1,79 +1,111 @@
 {
   "format": "crux-discovery/0.1",
-  "generated_at": "2026-09-18T18:30:00.000Z",
+  "generated_at": "2026-09-18T19:43:28.232Z",
   "source": {
     "kind": "source_code",
     "provider": "ship-check",
-    "label": "tomcwxyz/open-recs-local",
-    "external_ref": "tomcwxyz/open-recs-local"
+    "label": "https://github.com/tomcwxyz/open-recs-local#master",
+    "external_ref": "https://github.com/tomcwxyz/open-recs-local#master"
   },
   "signals": [
     {
-      "id": "signal:ai-sdk:package-ai",
+      "id": "signal:ai-sdk:9a96087d6bd2",
       "kind": "ai_sdk",
       "label": "Vercel AI SDK dependency",
       "confidence": "high",
       "technology": "ai",
+      "scope_hint": "shared",
       "evidence": [
         {
           "path": "package.json",
+          "line": 33,
           "detail": "Vercel AI SDK dependency is declared in project dependencies."
         }
       ]
     },
     {
-      "id": "signal:ai-sdk:openai-compatible",
+      "id": "signal:ai-sdk:8af11439e5bf",
       "kind": "ai_sdk",
       "label": "OpenAI-compatible AI SDK adapter",
       "confidence": "high",
       "technology": "openai-compatible",
+      "scope_hint": "shared",
       "evidence": [
         {
           "path": "package.json",
+          "line": 29,
           "detail": "OpenAI-compatible AI SDK adapter is declared in project dependencies."
         }
       ]
     },
     {
-      "id": "signal:provider:llm",
+      "id": "signal:workflow:cc081ddee254",
+      "kind": "workflow_job",
+      "label": "chat.search",
+      "confidence": "high",
+      "workflow_hint": "chat.search",
+      "candidate_label": "Chat search",
+      "evidence": [
+        {
+          "path": "src/app/api/chat-search/route.ts",
+          "line": 1,
+          "detail": "A named workflow/job boundary chat.search is present in source evidence."
+        }
+      ]
+    },
+    {
+      "id": "signal:model-call:caed1c573209",
+      "kind": "model_call",
+      "label": "Vercel AI SDK streaming generation",
+      "confidence": "high",
+      "technology": "ai",
+      "workflow_hint": "chat.search",
+      "candidate_label": "Chat search",
+      "scope_hint": "use",
+      "evidence": [
+        {
+          "path": "src/app/api/chat-search/route.ts",
+          "line": 107,
+          "detail": "Vercel AI SDK streaming generation call site detected. Prompt and response content are not included."
+        }
+      ]
+    },
+    {
+      "id": "signal:provider:2119859d4a37",
       "kind": "provider_configuration",
       "label": "Configurable LLM provider boundary",
       "confidence": "high",
+      "scope_hint": "shared",
       "evidence": [
         {
-          "path": "src/lib/providers/index.ts",
+          "path": "src/app/api/providers/llm/models/route.ts",
+          "line": 29,
+          "detail": "Source contains a configurable LLM/provider boundary."
+        },
+        {
+          "path": "src/lib/env.ts",
+          "line": 12,
+          "detail": "Source contains a configurable LLM/provider boundary."
+        },
+        {
+          "path": "src/lib/providers/config.ts",
+          "line": 45,
+          "detail": "Source contains a configurable LLM/provider boundary."
+        },
+        {
+          "path": "src/lib/providers/llm/chat-model.ts",
+          "line": 26,
+          "detail": "Source contains a configurable LLM/provider boundary."
+        },
+        {
+          "path": "src/lib/providers/llm/types.ts",
+          "line": 25,
           "detail": "Source contains a configurable LLM/provider boundary."
         }
       ]
     },
     {
-      "id": "signal:model-call:text",
-      "kind": "model_call",
-      "label": "Vercel AI SDK text generation",
-      "confidence": "high",
-      "technology": "ai",
-      "evidence": [
-        {
-          "path": "src/lib/providers/llm/openai-compat.ts",
-          "detail": "Vercel AI SDK text generation call site detected. Prompt and response content are not included."
-        }
-      ]
-    },
-    {
-      "id": "signal:model-call:object",
-      "kind": "model_call",
-      "label": "Vercel AI SDK structured generation",
-      "confidence": "high",
-      "technology": "ai",
-      "evidence": [
-        {
-          "path": "src/lib/providers/llm/openai-compat.ts",
-          "detail": "Vercel AI SDK structured generation call site detected. Prompt and response content are not included."
-        }
-      ]
-    },
-    {
-      "id": "signal:workflow:source-extract",
+      "id": "signal:workflow:8688a2c7f240",
       "kind": "workflow_job",
       "label": "source.extract",
       "confidence": "high",
@@ -81,8 +113,101 @@
       "candidate_label": "Recommendation extraction",
       "evidence": [
         {
-          "path": "docs/plans/2026-04-19-open-recs-local-design.md",
+          "path": "src/lib/jobs/handlers/extract.ts",
+          "line": 84,
           "detail": "A named workflow/job boundary source.extract is present in source evidence."
+        },
+        {
+          "path": "src/lib/jobs/handlers/index.ts",
+          "line": 34,
+          "detail": "A named workflow/job boundary source.extract is present in source evidence."
+        },
+        {
+          "path": "src/lib/jobs/handlers/parse.ts",
+          "line": 11,
+          "detail": "A named workflow/job boundary source.extract is present in source evidence."
+        },
+        {
+          "path": "src/lib/jobs/types.ts",
+          "line": 12,
+          "detail": "A named workflow/job boundary source.extract is present in source evidence."
+        },
+        {
+          "path": "src/lib/services/extraction-sections.ts",
+          "line": 2,
+          "detail": "A named workflow/job boundary source.extract is present in source evidence."
+        }
+      ]
+    },
+    {
+      "id": "signal:model-call:11d3258cbf25",
+      "kind": "model_call",
+      "label": "Structured generation through the project LLM provider",
+      "confidence": "high",
+      "technology": "llm-provider",
+      "workflow_hint": "source.extract",
+      "candidate_label": "Recommendation extraction",
+      "scope_hint": "use",
+      "evidence": [
+        {
+          "path": "src/lib/jobs/handlers/extract.ts",
+          "line": 180,
+          "detail": "Structured generation through the project LLM provider call site detected. Prompt and response content are not included."
+        }
+      ]
+    },
+    {
+      "id": "signal:provider:a6ba5e62dd1c",
+      "kind": "provider_configuration",
+      "label": "Configurable LLM provider boundary",
+      "confidence": "high",
+      "technology": "openai-compatible",
+      "scope_hint": "shared",
+      "evidence": [
+        {
+          "path": "src/lib/providers/index.ts",
+          "line": 15,
+          "detail": "Source contains a configurable LLM/provider boundary."
+        },
+        {
+          "path": "src/lib/providers/llm/openai-compat.ts",
+          "line": 53,
+          "detail": "Source contains a configurable LLM/provider boundary."
+        }
+      ]
+    },
+    {
+      "id": "signal:model-call:5a728e502ee7",
+      "kind": "model_call",
+      "label": "Vercel AI SDK text generation",
+      "confidence": "high",
+      "technology": "ai",
+      "scope_hint": "shared",
+      "evidence": [
+        {
+          "path": "src/lib/providers/llm/openai-compat.ts",
+          "line": 65,
+          "detail": "Vercel AI SDK text generation call site detected. Prompt and response content are not included."
+        },
+        {
+          "path": "src/lib/providers/test-connection.ts",
+          "line": 123,
+          "detail": "Vercel AI SDK text generation call site detected. Prompt and response content are not included."
+        }
+      ]
+    },
+    {
+      "id": "signal:model-call:471405af54c8",
+      "kind": "model_call",
+      "label": "Vercel AI SDK structured generation",
+      "confidence": "high",
+      "technology": "ai",
+      "scope_hint": "shared",
+      "evidence": [
+        {
+          "path": "src/lib/providers/llm/openai-compat.ts",
+          "line": 89,
+          "detail": "Vercel AI SDK structured generation call site detected. Prompt and response content are not included."
         }
       ]
     }
