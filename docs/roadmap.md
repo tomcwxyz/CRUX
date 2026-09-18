@@ -86,14 +86,30 @@ Ship Check is the first source-code discovery producer, not a dependency. The sa
 - [x] define a producer-neutral `crux-discovery/0.1` contract;
 - [x] group discovery signals into reviewable AI-use candidates without creating canonical declarations;
 - [x] build a discovery-first onboarding surface;
-- [x] run Ship Check discovery against Open Recommendations Local and replace the example with captured real output;
-- [ ] observe whether a person can recognise the candidate without CRUX terminology;
-- [ ] confirm the candidate with minimal human questions;
-- [ ] attach the smallest runtime integration after confirmation;
+- [x] accept a real public GitHub repository in the hosted pilot and produce `crux-discovery/0.1` from a bounded source/config probe;
+- [x] run Ship Check discovery against Open Recommendations Local and keep it as a regression target;
+- [x] discover the materially different Python/Anthropic **Soundings Ask** workflow with the same Ship Check command and generic rules;
+- [x] generate a smallest-hook observation proposal from a confirmed candidate;
+- [x] turn the Open Recs `source.extract` proposal into a real reviewable PR (#25), opt-in and metadata-only, without merging it;
+- [x] lock the dependency-free Open Recs observation payload against CRUX's canonical ingest schema;
+- [ ] observe whether a person can recognise the discovered candidates without CRUX terminology;
+- [ ] make human confirmation create a canonical CRUX declaration rather than remaining UI state;
+- [ ] add the plain-language **What power does the AI have?** step before minting an exact SystemVersion;
+- [ ] bind the observation hook to that human-confirmed exact SystemVersion;
 - [x] pass a real gateway/runtime observation through the same discovery contract and onboarding without source-code evidence;
+- [ ] add a GitHub App/private-repository connection and repository chooser;
+- [ ] let an authorised GitHub connection open the generated observation PR from CRUX;
 - [ ] build the actual account/platform connection for a non-source-code producer (gateway or workflow platform) and test discovery from that live connector.
 
-The first real discovery run found two candidate uses from executable Open Recs evidence — `chat.search` and `source.extract` — plus shared AI SDK/provider infrastructure. The final regression deliberately excludes Markdown and test/spec evidence and caps the report at 12 high-signal items.\n\nA second producer-contract test uses the real provider/model metadata observed during the production runtime smoke (`gateway` → `anthropic/claude-3-haiku`). It passes through the same `crux-discovery/0.1` candidate and confirmation flow with no repository paths. This validates the abstraction boundary, **not** a finished AI Gateway account connector.\n\nThe test is not whether CRUX can detect every AI call. It is whether an ordinary user can go from **connect something they already use** to **a useful, accurate AI-use record** with very little technical configuration.
+The first real discovery run found two candidate uses from executable Open Recs evidence — `chat.search` and `source.extract` — plus shared AI SDK/provider infrastructure. The Ship Check regression excludes Markdown and test/spec evidence and keeps discovery concise. CRUX's hosted public-GitHub probe is deliberately lighter-weight than Ship Check and now uses the same discovery envelope.
+
+The second application test is deliberately different: Soundings is Python, uses the Anthropic SDK directly, and runs an agent/tool loop. Generic discovery identifies **Ask**, the Anthropic SDK import and the real `messages.create` boundary in `server/soundings/ask/orchestrator.py`. Weak unscoped review/governance clues cannot create separate AI-use candidates by themselves.
+
+The observation test is also real but bounded. Open Recs PR #25 adds an opt-in, dependency-free metadata emitter only around the confirmed `source.extract` workflow. CRUX configuration is absent in CI, so the hook makes no network request there. Open Recs typecheck/lint/unit/build and local e2e pass; its existing hosted-mode signup/upload/admin e2e currently fails independently at source creation/admin editing and has been documented on the PR. The PR remains open and unmerged.
+
+A separate producer-contract test uses the real provider/model metadata observed during the production runtime smoke (`gateway` → `anthropic/claude-3-haiku`). It passes through the same `crux-discovery/0.1` candidate and confirmation flow with no repository paths. This validates the abstraction boundary, **not** a finished AI Gateway account connector.
+
+The test is not whether CRUX can detect every AI call. It is whether an ordinary user can go from **connect something they already use** to **a useful, accurate AI-use record** with very little technical configuration.
 
 ## P0 — safe disclosure boundary
 
