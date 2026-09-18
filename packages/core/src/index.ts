@@ -15,6 +15,7 @@ export * from "./scope.js";
 export * from "./discovery.js";
 export * from "./connectors.js";
 export * from "./gatewayDiscovery.js";
+export * from "./sourceSnapshotDiscovery.js";
 
 export type DerivedClaimStatus =
   | "declared"
