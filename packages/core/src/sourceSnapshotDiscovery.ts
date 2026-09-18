@@ -17,8 +17,9 @@ export type SourceSnapshotInput = {
   files: SourceSnapshotFile[];
 };
 
-const sourceFile = /\.(?:[cm]?[jt]sx?|json|ya?ml)$/i;
-const excludedFile = /(?:^|\/)(?:docs?|tests?|__tests__|fixtures?|coverage|dist|build|node_modules)(?:\/|$)|\.(?:test|spec)\.[cm]?[jt]sx?$/i;
+const sourceFile = /\.(?:[cm]?[jt]sx?|py|json|ya?ml)$/i;
+const dependencyManifest = /(?:^|\/)(?:pyproject\.toml|requirements(?:-[^/]+)?\.txt)$/i;
+const excludedFile = /(?:^|\/)(?:docs?|tests?|__tests__|fixtures?|coverage|dist|build|node_modules)(?:\/|$)|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)(?:test_[^/]+|[^/]+_test)\.py$/i;
 
 const callPatterns: Array<{ regex: RegExp; label: string; technology: string }> = [
   { regex: /\bgenerateText\s*\(\s*\{/, label: "Vercel AI SDK text generation", technology: "ai" },
@@ -51,13 +52,25 @@ const titleFromSlug = (value: string) =>
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
     .trim();
 
-const routeWorkflow = (path: string) => {
-  const match = path.match(/(?:^|\/)app\/api\/(.+)\/route\.[cm]?[jt]sx?$/i);
-  if (!match?.[1]) return null;
-  const segments = match[1].split("/").filter((segment) => !segment.startsWith("["));
-  if (segments.length === 0) return null;
-  const raw = segments.join(".");
-  return { hint: raw.replaceAll("-", "."), label: titleFromSlug(segments.join(" ")) };
+const pathWorkflow = (path: string) => {
+  const route = path.match(/(?:^|\/)app\/api\/(.+)\/route\.[cm]?[jt]sx?$/i);
+  if (route?.[1]) {
+    const segments = route[1].split("/").filter((segment) => !segment.startsWith("["));
+    if (segments.length > 0) {
+      const raw = segments.join(".");
+      return { hint: raw.replaceAll("-", "."), label: titleFromSlug(segments.join(" ")) };
+    }
+  }
+
+  const semanticSegments = new Set([
+    "ask", "chat", "agent", "extract", "extraction", "search",
+    "summarize", "summarise", "classify", "recommend", "recommendation", "review",
+  ]);
+  const segments = path
+    .split("/")
+    .map((segment) => segment.replace(/\.[^.]+$/, "").toLowerCase());
+  const semantic = segments.find((segment) => semanticSegments.has(segment));
+  return semantic ? { hint: semantic, label: titleFromSlug(semantic) } : null;
 };
 
 const namedWorkflow = (path: string, content: string) => {
@@ -69,7 +82,7 @@ const namedWorkflow = (path: string, content: string) => {
       offset: explicit.index,
     };
   }
-  const route = routeWorkflow(path);
+  const route = pathWorkflow(path);
   return route ? { ...route, offset: 0 } : null;
 };
 
@@ -103,7 +116,7 @@ const coalesce = (signals: DiscoverySignal[]) => {
 
 export const discoverAIFromSourceSnapshot = (input: SourceSnapshotInput): DiscoveryReport => {
   const signals: DiscoverySignal[] = [];
-  const files = input.files.filter((file) => sourceFile.test(file.path) && !excludedFile.test(file.path));
+  const files = input.files.filter((file) => (sourceFile.test(file.path) || dependencyManifest.test(file.path)) && !excludedFile.test(file.path));
   const packageFile = files.find((file) => file.path === "package.json");
 
   if (packageFile) {
@@ -156,6 +169,23 @@ export const discoverAIFromSourceSnapshot = (input: SourceSnapshotInput): Discov
         confidence: "high",
         scope_hint: "shared",
         evidence: [{ path: file.path, line, detail: "Source contains a configurable LLM/provider boundary." }],
+      });
+    }
+
+    const sdkProvider = /(?:from\s+(anthropic|openai)\s+import\b|import\s+(anthropic|openai)\b)/i.exec(file.content);
+    if (sdkProvider) {
+      const technology = (sdkProvider[1] ?? sdkProvider[2] ?? "ai-provider").toLowerCase();
+      const line = lineNumber(file.content, sdkProvider.index);
+      signals.push({
+        id: idFor("ai-provider", file.path, line),
+        kind: "ai_provider",
+        label: `${titleFromSlug(technology)} SDK`,
+        confidence: "high",
+        technology,
+        ...(workflow
+          ? { workflow_hint: workflow.hint, candidate_label: workflow.label, scope_hint: "use" as const }
+          : { scope_hint: "shared" as const }),
+        evidence: [{ path: file.path, line, detail: `${titleFromSlug(technology)} SDK import detected.` }],
       });
     }
 
