@@ -27,6 +27,9 @@ export type DiscoverySignalKind = z.infer<typeof DiscoverySignalKindSchema>;
 export const DiscoveryConfidenceSchema = z.enum(["high", "medium", "low"]);
 export type DiscoveryConfidence = z.infer<typeof DiscoveryConfidenceSchema>;
 
+export const DiscoverySignalScopeSchema = z.enum(["shared", "use"]);
+export type DiscoverySignalScope = z.infer<typeof DiscoverySignalScopeSchema>;
+
 export const DiscoveryEvidenceSchema = z.object({
   path: z.string().min(1).optional(),
   line: z.number().int().positive().optional(),
@@ -43,6 +46,7 @@ export const DiscoverySignalSchema = z.object({
   technology: z.string().min(1).optional(),
   workflow_hint: z.string().min(1).optional(),
   candidate_label: z.string().min(1).optional(),
+  scope_hint: DiscoverySignalScopeSchema.optional(),
   evidence: z.array(DiscoveryEvidenceSchema).min(1),
 }).strict();
 export type DiscoverySignal = z.infer<typeof DiscoverySignalSchema>;
