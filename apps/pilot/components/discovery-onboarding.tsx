@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { buildObservationPatchProposal, buildObservationPlan, discoveryConnectors, suggestAIUseCandidates } from "@crux/core";
+import { buildObservationPatchProposal, buildObservationPlan, createDiscoveryDeclaration, discoveryConnectors, suggestAIUseCandidates } from "@crux/core";
 import { DiscoveryReportSchema, type DiscoveryQuestion } from "@crux/schemas";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
 
@@ -43,9 +43,12 @@ export function DiscoveryOnboarding({
   const [selectedCandidateId, setSelectedCandidateId] = useState(firstCandidate?.id ?? "");
   const candidate = candidates.find((item) => item.id === selectedCandidateId) ?? firstCandidate;
   const [stage, setStage] = useState<Stage>(initialStage);
+  const [organisationName, setOrganisationName] = useState("");
   const [purpose, setPurpose] = useState("");
   const [affected, setAffected] = useState("");
-  const [authority, setAuthority] = useState("human");
+  const [consequential, setConsequential] = useState("no");
+  const [power, setPower] = useState("recommend");
+  const [actionControl, setActionControl] = useState("human_approval");
   const [showPatch, setShowPatch] = useState(false);
   const observationPlan = useMemo(
     () => candidate ? buildObservationPlan(report, candidate) : null,
@@ -55,18 +58,44 @@ export function DiscoveryOnboarding({
     () => candidate ? buildObservationPatchProposal(report, candidate) : null,
     [report, candidate],
   );
+  const canConfirm =
+    Boolean(organisationName.trim() && purpose.trim() && power) &&
+    (power !== "act" || Boolean(actionControl));
+  const declaration = useMemo(() => {
+    if (!candidate || !canConfirm) return null;
+    return createDiscoveryDeclaration({
+      report,
+      candidate,
+      confirmation: {
+        organisation_name: organisationName.trim(),
+        purpose: purpose.trim(),
+        people_affected: affected
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        consequential: consequential === "yes",
+        power: power as "suggest" | "recommend" | "decide" | "act",
+        ...(power === "act"
+          ? { action_control: actionControl as "human_approval" | "rule_bounded" | "automatic_bounded" }
+          : {}),
+      },
+    });
+  }, [report, candidate, canConfirm, organisationName, purpose, affected, consequential, power, actionControl]);
 
   if (!candidate) return null;
 
   const stageIndex = { connect: 0, discover: 1, confirm: 2, observe: 3 }[stage];
   const goDiscover = () => setStage("discover");
   const goConfirm = () => setStage("confirm");
-  const goObserve = () => setStage("observe");
+  const goObserve = () => { if (declaration) setStage("observe"); };
   const selectCandidate = (id: string) => {
     setSelectedCandidateId(id);
+    setOrganisationName("");
     setPurpose("");
     setAffected("");
-    setAuthority("human");
+    setConsequential("no");
+    setPower("recommend");
+    setActionControl("human_approval");
     setShowPatch(false);
     setStage("discover");
   };
@@ -164,11 +193,14 @@ export function DiscoveryOnboarding({
                 <div className="eyebrow2">Add the meaning only you know</div>
                 <h3 style={{fontFamily:"Georgia, 'Times New Roman', serif",fontSize:28,fontWeight:400,margin:"5px 0 6px"}}>Confirm {candidate.name}</h3>
                 <div className="confirm-grid">
+                  <div className="field full"><label>Which organisation is using this?</label><input value={organisationName} onChange={(event)=>setOrganisationName(event.target.value)} placeholder="Organisation name"/><div className="why">A repository owner or account name is not treated as organisational identity.</div></div>
                   <div className="field full"><label>What is this AI use for?</label><textarea value={purpose} onChange={(event)=>setPurpose(event.target.value)} placeholder="For example: help staff extract recommendations from reports so they can review and track them."/><div className="why">CRUX deliberately did not infer purpose from model calls or filenames.</div></div>
-                  <div className="field"><label>Who can be affected by it?</label><input value={affected} onChange={(event)=>setAffected(event.target.value)} placeholder="e.g. staff, report authors, organisations named in reports"/></div>
-                  <div className="field"><label>Who decides what happens next?</label><select value={authority} onChange={(event)=>setAuthority(event.target.value)}><option value="human">A person</option><option value="rule">A rule or policy</option><option value="hybrid">A person and automated rule</option><option value="ai">The AI system</option><option value="unknown">I don't know yet</option></select></div>
+                  <div className="field"><label>Who can be affected by it?</label><input value={affected} onChange={(event)=>setAffected(event.target.value)} placeholder="Comma-separated, e.g. staff, report authors"/></div>
+                  <div className="field"><label>Could it materially affect a person, service, opportunity or entitlement?</label><select value={consequential} onChange={(event)=>setConsequential(event.target.value)}><option value="no">No</option><option value="yes">Yes</option></select></div>
+                  <div className="field"><label>What can the AI do here?</label><select value={power} onChange={(event)=>setPower(event.target.value)}><option value="suggest">Suggest</option><option value="recommend">Recommend</option><option value="decide">Decide</option><option value="act">Act</option></select><div className="why">This maps plain language to CRUX influence/agency underneath.</div></div>
+                  {power === "act" && <div className="field"><label>Before the AI action takes effect…</label><select value={actionControl} onChange={(event)=>setActionControl(event.target.value)}><option value="human_approval">A person must approve it</option><option value="rule_bounded">A rule bounds when it can happen</option><option value="automatic_bounded">It can happen automatically within defined limits</option></select></div>}
                 </div>
-                <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}><button className="btn primary" type="button" onClick={goObserve} disabled={!purpose.trim()}>Confirm this use</button><button className="btn ghost" type="button" onClick={()=>setStage("discover")}>Back to discovery</button></div>
+                <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}><button className="btn primary" type="button" onClick={goObserve} disabled={!canConfirm}>Confirm and create draft record</button><button className="btn ghost" type="button" onClick={()=>setStage("discover")}>Back to discovery</button></div>
               </div>
             )}
           </>
@@ -177,8 +209,13 @@ export function DiscoveryOnboarding({
         {stage === "observe" && (
           <div className="ready">
             <div className="eyebrow2" style={{color:"rgba(255,255,255,.72)"}}>Ready to observe</div>
-            <h3>{candidate.name} now has human-confirmed meaning.</h3>
-            <p><strong>Purpose:</strong> {purpose}<br/><strong>Affected:</strong> {affected || "Not answered yet"}<br/><strong>Authority:</strong> {authority === "human" ? "A person decides what happens next" : authority}</p>
+            <h3>{candidate.name} now has a canonical internal draft.</h3>
+            <p><strong>Organisation:</strong> {organisationName}<br/><strong>Purpose:</strong> {purpose}<br/><strong>Affected:</strong> {affected || "No groups recorded"}<br/><strong>AI can:</strong> {power}{power === "act" ? ` · ${actionControl.replaceAll("_", " ")}` : ""}</p>
+            {declaration && <div className="observe-plan" style={{marginTop:12}}>
+              <div className="eyebrow2" style={{color:"rgba(255,255,255,.7)"}}>Canonical draft created</div>
+              <h4>{declaration.system_version_ref}</h4>
+              <p>The discovery candidate has become an internal Organisation → AI Use → System → exact SystemVersion record. No claim, evidence or outcome has been invented.</p>
+            </div>}
             <div className="flow"><div className="flow-node"><span>Discovery</span><strong>Technical signals</strong></div><span className="arrow">→</span><div className="flow-node"><span>Declaration</span><strong>Human confirmed meaning</strong></div><span className="arrow">→</span><div className="flow-node"><span>Runtime</span><strong>Observe what actually runs</strong></div><span className="arrow">→</span><div className="flow-node"><span>CRUX</span><strong>Reconcile reality</strong></div></div>
             {observationPlan && <div className="observe-plan">
               <div className="eyebrow2" style={{color:"rgba(255,255,255,.7)"}}>Smallest useful observation hook</div>
@@ -197,6 +234,7 @@ export function DiscoveryOnboarding({
                   <span>Add: {patchProposal.add_file.path}</span>
                   {patchProposal.target_path && <span>Edit: {patchProposal.target_path}</span>}
                   <span>Configure: {patchProposal.environment.map((item) => item.name).join(" · ")}</span>
+                  {declaration && <span>Set CRUX_SYSTEM_VERSION_REF={declaration.system_version_ref}</span>}
                 </div>
                 <code>{patchProposal.integration_snippet}</code>
                 <div className="patch-list">{patchProposal.review_checks.map((check) => <span key={check}>✓ {check}</span>)}</div>
