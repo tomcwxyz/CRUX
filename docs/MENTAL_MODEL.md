@@ -104,17 +104,35 @@ Editing should be a separate guided activity: **Describe this use**.
 
 The same four questions can structure authoring, with progressive detail only when the use is consequential or can cause actions.
 
-## Audience is a projection, not a mode of authorship
+## Audience projection and audience experience are different things
 
-Internal, public and affected-person views answer a different question:
+Internal, public and affected-person disclosure projections answer:
 
 > **What may this audience see?**
 
-They should be presented as views of the same record, not mixed with the authoring workflow.
+That is a safety and information-boundary question. It does **not** imply that each audience should receive the same interface with different fields hidden.
 
-A reader-facing label such as **View as: Internal · Public · Affected person** is clearer than making disclosure lenses compete with the four-question navigation.
+The composition of the view should answer a second question:
 
-Public and affected-person rendering must continue to consume only the disclosure projection, never canonical objects filtered at render time.
+> **What does this audience need to understand?**
+
+The three primary reading jobs are therefore:
+
+### Internal · scrutinise and improve
+
+Internal readers are responsible for the use. Their view may be denser and should foreground the intended process, human authority, claims, evidence, limitations, gaps and unknowns, plus operational/runtime detail when useful.
+
+### Public · understand the system
+
+The public view should feel like a clear transparency page. It should foreground the plain-language purpose, a visual process, the boundary of AI's authority, who decides, and the strongest inspectable evidence. Internal operational detail should not define the page.
+
+### Affected person · understand my case
+
+The affected-person view should be case-centred when a receipt is available. It should start with what AI contributed in the particular case, what happened next, who had final authority, the outcome, and the route for questions or challenge. The wider system description is supporting context, not the main story.
+
+**Projection decides what may be shown. Audience design decides what should be foregrounded.**
+
+Public and affected-person rendering must continue to consume only their disclosure projections, never canonical objects filtered at render time.
 
 ## Proportionality
 
@@ -131,28 +149,47 @@ A consequential or agentic use should progressively reveal more questions about 
 
 The amount of CRUX should follow the amount of consequence.
 
+## Visual grammar
+
+Prefer **show first, explain second, detail on demand**.
+
+Use a small repeated set of visual primitives rather than adding more prose:
+
+- a distinct **AI** node for AI contribution;
+- a **person** node for human involvement;
+- a **decision** shape for consequential authority;
+- an explicit **AI stops here** boundary where human authority takes over;
+- **✓** for evidence that supports an account;
+- **△** for evidence that qualifies or challenges it;
+- **○** and a dashed treatment for something unknown, unavailable or not disclosed;
+- a case timeline for what happened in a particular execution.
+
+These marks should carry meaning consistently across audiences, while the surrounding composition changes to fit the audience's job.
+
 ## UI implications
 
 The interface should optimise for comprehension in this order:
 
 1. **A short answer first.** A reader should quickly understand AI's role, human authority and whether AI can act by itself.
-2. **One continuous reading surface.** The four questions are sections in a story, not four destinations that must be mentally recombined.
-3. **Plain language first.** SAYS / SHOWS / HAPPENED can reinforce the reasoning model, but ordinary labels such as “What the organisation says”, “Evidence we can inspect” and “A particular case” should carry the meaning.
-4. **Editing is explicit.** Read mode contains no inline evidence or receipt editors.
-5. **Disclosure controls are secondary.** Audience switching belongs beside the record context, not in the main conceptual navigation.
-6. **Technical detail is progressive.** Provider/model observations, IDs and provenance can sit behind detail affordances.
-7. **Unknown appears locally.** Missing evidence or unresolved authority is shown exactly where the gap occurs.
-8. **Examples teach by contrast.** Writing assistant, funding review and bounded action should illustrate increasing consequence without becoming a separate navigation system.
+2. **Show before explaining.** Prefer process diagrams, authority boundaries, evidence marks and timelines over repeated explanatory paragraphs.
+3. **One coherent story per audience.** Do not make readers reconstruct the meaning from schema-shaped tabs.
+4. **Plain language first.** SAYS / SHOWS / HAPPENED can reinforce the reasoning model, but ordinary labels should carry the meaning.
+5. **Editing is separate.** Reading views contain no inline evidence or receipt editors.
+6. **Audience views are purpose-specific.** Internal, public and affected-person views may have different layouts and starting points.
+7. **Technical detail is progressive.** Provider/model observations, IDs and provenance can sit behind detail affordances.
+8. **Unknown appears locally.** Missing evidence or unresolved authority is shown exactly where the gap occurs.
+9. **Examples teach by contrast.** Writing assistant, funding review and bounded action should illustrate increasing consequence without becoming a separate navigation system.
 
 ## A useful comprehension test
 
-After reading a CRUX view, someone unfamiliar with the schema should be able to answer, in their own words:
+After reading the appropriate CRUX view, someone unfamiliar with the schema should be able to answer, in their own words:
 
 - Where exactly does AI enter the process?
 - What can it influence or cause?
 - Who has final authority?
-- Which important statements are descriptions, and what evidence can I inspect for them?
-- If a particular case is shown, what did AI actually contribute and what happened next?
+- What evidence can I inspect for important statements?
+- If this is about my case, what did AI actually contribute and what happened next?
+- What can I do if I have a question or concern?
 - What remains unknown?
 
 If the interface makes those answers easy, CRUX is doing its job. If the user instead has to learn CRUX's record types, lenses or implementation terminology, the UI is exposing too much of the schema.
