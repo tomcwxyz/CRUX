@@ -82,7 +82,9 @@ const namedWorkflow = (path: string, content: string) => {
       offset: explicit.index,
     };
   }
-  const route = pathWorkflow(path);
+  const hasAIBoundary =
+    /\bgenerate(?:Text|Object)\s*\(\s*\{|\bstreamText\s*\(\s*\{|\.(?:messages|responses)\.create\s*\(|\.chat\.completions\.create\s*\(|\.llm\.generate(?:Structured|Text)\s*\(|(?:from\s+(?:anthropic|openai)\s+import\b|import\s+(?:anthropic|openai)\b)/i.test(content);
+  const route = hasAIBoundary ? pathWorkflow(path) : null;
   return route ? { ...route, offset: 0 } : null;
 };
 
