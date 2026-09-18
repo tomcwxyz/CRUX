@@ -122,8 +122,10 @@ export const suggestAIUseCandidates = (input: DiscoveryReport): DiscoveryCandida
     return [candidateFromSignals(report, "unscoped", meaningful)];
   }
 
-  const shared = unscoped.filter((signal) =>
-    ["ai_sdk", "ai_provider", "provider_configuration"].includes(signal.kind),
+  const shared = unscoped.filter(
+    (signal) =>
+      signal.scope_hint === "shared" ||
+      ["ai_sdk", "ai_provider", "provider_configuration"].includes(signal.kind),
   );
   const candidates = [...explicitGroups.entries()].map(([key, signals]) =>
     candidateFromSignals(report, key, [...shared, ...signals]),
