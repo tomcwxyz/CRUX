@@ -101,3 +101,101 @@ describe("disclosure target filtering", () => {
     expect(projected.evidence).toHaveLength(1);
   });
 });
+
+describe("field-safe disclosure projection", () => {
+  it("uses the public summary without leaking internal AI-use purpose or authoring metadata", () => {
+    const bundle = emptyBundle();
+    bundle.organisations.push({
+      schema_version: "0.1",
+      id: "organisation:test",
+      name: "Example organisation",
+      legal_name: "Example Organisation Legal Entity Ltd",
+      description: "A public description.",
+      disclosure: "public",
+      external_refs: [],
+      created_at: timestamp,
+    });
+    bundle.ai_uses.push({
+      schema_version: "0.1",
+      id: "ai-use:review",
+      organisation_ref: "organisation:test",
+      name: "Funding review",
+      purpose: "Internal purpose with operational detail that must not be published.",
+      public_summary: "AI helps staff identify information relevant to funding review.",
+      status: "active",
+      people_affected: ["Applicants"],
+      consequential: true,
+      system_refs: ["system:review"],
+      owner_role: "Internal service owner",
+      disclosure: "public",
+      external_refs: [],
+      created_at: timestamp,
+    });
+    bundle.systems.push({
+      schema_version: "0.1",
+      id: "system:review",
+      name: "Review workflow",
+      description: "AI-supported review workflow.",
+      ai_use_refs: ["ai-use:review"],
+      influence: ["advisory"],
+      agency: "none",
+      status: "active",
+      owner_role: "Internal technical owner",
+      disclosure: "public",
+      external_refs: [],
+      created_at: timestamp,
+    });
+
+    const projected = redactBundle(bundle, "public");
+
+    expect(projected.organisations[0]).toEqual({
+      id: "organisation:test",
+      name: "Example organisation",
+      description: "A public description.",
+    });
+    expect(projected.ai_uses[0]).toMatchObject({
+      id: "ai-use:review",
+      public_summary: "AI helps staff identify information relevant to funding review.",
+    });
+    expect(projected.ai_uses[0]).not.toHaveProperty("purpose");
+    expect(projected.ai_uses[0]).not.toHaveProperty("owner_role");
+    expect(projected.ai_uses[0]).not.toHaveProperty("created_at");
+    expect(projected.ai_uses[0]).not.toHaveProperty("disclosure");
+    expect(projected.systems[0]).not.toHaveProperty("owner_role");
+    expect(projected.systems[0]).not.toHaveProperty("created_at");
+    expect(projected.systems[0]).not.toHaveProperty("disclosure");
+  });
+
+  it("keeps internal purpose and owner roles only in an internal projection", () => {
+    const bundle = emptyBundle();
+    bundle.organisations.push({
+      schema_version: "0.1",
+      id: "organisation:test",
+      name: "Example organisation",
+      disclosure: "internal",
+      external_refs: [],
+      created_at: timestamp,
+    });
+    bundle.ai_uses.push({
+      schema_version: "0.1",
+      id: "ai-use:review",
+      organisation_ref: "organisation:test",
+      name: "Funding review",
+      purpose: "Internal purpose.",
+      status: "active",
+      people_affected: [],
+      consequential: true,
+      system_refs: [],
+      owner_role: "Service owner",
+      disclosure: "internal",
+      external_refs: [],
+      created_at: timestamp,
+    });
+
+    const projected = redactBundle(bundle, "internal");
+    expect(projected.ai_uses[0]).toMatchObject({
+      purpose: "Internal purpose.",
+      owner_role: "Service owner",
+    });
+  });
+});
