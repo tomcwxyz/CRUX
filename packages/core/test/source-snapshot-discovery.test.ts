@@ -27,4 +27,38 @@ describe("discoverAIFromSourceSnapshot", () => {
     expect(candidates.map((candidate) => candidate.name)).toContain("Extract Source");
     expect(candidates).toHaveLength(2);
   });
+
+  it("discovers a Python Anthropic ask workflow without application-specific rules", () => {
+    const report = discoverAIFromSourceSnapshot({
+      provider: "github-probe",
+      label: "example/soundings",
+      externalRef: "https://github.com/example/soundings",
+      generatedAt: "2026-09-18T20:30:00.000Z",
+      files: [
+        {
+          path: "server/soundings/ask/orchestrator.py",
+          content: [
+            "from anthropic import Anthropic",
+            "class AskOrchestrator:",
+            "    async def run(self):",
+            "        client = Anthropic(api_key='x')",
+            "        response = client.messages.create(model='claude-sonnet', messages=[])",
+          ].join("\n"),
+        },
+        {
+          path: "server/soundings/ask/test_orchestrator.py",
+          content: "from anthropic import Anthropic\nclient.messages.create(model='test', messages=[])",
+        },
+      ],
+    });
+
+    const candidates = suggestAIUseCandidates(report);
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.name).toBe("Ask");
+    expect(candidates[0]?.confidence).toBe("high");
+    expect(candidates[0]?.observed.technologies).toContain("anthropic");
+    expect(report.signals.every((signal) =>
+      signal.evidence.every((evidence) => !evidence.path?.includes("test_orchestrator.py")),
+    )).toBe(true);
+  });
 });
