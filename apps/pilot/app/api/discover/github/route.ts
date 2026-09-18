@@ -3,7 +3,7 @@ import { discoverAIFromSourceSnapshot } from "@crux/core";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_FILES = 120;
+const MAX_FILES = 80;
 const MAX_FILE_CHARS = 60_000;
 const MAX_TOTAL_CHARS = 2_000_000;
 
@@ -70,16 +70,23 @@ const scanPublicRepo = async (repoRef: RepoRef) => {
     .sort((left, right) => priority(left) - priority(right) || left.localeCompare(right))
     .slice(0, MAX_FILES);
 
+  const fetched = await Promise.all(
+    paths.map(async (path) => {
+      const rawUrl = `https://raw.githubusercontent.com/${encodeURIComponent(repoRef.owner)}/${encodeURIComponent(repoRef.repo)}/${encodeURIComponent(branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
+      const response = await fetch(rawUrl, { cache: "no-store" });
+      if (!response.ok) return null;
+      return { path, content: (await response.text()).slice(0, MAX_FILE_CHARS) };
+    }),
+  );
+
   let totalChars = 0;
   const files: Array<{ path: string; content: string }> = [];
-  for (const path of paths) {
-    if (totalChars >= MAX_TOTAL_CHARS) break;
-    const rawUrl = `https://raw.githubusercontent.com/${encodeURIComponent(repoRef.owner)}/${encodeURIComponent(repoRef.repo)}/${encodeURIComponent(branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
-    const response = await fetch(rawUrl, { cache: "no-store" });
-    if (!response.ok) continue;
-    const content = (await response.text()).slice(0, MAX_FILE_CHARS);
+  for (const file of fetched) {
+    if (!file || totalChars >= MAX_TOTAL_CHARS) continue;
+    const remaining = MAX_TOTAL_CHARS - totalChars;
+    const content = file.content.slice(0, remaining);
     totalChars += content.length;
-    files.push({ path, content });
+    files.push({ path: file.path, content });
   }
 
   const report = discoverAIFromSourceSnapshot({
