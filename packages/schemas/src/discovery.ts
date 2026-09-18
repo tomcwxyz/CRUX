@@ -92,3 +92,41 @@ export const DiscoveryCandidateSchema = z.object({
   explanation: z.string().min(1),
 }).strict();
 export type DiscoveryCandidate = z.infer<typeof DiscoveryCandidateSchema>;
+
+export const DiscoveryPowerSchema = z.enum(["suggest", "recommend", "decide", "act"]);
+export type DiscoveryPower = z.infer<typeof DiscoveryPowerSchema>;
+
+export const DiscoveryActionControlSchema = z.enum([
+  "human_approval",
+  "rule_bounded",
+  "automatic_bounded",
+]);
+export type DiscoveryActionControl = z.infer<typeof DiscoveryActionControlSchema>;
+
+export const DiscoveryConfirmationSchema = z
+  .object({
+    organisation_name: z.string().min(1).max(240),
+    purpose: z.string().min(1).max(4_000),
+    people_affected: z.array(z.string().min(1).max(240)).default([]),
+    consequential: z.boolean(),
+    power: DiscoveryPowerSchema,
+    action_control: DiscoveryActionControlSchema.optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.power === "act" && value.action_control === undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["action_control"],
+        message: "An AI use that can act must say what constrains that action.",
+      });
+    }
+    if (value.power !== "act" && value.action_control !== undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["action_control"],
+        message: "Action control only applies when the AI can act.",
+      });
+    }
+  });
+export type DiscoveryConfirmation = z.infer<typeof DiscoveryConfirmationSchema>;
