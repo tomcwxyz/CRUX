@@ -69,7 +69,7 @@ const ensureScope = async () => {
   return { store, snapshot };
 };
 
-const eventWithoutSummary = <T extends { summary?: string }>(event: T) => {
+const eventWithoutSummary = <T extends { summary?: string | undefined }>(event: T) => {
   const copy = { ...event };
   delete copy.summary;
   return copy;
@@ -228,6 +228,7 @@ export async function POST(request: Request) {
         .slice("run:".length)
         .replace(/[^a-zA-Z0-9._-]/g, "-")
         .toLowerCase();
+      const humanInvolvement = optionalText(body.humanInvolvement);
       const receipt = receiptSchema.parse({
         schema_version: "0.1",
         id: `receipt:reviewed:${suffix}`,
@@ -238,9 +239,7 @@ export async function POST(request: Request) {
         ai_involvement: ["informational"],
         ai_summary: requiredText(body.aiSummary, "AI contribution"),
         effect_of_ai: requiredText(body.effectOfAi, "Effect of AI"),
-        ...(optionalText(body.humanInvolvement)
-          ? { human_involvement: optionalText(body.humanInvolvement) }
-          : {}),
+        ...(humanInvolvement ? { human_involvement: humanInvolvement } : {}),
         final_authority: finalAuthority,
         outcome: requiredText(body.outcome, "Outcome"),
         ...(challengeDescription
