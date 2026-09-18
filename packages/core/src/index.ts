@@ -12,6 +12,7 @@ import {
 } from "./scope.js";
 
 export * from "./scope.js";
+export * from "./discovery.js";
 
 export type DerivedClaimStatus =
   | "declared"
