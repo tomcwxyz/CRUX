@@ -1,0 +1,111 @@
+name: live-runtime-production-smoke
+
+on:
+  push:
+    paths:
+      - .github/workflows/live-runtime-production-smoke.yml
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event.head_commit.message == 'Exercise production live runtime slice'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Exercise deterministic runtime → review → affected-person path
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://crux-ashy.vercel.app/api/live-runtime'
+
+          echo 'Resetting synthetic scope'
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'content-type: application/json' \
+            --data '{"action":"reset"}' \
+            "$base" > reset.json
+          jq -e '.ok == true and .runtime.run_count == 0 and .runtime.reviewed_case == null' reset.json >/dev/null
+
+          echo 'Running deterministic metadata-only path'
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'content-type: application/json' \
+            --data '{"action":"run","mode":"demo"}' \
+            "$base" > run.json
+          jq -e '
+            .ok == true and
+            .runtime.run_count == 1 and
+            .runtime.pending_case != null and
+            .runtime.reviewed_case == null and
+            (.runtime.latest_event_types | index("ai_invocation")) != null and
+            (.runtime.latest_event_types | index("human_review")) != null and
+            (.runtime.latest_event_types | index("decision")) != null and
+            ([.bundle.events[] | has("summary")] | all(. == false))
+          ' run.json >/dev/null
+          run_ref=$(jq -r '.runtime.latest_run_ref' run.json)
+          test -n "$run_ref"
+
+          echo 'Confirming meaning and publishing affected-person case explanation'
+          review_payload=$(jq -n --arg runRef "$run_ref" '{
+            action: "review",
+            runRef: $runRef,
+            aiSummary: "AI was invoked in the eligibility-evidence extraction step.",
+            effectOfAi: "The AI output was included in the material reviewed by the funding officer.",
+            humanInvolvement: "A funding officer reviewed the original application and the AI contribution before making the eligibility decision.",
+            finalAuthority: "human",
+            outcome: "The funding officer made the eligibility decision.",
+            challengeDescription: "The applicant can contact the foundation to ask how the eligibility decision was reached or to raise a concern."
+          }')
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'content-type: application/json' \
+            --data "$review_payload" \
+            "$base" > reviewed.json
+          jq -e '
+            .ok == true and
+            .runtime.pending_case == null and
+            .runtime.reviewed_case != null and
+            ([.bundle.receipts[] | select(.run_ref == .runtime.latest_run_ref)] | length) >= 0
+          ' reviewed.json >/dev/null
+          jq -e --arg runRef "$run_ref" '
+            [.bundle.receipts[] | select(.run_ref == $runRef)] | length == 1
+          ' reviewed.json >/dev/null
+          jq -e --arg runRef "$run_ref" '
+            [.bundle.receipts[] | select(.run_ref == $runRef) | (.disclosure == "affected_party" and .source_content_included == false and .final_authority == "human")] | all
+          ' reviewed.json >/dev/null
+
+          echo 'Checking persisted state from a fresh GET'
+          curl --fail --silent --show-error "$base" > persisted.json
+          jq -e --arg runRef "$run_ref" '
+            .ok == true and
+            .runtime.reviewed_case.run_ref == $runRef and
+            ([.bundle.receipts[] | select(.run_ref == $runRef)] | length == 1)
+          ' persisted.json >/dev/null
+
+          echo 'Resetting synthetic scope after smoke'
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'content-type: application/json' \
+            --data '{"action":"reset"}' \
+            "$base" > final-reset.json
+          jq -e '.ok == true and .runtime.run_count == 0 and .bundle.receipts == []' final-reset.json >/dev/null
+
+      - name: Probe real-provider runtime path
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://crux-ashy.vercel.app/api/live-runtime'
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'content-type: application/json' \
+            --data '{"action":"run","mode":"live"}' \
+            "$base" > live.json
+          jq '{ok, run_mode, runtime: {run_count: .runtime.run_count, observed_provider: .runtime.observed_provider, observed_model: .runtime.observed_model, pending_case: (.runtime.pending_case != null)}}' live.json
+          jq -e '.ok == true and .run_mode == "live" and .runtime.observed_model != null and .runtime.pending_case != null' live.json >/dev/null
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'content-type: application/json' \
+            --data '{"action":"reset"}' \
+            "$base" >/dev/null
