@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClarityWorkbench } from "../components/clarity-workbench";
+import { AudienceWorkbench } from "../components/audience-workbench";
 
 export default function HomePage() {
   return (
@@ -11,7 +11,7 @@ export default function HomePage() {
         </div>
         <div className="toolbar-group">
           <Link className="btn ghost" href="/test">Technical tests</Link>
-          <div className="top-note">Understand one real use of AI without learning the schema first.</div>
+          <div className="top-note">One record. Different questions for different people.</div>
         </div>
       </header>
 
@@ -21,25 +21,25 @@ export default function HomePage() {
       >
         <div>
           <div className="eyebrow">Show your workings</div>
-          <h1 style={{ fontSize: "clamp(44px, 6vw, 78px)", maxWidth: 860 }}>Understand one use of AI.</h1>
+          <h1 style={{ fontSize: "clamp(44px, 6vw, 78px)", maxWidth: 880 }}>Make AI understandable to the person who needs to understand it.</h1>
         </div>
         <p className="hero-copy">
-          Start with the work itself. See where AI enters, what it can influence or cause, what evidence supports the account, and what happened in a particular case.
+          Internal teams need to scrutinise the system. The public needs a clear explanation. A person affected by a decision needs to understand what happened in their case.
         </p>
       </section>
 
-      <ClarityWorkbench />
+      <AudienceWorkbench />
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-        <Link className="btn" href="/test">Technical/runtime tests</Link>
+        <Link className="btn" href="/author">Create or edit a record</Link>
         <a className="btn" href="/crux-pilot-session.md" download>
           Download learning-session sheet
         </a>
       </div>
 
       <footer className="footer-note">
-        <span>The questions guide the reading. The portable CRUX bundle remains the underlying record.</span>
-        <span>Internal, public and affected-person views are projections of the same record.</span>
+        <span>The same CRUX record can support different explanations without exposing the same information to everyone.</span>
+        <span>Public and affected-person views are generated from disclosure-safe projections.</span>
       </footer>
     </main>
   );
