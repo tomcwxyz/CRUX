@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { suggestAIUseCandidates } from "@crux/core";
+import { discoveryConnectors, suggestAIUseCandidates } from "@crux/core";
 import { DiscoveryReportSchema, type DiscoveryQuestion } from "@crux/schemas";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
 
@@ -15,12 +15,8 @@ const questionCopy: Record<DiscoveryQuestion, string> = {
   action_limits: "What is the AI allowed to cause or do?",
 };
 
-const sources = [
-  ["GitHub project", "Let CRUX find AI SDKs, providers and workflow boundaries in source code."],
-  ["Project ZIP", "Useful for exported or local projects without a GitHub connection."],
-  ["AI gateway", "Observe model/provider activity without changing application code."],
-  ["Workflow platform", "Connect tools such as n8n, Make or Zapier and inspect workflow structure."],
-] as const;
+const sources = discoveryConnectors;
+
 
 const styles = `
 .discovery{overflow:hidden}.steps{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}.step{padding:14px 16px;border-right:1px solid var(--line);background:rgba(255,255,255,.16)}.step:last-child{border-right:0}.step.on{background:var(--chalk);box-shadow:inset 0 -3px 0 var(--rust)}.step span{display:block;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}.step strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;margin-top:4px}.disc-canvas{padding:clamp(22px,4vw,46px);background:rgba(255,253,248,.72)}.disc-head{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(250px,.75fr);gap:28px;align-items:start}.disc-head h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(36px,5vw,60px);font-weight:400;line-height:1;letter-spacing:-.04em;margin:5px 0 12px}.disc-head p{color:var(--muted);font-size:15px;line-height:1.55;margin:0}.principle{border-left:3px solid var(--rust);padding-left:14px;color:var(--muted);font-size:13px;line-height:1.5}.source-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:24px}.source-card{border:1px solid var(--line);border-radius:18px;padding:18px;background:rgba(255,255,255,.36);text-align:left}.source-card strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:400}.source-card span{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:6px}.source-card.active{border:2px solid rgba(64,88,74,.45);background:rgba(64,88,74,.04)}.connect-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--chalk)}.connected{display:flex;gap:9px;align-items:center}.dot{width:9px;height:9px;border-radius:50%;background:var(--moss)}.candidate{margin-top:23px;border:1px solid var(--line);border-radius:22px;background:var(--chalk);overflow:hidden}.candidate-top{padding:22px 22px 18px;display:flex;justify-content:space-between;gap:16px;align-items:start}.candidate h3{font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;margin:4px 0 6px}.eyebrow2{font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:var(--rust)}.confidence{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:6px 9px;border-radius:999px;background:rgba(64,88,74,.09);color:var(--moss)}.split{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}.split>div{padding:20px}.split>div+div{border-left:1px solid var(--line)}.split h4{font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:400;margin:0 0 12px}.signal{display:flex;gap:9px;padding:10px 0;border-top:1px solid var(--line)}.signal:first-of-type{border-top:0}.mark{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;flex:0 0 25px;background:rgba(64,88,74,.09);color:var(--moss);font-weight:900}.signal strong{display:block;font-size:13px}.signal small{display:block;color:var(--muted);line-height:1.35;margin-top:3px}.unknown{display:flex;gap:9px;padding:9px 0;color:var(--muted);font-size:13px;line-height:1.4}.unknown b{font-weight:900;color:var(--rust)}.choice-row{display:flex;gap:8px;flex-wrap:wrap;padding:18px 22px;border-top:1px solid var(--line);background:rgba(255,255,255,.25)}.confirm{margin-top:22px;border:1px solid rgba(168,76,50,.28);border-radius:22px;padding:22px;background:rgba(168,76,50,.035)}.confirm-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:16px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:800}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:13px;background:var(--chalk);padding:11px 12px;font:inherit}.field textarea{min-height:82px;resize:vertical}.why{font-size:11px;color:var(--muted);line-height:1.4}.ready{margin-top:22px;border-radius:22px;background:var(--moss);color:var(--chalk);padding:24px}.ready h3{font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;margin:3px 0 8px}.ready p{max-width:720px;line-height:1.55;color:rgba(255,255,255,.82)}.flow{display:flex;align-items:center;gap:8px;margin-top:18px;overflow-x:auto}.flow-node{min-width:145px;border:1px solid rgba(255,255,255,.3);border-radius:15px;padding:13px 15px}.flow-node span{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;opacity:.7}.flow-node strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;margin-top:5px}.arrow{opacity:.6}.detail{margin-top:14px;font-size:12px;color:var(--muted)}@media(max-width:760px){.steps,.source-grid,.split,.confirm-grid,.disc-head{grid-template-columns:1fr}.step{border-right:0;border-bottom:1px solid var(--line)}.split>div+div{border-left:0;border-top:1px solid var(--line)}.field.full{grid-column:auto}}
@@ -72,9 +68,9 @@ export function DiscoveryOnboarding() {
         {stage === "connect" && (
           <>
             <div className="source-grid">
-              {sources.map(([name, copy], index) => (
-                <button className={`source-card ${index === 0 ? "active" : ""}`} key={name} type="button" onClick={goDiscover}>
-                  <strong>{name}</strong><span>{copy}</span>
+              {sources.map((source, index) => (
+                <button className={`source-card ${index === 0 ? "active" : ""}`} key={source.id} type="button" onClick={goDiscover}>
+                  <strong>{source.name}</strong><span>{source.description}</span><div className="detail">{source.maturity === "prototype" ? "Available in this pilot" : "Planned connector"}</div>
                 </button>
               ))}
             </div>
