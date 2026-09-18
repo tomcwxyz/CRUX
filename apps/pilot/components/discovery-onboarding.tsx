@@ -69,7 +69,7 @@ export function DiscoveryOnboarding() {
           <>
             <div className="source-grid">
               {sources.map((source, index) => (
-                <button className={`source-card ${index === 0 ? "active" : ""}`} key={source.id} type="button" onClick={goDiscover}>
+                <button className={`source-card ${index === 0 ? "active" : ""}`} key={source.id} type="button" onClick={source.maturity === "prototype" ? goDiscover : undefined} disabled={source.maturity !== "prototype"} aria-disabled={source.maturity !== "prototype"}>
                   <strong>{source.name}</strong><span>{source.description}</span><div className="detail">{source.maturity === "prototype" ? "Available in this pilot" : "Planned connector"}</div>
                 </button>
               ))}
