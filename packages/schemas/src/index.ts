@@ -6,3 +6,4 @@ export * from "./evaluation-case.js";
 export * from "./system.js";
 export * from "./trace.js";
 export * from "./discovery.js";
+export * from "./connector.js";
