@@ -12,6 +12,7 @@ export default function DiscoverPage() {
         <div><div className="eyebrow">Find the AI you already have</div><h1 style={{fontSize:"clamp(44px, 6vw, 78px)",maxWidth:920}}>Don't start with a blank form.</h1></div>
         <p className="hero-copy">CRUX should begin with evidence from the tools and workflows you already use. It discovers technical signals, then asks people to supply only the meaning technology cannot know.</p>
       </section>
+      <div style={{display:"flex",justifyContent:"flex-end",margin:"0 0 14px"}}><Link className="btn ghost" href="/discover/runtime">Compare with runtime discovery →</Link></div>
       <DiscoveryOnboarding />
       <footer className="footer-note"><span>This pilot uses Open Recommendations Local as the first real discovery target.</span><span>Discovery evidence is metadata-only and is not a declaration until a person confirms it.</span></footer>
     </main>
