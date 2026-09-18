@@ -31,6 +31,48 @@ const cruxOwnedTargetKinds = new Set<TargetRef["kind"]>([
   "claim",
 ]);
 
+type OrganisationRecord = CruxPortableBundle["organisations"][number];
+type AIUseRecord = CruxPortableBundle["ai_uses"][number];
+type SystemRecord = CruxPortableBundle["systems"][number];
+type ClaimRecord = CruxPortableBundle["claims"][number];
+type EvidenceRecord = CruxPortableBundle["evidence"][number];
+
+type ProjectedOrganisation = Pick<
+  OrganisationRecord,
+  "id" | "name" | "website" | "jurisdiction" | "organisation_type" | "description" | "transparency_contact"
+> & {
+  legal_name?: string;
+};
+
+export type ProjectedAIUse = Pick<
+  AIUseRecord,
+  "id" | "organisation_ref" | "name" | "status" | "people_affected" | "consequential" | "system_refs"
+> & {
+  public_summary?: string;
+  purpose?: string;
+  owner_role?: string;
+};
+
+export type ProjectedSystem = Pick<
+  SystemRecord,
+  "id" | "name" | "description" | "ai_use_refs" | "influence" | "agency" | "status" | "current_version_ref"
+> & {
+  owner_role?: string;
+};
+
+export type ProjectedClaim = Pick<
+  ClaimRecord,
+  "id" | "type" | "statement" | "applies_to" | "status" | "review_after"
+> & {
+  owner_role?: string;
+  rationale?: string;
+};
+
+export type ProjectedEvidence = Pick<
+  EvidenceRecord,
+  "id" | "kind" | "title" | "summary" | "source" | "targets" | "freshness" | "result" | "limitations" | "external_refs"
+>;
+
 export type ProjectedSystemVersion = {
   id: string;
   system_ref: string;
@@ -45,19 +87,19 @@ export type ProjectedSystemVersion = {
     description?: string;
     nodes: Array<{
       id: string;
-      type: string;
+      type: SystemVersion["process"]["nodes"][number]["type"];
       name: string;
       description?: string;
     }>;
     edges: Array<{ from: string; to: string }>;
   };
-  components: unknown[];
-  data_sources: unknown[];
-  human_roles: unknown[];
-  decisions: unknown[];
-  actions: unknown[];
-  risks: unknown[];
-  safeguards: unknown[];
+  components: SystemVersion["components"];
+  data_sources: SystemVersion["data_sources"];
+  human_roles: SystemVersion["human_roles"];
+  decisions: SystemVersion["decisions"];
+  actions: SystemVersion["actions"];
+  risks: SystemVersion["risks"];
+  safeguards: SystemVersion["safeguards"];
   published_at?: string;
 };
 
@@ -66,18 +108,104 @@ export type CruxDisclosureBundle = {
   source_format: "crux-bundle/0.1";
   generated_at: string;
   disclosure_level: DisclosureLevel;
-  organisations: unknown[];
-  ai_uses: unknown[];
-  systems: unknown[];
+  organisations: ProjectedOrganisation[];
+  ai_uses: ProjectedAIUse[];
+  systems: ProjectedSystem[];
   system_versions: ProjectedSystemVersion[];
-  claims: unknown[];
-  evidence: unknown[];
+  claims: ProjectedClaim[];
+  evidence: ProjectedEvidence[];
   claim_evidence_links: Array<Pick<EvidenceLink, "claim_ref" | "evidence_ref" | "relationship">>;
-  evaluation_definitions: unknown[];
-  evaluation_runs: unknown[];
-  evaluation_cases: unknown[];
-  observations: unknown[];
+  evaluation_definitions: CruxPortableBundle["evaluation_definitions"];
+  evaluation_runs: CruxPortableBundle["evaluation_runs"];
+  evaluation_cases: CruxPortableBundle["evaluation_cases"];
+  observations: CruxPortableBundle["observations"];
   trace_views: ReturnType<typeof projectTraceForDisclosure>[];
+};
+
+const projectOrganisation = (
+  item: OrganisationRecord,
+  maximumLevel: DisclosureLevel,
+): ProjectedOrganisation => ({
+  id: item.id,
+  name: item.name,
+  ...(item.website ? { website: item.website } : {}),
+  ...(item.jurisdiction ? { jurisdiction: item.jurisdiction } : {}),
+  ...(item.organisation_type ? { organisation_type: item.organisation_type } : {}),
+  ...(item.description ? { description: item.description } : {}),
+  ...(item.transparency_contact ? { transparency_contact: item.transparency_contact } : {}),
+  ...(maximumLevel === "internal" && item.legal_name ? { legal_name: item.legal_name } : {}),
+});
+
+const projectAIUse = (
+  item: AIUseRecord,
+  maximumLevel: DisclosureLevel,
+): ProjectedAIUse => ({
+  id: item.id,
+  organisation_ref: item.organisation_ref,
+  name: item.name,
+  status: item.status,
+  people_affected: item.people_affected,
+  consequential: item.consequential,
+  system_refs: [...item.system_refs],
+  ...(item.public_summary ? { public_summary: item.public_summary } : {}),
+  ...(maximumLevel === "internal" ? { purpose: item.purpose } : {}),
+  ...(maximumLevel === "internal" && item.owner_role ? { owner_role: item.owner_role } : {}),
+});
+
+const projectSystem = (
+  item: SystemRecord,
+  maximumLevel: DisclosureLevel,
+): ProjectedSystem => ({
+  id: item.id,
+  name: item.name,
+  description: item.description,
+  ai_use_refs: [...item.ai_use_refs],
+  influence: [...item.influence],
+  agency: item.agency,
+  status: item.status,
+  ...(item.current_version_ref ? { current_version_ref: item.current_version_ref } : {}),
+  ...(maximumLevel === "internal" && item.owner_role ? { owner_role: item.owner_role } : {}),
+});
+
+const projectClaim = (
+  item: ClaimRecord,
+  visibleRefs: Set<string>,
+  maximumLevel: DisclosureLevel,
+): ProjectedClaim | undefined => {
+  const appliesTo = filterTargetRefs(item.applies_to, visibleRefs);
+  if (appliesTo.length === 0) return undefined;
+
+  return {
+    id: item.id,
+    type: item.type,
+    statement: item.statement,
+    applies_to: appliesTo,
+    status: item.status,
+    ...(item.review_after ? { review_after: item.review_after } : {}),
+    ...(maximumLevel === "internal" && item.owner_role ? { owner_role: item.owner_role } : {}),
+    ...(maximumLevel === "internal" && item.rationale ? { rationale: item.rationale } : {}),
+  };
+};
+
+const projectEvidence = (
+  item: EvidenceRecord,
+  visibleRefs: Set<string>,
+): ProjectedEvidence | undefined => {
+  const targets = filterTargetRefs(item.targets, visibleRefs);
+  if (targets.length === 0) return undefined;
+
+  return {
+    id: item.id,
+    kind: item.kind,
+    ...(item.title ? { title: item.title } : {}),
+    summary: item.summary,
+    source: item.source,
+    targets,
+    freshness: item.freshness,
+    ...(item.result ? { result: item.result } : {}),
+    limitations: item.limitations,
+    external_refs: item.external_refs,
+  };
 };
 
 const projectVersion = (
@@ -147,7 +275,9 @@ export const redactBundle = (
   bundle: CruxPortableBundle,
   maximumLevel: DisclosureLevel,
 ): CruxDisclosureBundle => {
-  const organisations = bundle.organisations.filter((item) => visibleAt(item.disclosure, maximumLevel));
+  const organisations = bundle.organisations
+    .filter((item) => visibleAt(item.disclosure, maximumLevel))
+    .map((item) => projectOrganisation(item, maximumLevel));
   const organisationIds = new Set(organisations.map((item) => item.id));
 
   const aiUses = bundle.ai_uses
@@ -155,7 +285,7 @@ export const redactBundle = (
       (item) =>
         visibleAt(item.disclosure, maximumLevel) && organisationIds.has(item.organisation_ref),
     )
-    .map((item) => ({ ...item }));
+    .map((item) => projectAIUse(item, maximumLevel));
   const aiUseIds = new Set(aiUses.map((item) => item.id));
 
   const systems = bundle.systems
@@ -164,10 +294,7 @@ export const redactBundle = (
         visibleAt(item.disclosure, maximumLevel) &&
         item.ai_use_refs.some((ref) => aiUseIds.has(ref)),
     )
-    .map((item) => ({
-      ...item,
-      ai_use_refs: item.ai_use_refs.filter((ref) => aiUseIds.has(ref)),
-    }));
+    .map((item) => projectSystem(item, maximumLevel));
   const systemIds = new Set(systems.map((item) => item.id));
 
   const systemVersions = bundle.system_versions
@@ -204,9 +331,7 @@ export const redactBundle = (
       version.risks,
       version.safeguards,
     ]) {
-      for (const item of collection as Array<{ id?: string }>) {
-        if (item.id) visibleRefs.add(item.id);
-      }
+      for (const item of collection) visibleRefs.add(item.id);
     }
   }
 
@@ -214,20 +339,14 @@ export const redactBundle = (
   for (const claim of candidateClaims) visibleRefs.add(claim.id);
 
   const claims = candidateClaims
-    .map((item) => ({
-      ...item,
-      applies_to: filterTargetRefs(item.applies_to, visibleRefs),
-    }))
-    .filter((item) => item.applies_to.length > 0);
+    .map((item) => projectClaim(item, visibleRefs, maximumLevel))
+    .filter((item): item is ProjectedClaim => item !== undefined);
   const claimIds = new Set(claims.map((item) => item.id));
 
   const evidence = bundle.evidence
     .filter((item) => visibleAt(item.disclosure, maximumLevel))
-    .map((item) => ({
-      ...item,
-      targets: filterTargetRefs(item.targets, visibleRefs),
-    }))
-    .filter((item) => item.targets.length > 0);
+    .map((item) => projectEvidence(item, visibleRefs))
+    .filter((item): item is ProjectedEvidence => item !== undefined);
   const evidenceIds = new Set(evidence.map((item) => item.id));
 
   const claimEvidenceLinks = bundle.evidence_links
