@@ -102,6 +102,18 @@ const candidateFromSignals = (
   });
 };
 
+const candidateAnchorKinds = new Set<DiscoverySignal["kind"]>([
+  "model_call",
+  "ai_sdk",
+  "ai_provider",
+  "provider_configuration",
+  "workflow_job",
+  "runtime_observation",
+]);
+
+const hasCandidateAnchor = (signals: DiscoverySignal[]) =>
+  signals.some((signal) => candidateAnchorKinds.has(signal.kind));
+
 export const suggestAIUseCandidates = (input: DiscoveryReport): DiscoveryCandidate[] => {
   const report = DiscoveryReportSchema.parse(input);
   const meaningful = report.signals.filter((signal) =>
@@ -123,7 +135,9 @@ export const suggestAIUseCandidates = (input: DiscoveryReport): DiscoveryCandida
   }
 
   if (explicitGroups.size === 0) {
-    return [candidateFromSignals(report, "unscoped", meaningful)];
+    return hasCandidateAnchor(meaningful)
+      ? [candidateFromSignals(report, "unscoped", meaningful)]
+      : [];
   }
 
   const shared = unscoped.filter(
@@ -136,7 +150,7 @@ export const suggestAIUseCandidates = (input: DiscoveryReport): DiscoveryCandida
   );
 
   const unshared = unscoped.filter((signal) => !shared.includes(signal));
-  if (unshared.length > 0) {
+  if (unshared.length > 0 && hasCandidateAnchor(unshared)) {
     candidates.push(candidateFromSignals(report, "unscoped", unshared));
   }
 
