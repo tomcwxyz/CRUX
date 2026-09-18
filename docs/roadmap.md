@@ -86,13 +86,13 @@ Ship Check is the first source-code discovery producer, not a dependency. The sa
 - [x] define a producer-neutral `crux-discovery/0.1` contract;
 - [x] group discovery signals into reviewable AI-use candidates without creating canonical declarations;
 - [x] build a discovery-first onboarding surface;
-- [~] run Ship Check discovery against Open Recommendations Local and replace the example with captured real output;
+- [x] run Ship Check discovery against Open Recommendations Local and replace the example with captured real output;
 - [ ] observe whether a person can recognise the candidate without CRUX terminology;
 - [ ] confirm the candidate with minimal human questions;
 - [ ] attach the smallest runtime integration after confirmation;
 - [ ] repeat with a materially different source type or application.
 
-The test is not whether CRUX can detect every AI call. It is whether an ordinary user can go from **connect something they already use** to **a useful, accurate AI-use record** with very little technical configuration.
+The first real discovery run found two candidate uses from executable Open Recs evidence — `chat.search` and `source.extract` — plus shared AI SDK/provider infrastructure. The final regression deliberately excludes Markdown and test/spec evidence and caps the report at 12 high-signal items.\n\nThe test is not whether CRUX can detect every AI call. It is whether an ordinary user can go from **connect something they already use** to **a useful, accurate AI-use record** with very little technical configuration.
 
 ## P0 — safe disclosure boundary
 
