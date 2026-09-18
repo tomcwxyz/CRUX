@@ -16,6 +16,7 @@ export * from "./discovery.js";
 export * from "./connectors.js";
 export * from "./gatewayDiscovery.js";
 export * from "./sourceSnapshotDiscovery.js";
+export * from "./observationPlan.js";
 
 export type DerivedClaimStatus =
   | "declared"
