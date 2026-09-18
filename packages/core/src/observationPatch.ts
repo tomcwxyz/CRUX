@@ -32,6 +32,7 @@ export const buildObservationPatchProposal = (
     },
     environment: [
       { name: "CRUX_INGEST_URL", purpose: "Authenticated CRUX runtime-ingest endpoint." },
+      { name: "CRUX_INGEST_TOKEN", purpose: "Bearer credential for the configured ingest endpoint." },
       { name: "CRUX_SYSTEM_VERSION_REF", purpose: "Exact confirmed CRUX SystemVersion this observation belongs to." },
       { name: "CRUX_PRODUCER_ID", purpose: "Stable producer identity for idempotent provenance." },
     ],
