@@ -117,3 +117,23 @@ Those remain human-confirmed meaning.
 2. **Materially different producer** — use the same `crux-discovery/0.1` onboarding with a gateway/runtime or workflow-platform source. This test should require no source-code assumptions in the CRUX UI or candidate grouper.
 
 A successful second test is evidence that the discovery contract is genuinely connector-neutral rather than an Open Recs scanner format with a generic name.
+
+
+## Test evidence so far
+
+### Open Recommendations Local — real source discovery
+
+Ship Check scanned the real `tomcwxyz/open-recs-local` repository and produced a 10-signal `crux-discovery/0.1` report from executable/config evidence.
+
+It identified two use-level candidates:
+
+- `chat.search` / **Chat search** from the API route and streaming model call;
+- `source.extract` / **Recommendation extraction** from the queue/handler boundary and structured LLM-provider call.
+
+Shared SDK/provider evidence remains shared context rather than becoming a third AI use. Markdown, test/spec and e2e evidence are excluded from the final regression.
+
+### Gateway/runtime — producer-contract test
+
+The production runtime smoke previously observed one real call through the gateway using `anthropic/claude-3-haiku`. That metadata has now been converted into the same discovery envelope and passed through the same candidate/confirmation UI with no source-code paths.
+
+This demonstrates that CRUX's discovery model is not tied to Ship Check. It does **not** yet demonstrate one-click gateway account connection; OAuth/API ingestion remains a connector implementation task.
