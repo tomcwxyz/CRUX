@@ -13,6 +13,7 @@ import {
 
 export * from "./scope.js";
 export * from "./discovery.js";
+export * from "./connectors.js";
 
 export type DerivedClaimStatus =
   | "declared"
