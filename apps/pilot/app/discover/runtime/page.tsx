@@ -1,6 +1,6 @@
 import Link from "next/link";
-import gatewayRuntimeJson from "../../../../examples/discovery/gateway-runtime.json";
-import { DiscoveryOnboarding } from "../../components/discovery-onboarding";
+import gatewayRuntimeJson from "../../../../../examples/discovery/gateway-runtime.json";
+import { DiscoveryOnboarding } from "../../../components/discovery-onboarding";
 
 export default function RuntimeDiscoveryPage() {
   return (
