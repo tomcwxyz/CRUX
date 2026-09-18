@@ -2,141 +2,125 @@
 
 **Open evidence and provenance for organisational AI.**
 
-CRUX helps organisations show where AI is used, how AI-mediated processes work, what evidence supports claims about those systems, and what actually happened in consequential cases.
+CRUX is a guided way to think clearly about AI in an organisation.
 
-CRUX is not a trust score, compliance badge or all-purpose eval platform. Its job is to make organisational AI **inspectable, evidenced and traceable**.
+The product starts with four ordinary questions:
 
-```text
-Where do we use AI?
-        ↓
-How does the process work?
-        ↓
-What claims do we make about it?
-        ↓
-What evidence supports, qualifies or contradicts those claims?
-        ↓
-What actually happened when the system ran?
-```
+1. **Where is AI involved?**
+2. **What power does it have here?**
+3. **Why should I believe what the organisation says?**
+4. **What happened in this particular case?**
 
-## Product boundary
+The schema is the durable, portable output of that thinking — not the user's mental model.
 
-CRUX is a standalone product. It must remain useful with no other Good Ship product installed or connected.
+CRUX is not a trust score, compliance badge or all-purpose eval platform. It keeps organisational declarations, evidence, observed behaviour and particular outcomes distinct instead of collapsing them into a rating.
 
-- **TOPO** — what may AI know? Portable, user-controlled context and memory.
-- **RACK** — how should AI work? Portable working practice, boundaries and verification.
-- **CRUX** — where is AI used, what evidence supports its claims, and what actually happened?
-- **Ship Check** — what implementation evidence can be independently observed in software?
+## The visible reasoning model
 
-Integrations are optional, explicit and replaceable. CRUX owns its canonical transparency, claim/evidence and provenance records. It does not read another product's database or require another Good Ship runtime.
-
-## What exists now
-
-CRUX currently has eight implementation layers:
-
-- `packages/schemas` — strict canonical contracts for organisations, AI uses, systems, versions, claims, evidence, evaluations, runs, events, traces and receipts;
-- `packages/core` — evidence scope/freshness resolution, disclosure projection, trace consistency, declared-versus-observed reconciliation and proposal-first learning;
-- `packages/formats` — the portable `crux-bundle/0.1` format, cross-reference validation, disclosure exports, JSON Schema and EvidenceEnvelope import;
-- `packages/cli` — standalone validation, inspection, disclosure projection, evidence ingestion and schema export;
-- `packages/instrumentation` — metadata-first runtime collection, AI SDK/OpenTelemetry mapping and receipt proposals;
-- `packages/transport` — provider-neutral `crux-ingest/0.1`, bounded metadata policy, idempotency and durable-store semantics;
-- `adapters/postgres` — driver-neutral PostgreSQL persistence for canonical bundle + request/acceptance ledgers;
-- `apps/pilot` — a deliberately thin authoring, viewing and browser-acceptance surface for the `0.1-beta` organisational pilot.
-
-The contracts are provider-neutral. RACK, Ship Check, external eval tools, custom test suites, research, audits, observability systems and human evaluations can contribute evidence or observations without becoming CRUX dependencies.
-
-## Core model
+CRUX uses four deliberately simple ideas:
 
 ```text
-Organisation
-    │
-    ├── AI Use
-    │      └── System
-    │             ├── System Version
-    │             │      ├── Process
-    │             │      ├── Components / Data Sources
-    │             │      ├── Human Roles / Decisions / Actions
-    │             │      └── Risks / Safeguards
-    │             ├── Claims
-    │             │      └── Evidence
-    │             │              └── Evaluations
-    │             └── Runs
-    │                    ├── Events
-    │                    ├── Traces
-    │                    └── Receipts
-    └── Change History
+SAYS
+what the organisation declares
+
+SHOWS
+what evidence supports, qualifies or challenges it
+
+HAPPENED
+what occurred in a particular case
+
+UNKNOWN
+what remains unavailable or unresolved
 ```
 
-A **Trace** is the selected causal path that matters for explanation. It is deliberately not the same thing as a complete raw execution log.
+For example:
+
+```text
+SAYS
+“AI cannot reject a funding application.”
+
+SHOWS
+✓ the deployed workflow has no automated rejection action
+✓ a funding officer must make the eligibility decision
+⚠ this evidence applies to the current system version
+
+HAPPENED
+AI highlighted possible eligibility evidence
+→ a funding officer reviewed the original application
+→ the funding officer decided
+→ the application remained eligible
+```
+
+The canonical CRUX model underneath can represent considerably more detail, but people should not need to learn terms such as `SystemVersion`, `EvidenceLink`, `Trace` or `Receipt` in order to use the product.
+
+See [the product mental model](docs/PRODUCT_MENTAL_MODEL.md).
 
 ## Humans declare meaning; systems report behaviour
 
-CRUX should not become a manually maintained AI register that drifts away from production reality.
+CRUX's underlying operating rule remains:
 
-Manual authoring remains appropriate for organisational purpose, people affected, consequence, accountability, challenge routes, public claims and disclosure decisions. Runtime systems can automatically report facts they can actually observe: deployed SystemVersion, model/provider used, fallback behaviour, event sequence, errors and deliberately annotated reviews/decisions/actions.
+> **Humans declare meaning; systems report behaviour; CRUX reconciles the two.**
 
-`packages/instrumentation` is the runtime boundary. It produces canonical CRUX Run/Event records and maps bounded metadata from AI SDK callbacks and OpenTelemetry GenAI spans. Content-bearing telemetry is ignored by default. `@crux/core` then compares observed provider/model metadata with the exact declared SystemVersion rather than letting an adapter define that meaning.
+People and organisations are appropriate sources for things such as purpose, accountability, consequences, challenge routes and public statements.
 
-Observed causal paths can become review-required `crux-receipt-proposal/0.1` artefacts. They deliberately leave final authority, actual outcome, AI effect and challenge routes unresolved until the application or a human can provide that organisational meaning.
+Systems are appropriate sources for things they can actually observe, such as which version ran, provider/model metadata, event sequence, errors and deliberately annotated review/decision/action events.
 
-See [CRUX in AI pipelines](docs/PIPELINE_INTEGRATION.md) for the design and implementation sequence.
+Observed behaviour never silently becomes organisational meaning or policy.
 
-## Durable ingestion
+## The pilot
 
-The beta durable path is now proven end-to-end:
+`apps/pilot` is currently a learning prototype, not a validated production product.
 
-```text
-browser / producer
-  → crux-ingest/0.1
-  → authenticated principal + authorised producer/scope
-  → semantic ingestion
-  → PostgreSQL transaction
-  → canonical bundle + request/acceptance ledger
-```
+The main interface follows the four questions rather than exposing the schema as navigation. It includes:
 
-Production Test 5 proved first commit, exact replay and changed-request conflict against real Neon persistence. The accepted design remains provider-neutral and keeps Neon as a deployment choice rather than part of the CRUX interchange contract.
+- a visual process story showing where AI, people, decisions and actions appear;
+- plain-language exploration of what AI can influence or cause;
+- **SAYS / SHOWS / UNKNOWN** evidence reasoning;
+- **HAPPENED** explanations for consequential cases;
+- progressive authoring that asks more only when a use can materially affect people or cause actions;
+- embedded examples and “why we ask” guidance;
+- working, public and affected-person views;
+- three contrasting learning cases: writing support, funding review and bounded action.
 
-See [durable ingress](docs/DURABLE_INGRESS.md).
-
-## Beta pilot app
-
-The pilot UI does not introduce a second application-only domain model. It edits and reads the same portable CRUX bundle used by the CLI.
+Run it locally:
 
 ```bash
 pnpm install
 pnpm pilot
 ```
 
-The pilot surface can:
+The authoring pilot remains usable without accounts or hosted persistence.
 
-- start a simple canonical CRUX record;
-- open an existing `crux-bundle/0.1` JSON file;
-- show organisational AI uses, systems and the current process;
-- distinguish claims from their evidence and derived evidence state;
-- display consequential receipts;
-- compare declared provider/model details with bounded observed runtime metadata for the exact SystemVersion in the working lens;
-- switch between working, public and affected-person disclosure lenses;
-- export canonical, public and affected-person JSON;
-- keep incomplete edits as an explicit draft and block canonical/disclosure export until schema and reference validation pass;
-- download a structured pilot-session sheet for authoring and comprehension tests;
-- run browser acceptance tests for live provider calls, causal workflow provenance, transport and durable ingress.
+## Disclosure is a boundary
 
-`examples/observed-divergence/crux.json` is a small portable example for trying the observed-behaviour view.
+CRUX uses a canonical working bundle and derived disclosure projections.
 
-The authoring pilot intentionally remains usable without accounts or hosted persistence. The hosted test routes exist to prove integration boundaries, not to redefine the standalone source of truth.
+Public and affected-person disclosures must be **constructed from explicit allowed fields**, not made by copying internal records and trying to remove sensitive fields afterwards.
 
-## Beta learning
+The current prototype therefore:
 
-The main beta uncertainty is now human usefulness rather than basic infrastructure.
+- uses typed field-level disclosure projections;
+- uses `public_summary` rather than internal AI-use `purpose` in lower-disclosure views;
+- excludes internal owner/timestamp/detail fields from those projections;
+- renders public and affected-person UI from the disclosure projection itself rather than filtered canonical records;
+- has regression tests for field-level disclosure safety.
 
-The first structured learning cycle uses three contrasting case shapes:
+`crux redact` produces `crux-disclosure/0.1`; it does not mutate the canonical bundle.
 
-- `examples/writing-assistant` — low-consequence productivity;
-- `examples/funding-review` — consequential human decision-making;
-- browser Workflow/runtime records — bounded agentic action.
+## Portable model and tooling
 
-For each, CRUX tests authoring friction, non-author comprehension, disclosure quality and declared-versus-observed interpretation before making broader schema changes.
+The technical prototype currently includes:
 
-See [beta learning protocol](docs/BETA_LEARNING_PROTOCOL.md) and [pilot plan](docs/PILOT.md).
+- `packages/schemas` — canonical contracts for organisations, AI uses, systems, versions, claims, evidence, evaluations, runs, events, traces and receipts;
+- `packages/core` — evidence resolution, trace/projection logic and declared-versus-observed reconciliation;
+- `packages/formats` — `crux-bundle/0.1`, `crux-disclosure/0.1`, reference validation, JSON Schema and evidence import;
+- `packages/cli` — standalone validation, inspection, disclosure projection, evidence ingestion and schema export;
+- `packages/instrumentation` — metadata-first runtime collection and AI SDK/OpenTelemetry mapping;
+- `packages/transport` — provider-neutral semantic ingestion;
+- `adapters/postgres` — optional PostgreSQL persistence;
+- `apps/pilot` — the human learning surface.
+
+These are implementation capabilities, not evidence that organisations need or understand every layer.
 
 ## Standalone CLI
 
@@ -153,13 +137,21 @@ Validate a canonical bundle:
 pnpm crux -- validate examples/funding-review/crux.json
 ```
 
-Inspect it in plain language, including current claim/evidence state:
+Inspect it:
 
 ```bash
 pnpm crux -- inspect examples/funding-review/crux.json
 ```
 
-Import a portable evidence result without silently linking it to a claim:
+Create a public disclosure:
+
+```bash
+pnpm crux -- redact examples/funding-review/crux.json \
+  --level public \
+  -o crux-public.json
+```
+
+Import external evidence without silently attaching it to a claim:
 
 ```bash
 pnpm crux -- ingest-evidence \
@@ -168,21 +160,65 @@ pnpm crux -- ingest-evidence \
   -o crux-with-evidence.json
 ```
 
-Create a public disclosure projection:
-
-```bash
-pnpm crux -- redact examples/funding-review/crux.json \
-  --level public \
-  -o crux-public.json
-```
-
-Export JSON Schema for independent tooling:
+Export JSON Schema:
 
 ```bash
 pnpm crux -- schema -o crux-bundle.schema.json
 ```
 
-`redact` produces `crux-disclosure/0.1`, a derived disclosure artefact. It does not mutate or pretend to replace the canonical bundle.
+## Technical paths exercised
+
+The prototype has exercised metadata-first AI SDK/OpenTelemetry instrumentation, provider/model comparison, semantic ingestion, request idempotency and PostgreSQL/Neon persistence including a production synthetic commit/replay/conflict test.
+
+Those checks demonstrate that the technical paths can work. They are **not** organisational, governance, usability or adoption validation.
+
+See [implementation status](docs/IMPLEMENTATION_STATUS.md) for the precise distinction.
+
+## What we are testing now
+
+The important beta questions are human:
+
+- Can a domain owner describe real AI use without learning the schema?
+- Can a non-author see where AI enters a process and where it stops?
+- Can they tell whether AI can merely assist, recommend, decide or act?
+- Can they distinguish **SAYS** from **SHOWS**?
+- Can they understand **HAPPENED** as one particular case rather than proof of all cases?
+- Do public and affected-person views remain both safe and genuinely useful?
+- Does **UNKNOWN** remain legible rather than being interpreted as a failure or hidden score?
+
+Infrastructure expansion is paused by default while those questions are tested.
+
+The first teaching case is `examples/funding-review`. The other anchor cases are `examples/writing-assistant` and `examples/bounded-action`.
+
+See [beta learning protocol](docs/BETA_LEARNING_PROTOCOL.md) and [roadmap](docs/roadmap.md).
+
+## Open contract
+
+CRUX is standalone and provider-neutral. TOPO, RACK, Ship Check, eval systems and observability tools may later produce or consume bounded CRUX material, but none is a CRUX runtime dependency.
+
+The stronger future test of the “open” claim is not another adapter. It is an **independent CRUX reader** that can consume a disclosure without importing the CRUX application and explain:
+
+- where AI is used;
+- who has authority;
+- what is asserted;
+- what evidence exists;
+- what happened;
+- what remains unknown.
+
+Until an independent consumer exists, portability is an intended property being tested rather than an adoption claim.
+
+## Principles
+
+- **People first, schema underneath** — the product teaches critical thinking, not ontology navigation.
+- **Evidence over assertion** — declarations and evidence remain distinct.
+- **Process before model** — the real-world workflow matters more than the provider name.
+- **Proportionate depth** — low-consequence assistance should remain lightweight; consequential/agentic uses justify more questions.
+- **Versioned truth** — evidence and outcomes apply to the version they actually concern.
+- **Progressive disclosure** — useful transparency must not require unsafe disclosure.
+- **Unknown is meaningful** — unavailable information remains visible rather than being silently omitted.
+- **No implied trust** — CRUX does not certify that a system is trustworthy.
+- **Observed is not declared** — telemetry cannot silently define purpose, accountability or policy.
+- **Standalone first** — integrations improve CRUX but never complete it.
 
 ## Development
 
@@ -192,39 +228,13 @@ pnpm check
 pnpm build
 ```
 
-Useful package-level checks:
-
-```bash
-pnpm --filter @crux/schemas test
-pnpm --filter @crux/core test
-pnpm --filter @crux/formats test
-pnpm --filter @crux/instrumentation test
-pnpm --filter @crux/transport test
-pnpm --filter @crux/adapter-postgres test
-pnpm --filter @crux/pilot test
-```
-
-## Principles
-
-- **Standalone first** — integrations improve CRUX but never complete it.
-- **Evidence over assertion** — declarations and evidence are distinct objects.
-- **Process before model** — organisational processes are more durable than provider/model names.
-- **Versioned truth** — receipts and evidence point to the system version they actually apply to.
-- **Progressive disclosure** — useful transparency must not require unsafe disclosure of sensitive content.
-- **Unknown is meaningful** — unknown, withheld and supplier-undisclosed information remain visible states.
-- **No implied trust** — CRUX records evidence; it does not certify that an AI system is trustworthy.
-- **Open contracts** — portable, versioned interchange formats are part of the product contract.
-- **Minimal integration data** — connected tools exchange bounded evidence/metadata rather than whole projects, prompts or conversations.
-- **Observed is not declared** — telemetry may report behaviour but does not silently rewrite organisational meaning or policy.
-- **Proposal-first learning** — a real-world receipt can suggest a future eval case, but CRUX does not silently turn production behaviour into accepted policy or tests.
-
 ## Status
 
-CRUX is at **0.1-beta.0**. The open contracts, evidence-resolution core, provenance model, portable bundle and CLI are implemented. The runtime pipeline, transport boundary and durable PostgreSQL ingress path have all been accepted through live browser/production tests, including metadata-only external provider calls and production Test 5 against Neon.
+CRUX is at **0.1-beta.0**.
 
-The immediate beta focus is now organisational learning: can authors describe real AI use without specialist schema knowledge, and can non-authors correctly understand AI involvement, authority, evidence, unknowns and specific-case outcomes from CRUX disclosures?
+The modelling and technical prototype are substantial. Human usefulness and comprehension are not yet validated externally. That is now the centre of the project.
 
-See the [specification](docs/specification.md), [roadmap](docs/roadmap.md), [architecture](docs/architecture.md), [pilot plan](docs/PILOT.md), [beta learning protocol](docs/BETA_LEARNING_PROTOCOL.md), [pipeline integration design](docs/PIPELINE_INTEGRATION.md), [durable ingress design](docs/DURABLE_INGRESS.md), [implementation status](docs/IMPLEMENTATION_STATUS.md) and [versioning policy](docs/VERSIONING.md).
+See [product mental model](docs/PRODUCT_MENTAL_MODEL.md), [roadmap](docs/roadmap.md), [implementation status](docs/IMPLEMENTATION_STATUS.md), [beta learning protocol](docs/BETA_LEARNING_PROTOCOL.md), [architecture](docs/architecture.md) and [versioning policy](docs/VERSIONING.md).
 
 ## Licence
 
