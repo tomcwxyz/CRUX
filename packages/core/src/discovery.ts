@@ -24,7 +24,11 @@ const confidenceFor = (signals: DiscoverySignal[]): DiscoveryConfidence => {
   if (kinds.has("model_call") && (kinds.has("workflow_job") || kinds.has("human_review_surface"))) {
     return "high";
   }
-  if (kinds.has("model_call") || (kinds.has("ai_sdk") && kinds.has("provider_configuration"))) {
+  if (
+    kinds.has("model_call") ||
+    kinds.has("runtime_observation") ||
+    (kinds.has("ai_sdk") && kinds.has("provider_configuration"))
+  ) {
     return "medium";
   }
   return "low";
