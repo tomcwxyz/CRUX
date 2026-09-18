@@ -74,7 +74,7 @@ type ViewModel = {
   organisationName: string;
   use?: ViewUse;
   system?: ViewSystem;
-  version?: ViewVersion;
+  version?: ViewVersion | undefined;
   claims: ViewClaim[];
   evidence: ViewEvidence[];
   links: ViewLink[];
