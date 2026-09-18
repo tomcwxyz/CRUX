@@ -28,6 +28,7 @@ const humanNodeRef = "node:funding-officer-review";
 const decisionNodeRef = "node:eligibility-decision";
 const decisionRef = "decision:eligibility";
 const humanRoleRef = "role:funding-officer";
+const liveProviderEnabled = process.env.CRUX_ENABLE_PUBLIC_LIVE_RUNTIME === "true";
 
 const producer = {
   id: "producer:crux-live-pilot",
@@ -110,6 +111,7 @@ const runtimePayload = (bundle: CruxPortableBundle, revision: number) => {
     revision,
     bundle,
     runtime: {
+      live_provider_enabled: liveProviderEnabled,
       run_count: bundle.runs.filter((run) => run.system_version_ref === systemVersionRef).length,
       event_count: bundle.events.filter((event) =>
         bundle.runs.some(
@@ -277,6 +279,18 @@ export async function POST(request: Request) {
     }
 
     const mode = body.mode === "demo" ? "demo" : "live";
+    if (mode === "live" && !liveProviderEnabled) {
+      return response(
+        {
+          ok: false,
+          code: "live_provider_disabled",
+          message:
+            "The paid live-provider probe is disabled on the public pilot. Use the deterministic runtime demo; real applications should send bounded runtime records through CRUX ingestion.",
+        },
+        403,
+      );
+    }
+
     const startedAt = new Date();
     const runId = `run:pilot-live:${startedAt.getTime()}`;
     const crux = createInstrumentationSession({
