@@ -1,0 +1,31 @@
+{
+  "format": "crux-discovery/0.1",
+  "generated_at": "2026-09-18T17:15:45.515Z",
+  "source": {
+    "kind": "gateway",
+    "provider": "vercel-ai-gateway",
+    "label": "CRUX production gateway observation"
+  },
+  "signals": [
+    {
+      "id": "signal:runtime:crux-live-runtime-1",
+      "kind": "runtime_observation",
+      "label": "anthropic/claude-3-haiku model activity",
+      "confidence": "high",
+      "technology": "gateway",
+      "workflow_hint": "live.runtime",
+      "candidate_label": "Live Runtime",
+      "scope_hint": "use",
+      "evidence": [
+        {
+          "detail": "1 metadata-only invocation observed between 2026-09-18T17:15:41.775Z and 2026-09-18T17:15:45.515Z. Provider: gateway; model: anthropic/claude-3-haiku."
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Gateway metadata can establish that model activity occurred, but cannot establish why the AI was used, who was affected or who held decision authority.",
+    "Prompt, response and reasoning content are not required for this discovery report.",
+    "Application and workflow labels are technical hints, not organisational declarations."
+  ]
+}
