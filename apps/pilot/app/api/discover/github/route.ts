@@ -27,12 +27,14 @@ const githubHeaders = () => ({
 
 const sourcePath = (path: string) =>
   path === "package.json" ||
-  (/\.(?:[cm]?[jt]sx?|json|ya?ml)$/i.test(path) &&
-    !/(?:^|\/)(?:docs?|tests?|__tests__|fixtures?|coverage|dist|build|node_modules)(?:\/|$)|\.(?:test|spec)\.[cm]?[jt]sx?$/i.test(path));
+  /(?:^|\/)(?:pyproject\.toml|requirements(?:-[^/]+)?\.txt)$/i.test(path) ||
+  (/\.(?:[cm]?[jt]sx?|py|json|ya?ml)$/i.test(path) &&
+    !/(?:^|\/)(?:docs?|tests?|__tests__|fixtures?|coverage|dist|build|node_modules)(?:\/|$)|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)(?:test_[^/]+|[^/]+_test)\.py$/i.test(path));
 
 const priority = (path: string) => {
   if (path === "package.json") return 0;
   if (/\/app\/api\//i.test(path)) return 1;
+  if (/(?:^|\/)(?:ask|chat|agent|extract|extraction|search)(?:\/|$)/i.test(path)) return 1;
   if (/\/jobs?\//i.test(path)) return 2;
   if (/\/providers?\//i.test(path)) return 3;
   if (/\/services?\//i.test(path)) return 4;
