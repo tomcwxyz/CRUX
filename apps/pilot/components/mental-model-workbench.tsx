@@ -67,7 +67,7 @@ type ViewReceipt = {
   humanInvolvement?: string;
   finalAuthority: string;
   outcome: string;
-  challenge?: { available: boolean; description?: string; uri?: string };
+  challenge?: NonNullable<CruxPortableBundle["receipts"][number]["challenge"]>;
 };
 
 type ViewModel = {
