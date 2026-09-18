@@ -36,4 +36,36 @@ describe("suggestAIUseCandidates", () => {
     expect(candidates[0]?.name).toBe("Support reply assistance");
     expect(candidates[0]?.unanswered).toContain("authority");
   });
+
+  it("does not turn an unscoped review clue into a separate AI use", () => {
+    const candidates = suggestAIUseCandidates({
+      format: "crux-discovery/0.1",
+      generated_at: "2026-09-18T20:30:00.000Z",
+      source: { kind: "source_code", provider: "ship-check", label: "example/soundings" },
+      signals: [
+        {
+          id: "ask-call",
+          kind: "model_call",
+          label: "Anthropic messages call",
+          confidence: "high",
+          technology: "anthropic",
+          workflow_hint: "ask",
+          candidate_label: "Ask",
+          evidence: [{ path: "server/example/ask/orchestrator.py", detail: "messages.create" }],
+        },
+        {
+          id: "review-clue",
+          kind: "human_review_surface",
+          label: "Human review surface",
+          confidence: "medium",
+          evidence: [{ path: "server/example/db/review_status.py", detail: "review status field" }],
+        },
+      ],
+      limitations: [],
+    });
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.name).toBe("Ask");
+    expect(candidates[0]?.signal_refs).not.toContain("review-clue");
+  });
 });
