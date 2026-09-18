@@ -27,6 +27,7 @@ describe("discoveryReportFromGateway", () => {
     const candidates = suggestAIUseCandidates(report);
     expect(candidates).toHaveLength(1);
     expect(candidates[0]?.name).toBe("Live Runtime");
+    expect(candidates[0]?.confidence).toBe("medium");
     expect(candidates[0]?.unanswered).toEqual(["purpose", "people_affected", "authority"]);
   });
 });
