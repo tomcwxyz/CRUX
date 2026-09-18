@@ -1,0 +1,95 @@
+{
+  "format": "crux-discovery/0.1",
+  "generated_at": "2026-09-18T18:30:00.000Z",
+  "source": {
+    "kind": "source_code",
+    "provider": "ship-check",
+    "label": "tomcwxyz/open-recs-local",
+    "external_ref": "tomcwxyz/open-recs-local"
+  },
+  "signals": [
+    {
+      "id": "signal:ai-sdk:package-ai",
+      "kind": "ai_sdk",
+      "label": "Vercel AI SDK dependency",
+      "confidence": "high",
+      "technology": "ai",
+      "evidence": [
+        {
+          "path": "package.json",
+          "detail": "Vercel AI SDK dependency is declared in project dependencies."
+        }
+      ]
+    },
+    {
+      "id": "signal:ai-sdk:openai-compatible",
+      "kind": "ai_sdk",
+      "label": "OpenAI-compatible AI SDK adapter",
+      "confidence": "high",
+      "technology": "openai-compatible",
+      "evidence": [
+        {
+          "path": "package.json",
+          "detail": "OpenAI-compatible AI SDK adapter is declared in project dependencies."
+        }
+      ]
+    },
+    {
+      "id": "signal:provider:llm",
+      "kind": "provider_configuration",
+      "label": "Configurable LLM provider boundary",
+      "confidence": "high",
+      "evidence": [
+        {
+          "path": "src/lib/providers/index.ts",
+          "detail": "Source contains a configurable LLM/provider boundary."
+        }
+      ]
+    },
+    {
+      "id": "signal:model-call:text",
+      "kind": "model_call",
+      "label": "Vercel AI SDK text generation",
+      "confidence": "high",
+      "technology": "ai",
+      "evidence": [
+        {
+          "path": "src/lib/providers/llm/openai-compat.ts",
+          "detail": "Vercel AI SDK text generation call site detected. Prompt and response content are not included."
+        }
+      ]
+    },
+    {
+      "id": "signal:model-call:object",
+      "kind": "model_call",
+      "label": "Vercel AI SDK structured generation",
+      "confidence": "high",
+      "technology": "ai",
+      "evidence": [
+        {
+          "path": "src/lib/providers/llm/openai-compat.ts",
+          "detail": "Vercel AI SDK structured generation call site detected. Prompt and response content are not included."
+        }
+      ]
+    },
+    {
+      "id": "signal:workflow:source-extract",
+      "kind": "workflow_job",
+      "label": "source.extract",
+      "confidence": "high",
+      "workflow_hint": "source.extract",
+      "candidate_label": "Recommendation extraction",
+      "evidence": [
+        {
+          "path": "docs/plans/2026-04-19-open-recs-local-design.md",
+          "detail": "A named workflow/job boundary source.extract is present in source evidence."
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Static source inspection can identify technical AI and workflow signals, but cannot establish organisational purpose, affected people, decision authority or whether a candidate represents one coherent AI use.",
+    "No prompt, response, source-document or application-record content is included in this discovery report.",
+    "Absence of a discovery signal does not establish absence of AI use."
+  ]
+}
