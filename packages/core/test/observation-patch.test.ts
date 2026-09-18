@@ -20,6 +20,7 @@ describe("buildObservationPatchProposal", () => {
     expect(proposal.target_path).toBe("src/lib/jobs/handlers/extract.ts");
     expect(proposal.environment.map((item) => item.name)).toEqual([
       "CRUX_INGEST_URL",
+      "CRUX_INGEST_TOKEN",
       "CRUX_SYSTEM_VERSION_REF",
       "CRUX_PRODUCER_ID",
     ]);
