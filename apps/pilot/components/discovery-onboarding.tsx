@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { buildObservationPatchProposal, buildObservationPlan, createDiscoveryDeclaration, discoveryConnectors, suggestAIUseCandidates } from "@crux/core";
 import { DiscoveryReportSchema, type DiscoveryQuestion } from "@crux/schemas";
+import { portableBundleFromDiscoveryDeclaration } from "@crux/formats";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
 
 type Stage = "connect" | "discover" | "confirm" | "observe";
@@ -88,6 +89,17 @@ export function DiscoveryOnboarding({
   const goDiscover = () => setStage("discover");
   const goConfirm = () => setStage("confirm");
   const goObserve = () => { if (declaration) setStage("observe"); };
+  const downloadDraft = () => {
+    if (!declaration) return;
+    const bundle = portableBundleFromDiscoveryDeclaration(declaration);
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `crux-${candidate.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ai-use"}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
   const selectCandidate = (id: string) => {
     setSelectedCandidateId(id);
     setOrganisationName("");
@@ -215,6 +227,9 @@ export function DiscoveryOnboarding({
               <div className="eyebrow2" style={{color:"rgba(255,255,255,.7)"}}>Canonical draft created</div>
               <h4>{declaration.system_version_ref}</h4>
               <p>The discovery candidate has become an internal Organisation → AI Use → System → exact SystemVersion record. No claim, evidence or outcome has been invented.</p>
+              <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
+                <button className="btn" type="button" onClick={downloadDraft}>Download portable draft</button>
+              </div>
             </div>}
             <div className="flow"><div className="flow-node"><span>Discovery</span><strong>Technical signals</strong></div><span className="arrow">→</span><div className="flow-node"><span>Declaration</span><strong>Human confirmed meaning</strong></div><span className="arrow">→</span><div className="flow-node"><span>Runtime</span><strong>Observe what actually runs</strong></div><span className="arrow">→</span><div className="flow-node"><span>CRUX</span><strong>Reconcile reality</strong></div></div>
             {observationPlan && <div className="observe-plan">
