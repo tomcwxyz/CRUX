@@ -1,5 +1,8 @@
 import { GITHUB_API_VERSION } from "../../../../../lib/github-app";
-import { generateOpenRecsSourceExtractPatch } from "../../../../../lib/observation-patch-adapters";
+import {
+  getObservationPatchAdapter,
+} from "../../../../../lib/observation-patch-registry";
+import type { RepositoryPatchFile } from "../../../../../lib/observation-patch-adapters";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +32,7 @@ const getFile = async ({
   path: string;
   ref: string;
   optional?: boolean;
-}) => {
+}): Promise<RepositoryPatchFile | null> => {
   const response = await fetch(
     `https://api.github.com/repos/${repository}/contents/${path
       .split("/")
@@ -72,11 +75,23 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, code: "invalid_json" }, { status: 400 });
   }
 
-  if (
-    body.repository !== "tomcwxyz/open-recs-local" ||
-    body.adapter_id !== "open-recs-source-extract" ||
-    !body.system_version_ref
-  ) {
+  if (!body.repository || !body.adapter_id || !body.system_version_ref) {
+    return Response.json(
+      {
+        ok: false,
+        code: "invalid_request",
+        message:
+          "Repository, exact observation adapter and SystemVersion are required.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const adapter = getObservationPatchAdapter(
+    body.adapter_id,
+    body.repository,
+  );
+  if (!adapter) {
     return Response.json(
       {
         ok: false,
@@ -90,7 +105,7 @@ export async function POST(request: Request) {
 
   try {
     const repositoryResponse = await fetch(
-      "https://api.github.com/repos/tomcwxyz/open-recs-local",
+      `https://api.github.com/repos/${body.repository}`,
       { headers: headers(), cache: "no-store" },
     );
     if (!repositoryResponse.ok) {
@@ -101,38 +116,27 @@ export async function POST(request: Request) {
     const repository = (await repositoryResponse.json()) as {
       default_branch?: string;
     };
-    const ref = repository.default_branch ?? "master";
+    if (!repository.default_branch) {
+      throw new Error("GitHub did not return the repository default branch.");
+    }
+    const ref = repository.default_branch;
 
-    const [extract, env, observe, observeTest] = await Promise.all([
-      getFile({
-        repository: body.repository,
-        path: "src/lib/jobs/handlers/extract.ts",
-        ref,
-      }),
-      getFile({
-        repository: body.repository,
-        path: ".env.example",
-        ref,
-      }),
-      getFile({
-        repository: body.repository,
-        path: "src/lib/crux/observe.ts",
-        ref,
-        optional: true,
-      }),
-      getFile({
-        repository: body.repository,
-        path: "src/lib/crux/observe.test.ts",
-        ref,
-        optional: true,
-      }),
-    ]);
+    const fetched = await Promise.all(
+      adapter.files.map((file) =>
+        getFile({
+          repository: body.repository!,
+          path: file.path,
+          ref,
+          ...(file.optional ? { optional: true } : {}),
+        }),
+      ),
+    );
 
-    const patch = generateOpenRecsSourceExtractPatch({
+    const patch = adapter.generate({
       repository: body.repository,
       systemVersionRef: body.system_version_ref,
-      files: [extract, env, observe, observeTest].filter(
-        (file): file is NonNullable<typeof file> => Boolean(file),
+      files: fetched.filter(
+        (file): file is RepositoryPatchFile => Boolean(file),
       ),
     });
 
