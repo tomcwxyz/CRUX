@@ -101,7 +101,7 @@ describe("GitHub observation pull request transaction", () => {
       },
     );
 
-    const fetchImpl = vi.fn(
+    const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         const method = init?.method ?? "GET";
@@ -127,7 +127,8 @@ describe("GitHub observation pull request transaction", () => {
         }
         throw new Error(`Unexpected fetch: ${method} ${url}`);
       },
-    ) as unknown as typeof fetch;
+    );
+    const fetchImpl = fetchMock as unknown as typeof fetch;
 
     const result = await createObservationPullRequest({
       repository: "tomcwxyz/open-recs-local",
@@ -151,13 +152,13 @@ describe("GitHub observation pull request transaction", () => {
       ),
     ).toBe(true);
     expect(
-      fetchImpl.mock.calls.some(([, init]) => init?.method === "POST"),
+      fetchMock.mock.calls.some(([, init]) => init?.method === "POST"),
     ).toBe(false);
   });
 
   it("returns an existing open review instead of duplicating its branch", async () => {
     const mintToken = vi.fn(async () => "read-token");
-    const fetchImpl = vi.fn(
+    const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         const method = init?.method ?? "GET";
@@ -196,7 +197,8 @@ describe("GitHub observation pull request transaction", () => {
         }
         throw new Error(`Unexpected fetch: ${method} ${url}`);
       },
-    ) as unknown as typeof fetch;
+    );
+    const fetchImpl = fetchMock as unknown as typeof fetch;
 
     const result = await createObservationPullRequest({
       repository: "tomcwxyz/open-recs-local",
@@ -219,7 +221,7 @@ describe("GitHub observation pull request transaction", () => {
     expect(mintToken).toHaveBeenNthCalledWith(1, 12, { contents: "read" });
     expect(mintToken).toHaveBeenNthCalledWith(2, 12, { pull_requests: "read" });
     expect(
-      fetchImpl.mock.calls.some(([, init]) => init?.method === "POST"),
+      fetchMock.mock.calls.some(([, init]) => init?.method === "POST"),
     ).toBe(false);
   });
 
