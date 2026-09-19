@@ -178,7 +178,13 @@ const scanRepo = async (repoRef: RepoRef, installationId?: number) => {
   const fetched = await mapWithConcurrency(
     entries,
     token ? 10 : 24,
-    (entry) => fetchSourceFile({ repoRef, repoUrl, branch, entry, token }),
+    (entry) => fetchSourceFile({
+      repoRef,
+      repoUrl,
+      branch,
+      entry,
+      ...(token ? { token } : {}),
+    }),
   );
 
   let totalChars = 0;
