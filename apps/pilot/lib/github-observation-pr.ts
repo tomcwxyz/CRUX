@@ -334,14 +334,22 @@ export const createObservationPullRequest = async ({
     );
     pullsUrl.searchParams.set("state", "open");
     pullsUrl.searchParams.set("head", `${owner}:${patch.branch_name}`);
-    const pulls = await json<GithubPull[]>(
-      fetchImpl,
-      pullsUrl.toString(),
-      readToken,
-    );
-    const existingPull = pulls.find(
-      (pull) => Boolean(pull.number && pull.html_url),
-    );
+    let existingPull: GithubPull | undefined;
+    try {
+      const pullReadToken = await mintToken(installationId, {
+        pull_requests: "read",
+      });
+      const pulls = await json<GithubPull[]>(
+        fetchImpl,
+        pullsUrl.toString(),
+        pullReadToken,
+      );
+      existingPull = pulls.find(
+        (pull) => Boolean(pull.number && pull.html_url),
+      );
+    } catch {
+      // Existing branch still fails closed if the App cannot inspect PRs.
+    }
     if (existingPull?.number && existingPull.html_url) {
       return {
         status: "existing_review",
