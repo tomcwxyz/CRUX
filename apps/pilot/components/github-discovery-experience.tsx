@@ -34,6 +34,7 @@ type ConnectedRepository = {
   private: boolean;
   default_branch: string;
   html_url: string;
+  user_can_write?: boolean;
 };
 
 const styles = `
@@ -50,6 +51,7 @@ export function GithubDiscoveryExperience() {
   const [status, setStatus] = useState<GithubStatus | null>(null);
   const [repositories, setRepositories] = useState<ConnectedRepository[]>([]);
   const [selectedRepository, setSelectedRepository] = useState("");
+  const [activeRepository, setActiveRepository] = useState<ConnectedRepository | null>(null);
 
   const loadConnection = async () => {
     setConnectionLoading(true);
@@ -112,6 +114,7 @@ export function GithubDiscoveryExperience() {
       }
       setReport(DiscoveryReportSchema.parse(result.report));
       setScan(result.scan ?? null);
+      if (!installationId) setActiveRepository(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "CRUX could not scan this repository.");
     } finally {
@@ -122,6 +125,7 @@ export function GithubDiscoveryExperience() {
   const scanConnected = async () => {
     const selected = repositories.find((item) => item.full_name === selectedRepository);
     if (!selected) return;
+    setActiveRepository(selected);
     await scanRepo({
       repository: selected.full_name,
       installationId: selected.installation_id,
@@ -160,6 +164,8 @@ export function GithubDiscoveryExperience() {
             : "Public GitHub · bounded hosted probe · deeper scanning available through Ship Check"}
           initialStage="discover"
           showConnectorChoices={false}
+          githubInstallationId={activeRepository?.installation_id}
+          githubUserCanWrite={Boolean(activeRepository?.user_can_write)}
         />
       </>
     );
@@ -207,7 +213,7 @@ export function GithubDiscoveryExperience() {
                 >
                   {repositories.map((item) => (
                     <option key={`${item.installation_id}:${item.full_name}`} value={item.full_name}>
-                      {item.full_name}{item.private ? " · private" : ""}
+                      {item.full_name}{item.private ? " · private" : ""}{item.user_can_write ? " · can create PR" : ""}
                     </option>
                   ))}
                 </select>
