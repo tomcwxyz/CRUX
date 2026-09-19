@@ -7,7 +7,7 @@ import {
   decodeGithubConnection,
   getGithubAppConfig,
   githubAppConfigured,
-} from "../../../lib/github-app";
+} from "../../../../lib/github-app";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
