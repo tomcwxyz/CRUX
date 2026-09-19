@@ -8,6 +8,17 @@ import openRecsJson from "../../../examples/discovery/open-recs.json";
 
 type Stage = "connect" | "discover" | "confirm" | "observe";
 
+type PatchReadiness =
+  | {
+      status: "ready";
+      title: string;
+      branch_name: string;
+      checked_ref: string;
+      changes: Array<{ path: string; mode: "create" | "update"; purpose: string }>;
+    }
+  | { status: "blocked"; reason: string }
+  | { status: "error"; reason: string };
+
 const questionCopy: Record<DiscoveryQuestion, string> = {
   purpose: "What is this AI use for?",
   people_affected: "Who can be affected by it?",
@@ -51,6 +62,8 @@ export function DiscoveryOnboarding({
   const [power, setPower] = useState("recommend");
   const [actionControl, setActionControl] = useState("human_approval");
   const [showPatch, setShowPatch] = useState(false);
+  const [patchReadiness, setPatchReadiness] = useState<PatchReadiness | null>(null);
+  const [checkingPatch, setCheckingPatch] = useState(false);
   const observationPlan = useMemo(
     () => candidate ? buildObservationPlan(report, candidate) : null,
     [report, candidate],
@@ -89,6 +102,57 @@ export function DiscoveryOnboarding({
   const goDiscover = () => setStage("discover");
   const goConfirm = () => setStage("confirm");
   const goObserve = () => { if (declaration) setStage("observe"); };
+  const repositoryName = (() => {
+    if (report.source.external_ref) {
+      try {
+        const url = new URL(report.source.external_ref);
+        return url.hostname === "github.com"
+          ? url.pathname.replace(/^\//, "").replace(/\/$/, "")
+          : "";
+      } catch {
+        return "";
+      }
+    }
+    return report.source.label.split("#")[0] ?? "";
+  })();
+  const checkExactPatch = async () => {
+    if (
+      !declaration ||
+      patchProposal?.generation.state !== "adapter_available" ||
+      !repositoryName
+    ) {
+      return;
+    }
+    setCheckingPatch(true);
+    setPatchReadiness(null);
+    try {
+      const response = await fetch("/api/github/observation-patch/preview", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          repository: repositoryName,
+          adapter_id: patchProposal.generation.adapter_id,
+          system_version_ref: declaration.system_version_ref,
+        }),
+      });
+      const result = (await response.json()) as {
+        ok: boolean;
+        message?: string;
+        patch?: PatchReadiness;
+      };
+      if (!response.ok || !result.ok || !result.patch) {
+        throw new Error(result.message ?? "CRUX could not check the repository patch.");
+      }
+      setPatchReadiness(result.patch);
+    } catch (error) {
+      setPatchReadiness({
+        status: "error",
+        reason: error instanceof Error ? error.message : "CRUX could not check the repository patch.",
+      });
+    } finally {
+      setCheckingPatch(false);
+    }
+  };
   const downloadDraft = () => {
     if (!declaration) return;
     const bundle = portableBundleFromDiscoveryDeclaration(declaration);
@@ -109,6 +173,7 @@ export function DiscoveryOnboarding({
     setPower("recommend");
     setActionControl("human_approval");
     setShowPatch(false);
+    setPatchReadiness(null);
     setStage("discover");
   };
 
@@ -253,7 +318,20 @@ export function DiscoveryOnboarding({
                 </div>
                 <code>{patchProposal.integration_snippet}</code>
                 <div className="patch-list">{patchProposal.review_checks.map((check) => <span key={check}>✓ {check}</span>)}</div>
-                <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>Opening a pull request from CRUX itself will require the GitHub App connection. Until then this is a reviewable proposal, not an automatic repository write.</div>
+                <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>{patchProposal.generation.reason}</div>
+                {patchProposal.generation.state === "adapter_available" && declaration && <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
+                  <button className="btn" type="button" onClick={() => void checkExactPatch()} disabled={checkingPatch}>
+                    {checkingPatch ? "Checking repository…" : "Check exact patch readiness"}
+                  </button>
+                </div>}
+                {patchReadiness?.status === "ready" && <div className="patch-list">
+                  <strong>Exact patch ready on {patchReadiness.checked_ref}</strong>
+                  {patchReadiness.changes.map((change) => <span key={change.path}>✓ {change.mode}: {change.path} — {change.purpose}</span>)}
+                  <span>Proposed branch: {patchReadiness.branch_name}</span>
+                </div>}
+                {patchReadiness?.status === "blocked" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>Exact patch blocked: {patchReadiness.reason}</div>}
+                {patchReadiness?.status === "error" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>Patch check failed: {patchReadiness.reason}</div>}
+                <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>CRUX will only offer repository writes when an exact adapter passes its source checks. Pull-request creation will require a separate explicit GitHub write capability and will never auto-merge.</div>
               </div>}
             </div>}
             <p className="detail" style={{color:"rgba(255,255,255,.72)"}}>Runtime evidence may challenge the declaration, but never silently rewrites it. A generated patch should remain reviewable and disabled until explicit CRUX configuration is present.</p>

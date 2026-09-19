@@ -25,5 +25,58 @@ describe("buildObservationPatchProposal", () => {
       "CRUX_PRODUCER_ID",
     ]);
     expect(proposal.review_checks.join(" ")).toContain("No prompt");
+    expect(proposal.generation.state).toBe("manual_review_required");
+  });
+
+  it("marks the proven Open Recs source.extract adapter as available", () => {
+    const report = DiscoveryReportSchema.parse({
+      format: "crux-discovery/0.1",
+      generated_at: "2026-09-19T11:55:00.000Z",
+      source: {
+        kind: "source_code",
+        provider: "github-probe",
+        label: "tomcwxyz/open-recs-local#master",
+        external_ref: "https://github.com/tomcwxyz/open-recs-local",
+      },
+      signals: [
+        {
+          id: "flow",
+          kind: "workflow_job",
+          label: "source.extract",
+          confidence: "high",
+          workflow_hint: "source.extract",
+          candidate_label: "Extract Source",
+          scope_hint: "use",
+          evidence: [{
+            path: "src/lib/jobs/handlers/extract.ts",
+            detail: "workflow",
+          }],
+        },
+        {
+          id: "call",
+          kind: "model_call",
+          label: "Structured generation through the project LLM provider",
+          confidence: "high",
+          technology: "llm-provider",
+          workflow_hint: "source.extract",
+          candidate_label: "Extract Source",
+          scope_hint: "use",
+          evidence: [{
+            path: "src/lib/jobs/handlers/extract.ts",
+            detail: "call",
+          }],
+        },
+      ],
+      limitations: [],
+    });
+
+    const candidate = suggestAIUseCandidates(report)[0]!;
+    const proposal = buildObservationPatchProposal(report, candidate);
+
+    expect(proposal.generation).toEqual({
+      state: "adapter_available",
+      adapter_id: "open-recs-source-extract",
+      reason: expect.stringContaining("deterministic adapter"),
+    });
   });
 });
