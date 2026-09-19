@@ -27,6 +27,12 @@ type PullRequestState =
       branch: string;
       base_sha: string;
     }
+  | {
+      status: "existing_review";
+      pull_request_number: number;
+      pull_request_url: string;
+      branch: string;
+    }
   | { status: "blocked"; code: string; reason: string }
   | { status: "error"; reason: string };
 
@@ -402,6 +408,11 @@ export function DiscoveryOnboarding({
                   <span>Base checked again at {pullRequestState.base_sha.slice(0, 12)}.</span>
                   <a href={pullRequestState.pull_request_url} target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Open the draft pull request on GitHub</a>
                   <span>CRUX will not merge it.</span>
+                </div>}
+                {pullRequestState?.status === "existing_review" && <div className="patch-list">
+                  <strong>Observation change is already under review in PR #{pullRequestState.pull_request_number}.</strong>
+                  <a href={pullRequestState.pull_request_url} target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Open the existing draft pull request on GitHub</a>
+                  <span>CRUX did not update or duplicate the existing review branch.</span>
                 </div>}
                 {pullRequestState?.status === "blocked" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>PR creation blocked: {pullRequestState.reason}</div>}
                 {pullRequestState?.status === "error" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>PR creation failed: {pullRequestState.reason}</div>}
