@@ -107,7 +107,11 @@ const installationContextFor = async (installationId?: number) => {
   }
 
   return {
-    token: await createGithubInstallationToken(installationId, config),
+    token: await createGithubInstallationToken(
+      installationId,
+      config,
+      { contents: "read" },
+    ),
     repositoryIds: new Set(installation.repository_ids),
   };
 };
