@@ -5,6 +5,7 @@ import {
   decodeGithubConnection,
   encodeGithubConnection,
   githubConnectionAllowsRepository,
+  githubConnectionAllowsWriteRepository,
 } from "../lib/github-app";
 
 describe("GitHub App connection helpers", () => {
@@ -13,8 +14,12 @@ describe("GitHub App connection helpers", () => {
     const encoded = encodeGithubConnection({
       version: 1,
       installations: [
-        { id: 12, repository_ids: [101, 102, 101] },
-        { id: 34, repository_ids: [201] },
+        {
+          id: 12,
+          repository_ids: [101, 102, 101],
+          write_repository_ids: [102, 999],
+        },
+        { id: 34, repository_ids: [201], write_repository_ids: [] },
       ],
       expires_at: 2_000,
     }, secret);
@@ -23,13 +28,15 @@ describe("GitHub App connection helpers", () => {
     expect(decoded).toEqual({
       version: 1,
       installations: [
-        { id: 12, repository_ids: [101, 102] },
-        { id: 34, repository_ids: [201] },
+        { id: 12, repository_ids: [101, 102], write_repository_ids: [102] },
+        { id: 34, repository_ids: [201], write_repository_ids: [] },
       ],
       expires_at: 2_000,
     });
     expect(decoded && githubConnectionAllowsRepository(decoded, 12, 102)).toBe(true);
     expect(decoded && githubConnectionAllowsRepository(decoded, 12, 201)).toBe(false);
+    expect(decoded && githubConnectionAllowsWriteRepository(decoded, 12, 102)).toBe(true);
+    expect(decoded && githubConnectionAllowsWriteRepository(decoded, 12, 101)).toBe(false);
     expect(decodeGithubConnection(encoded + "x", secret, 1_000)).toBeNull();
     expect(decodeGithubConnection(encoded, secret, 3_000)).toBeNull();
   });
