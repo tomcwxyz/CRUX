@@ -3,7 +3,7 @@
 **Status:** implementation ready for configuration  
 **Updated:** 19 September 2026
 
-The CRUX discovery pilot can work without GitHub authentication for public repositories. The GitHub App connection adds a repository chooser and bounded read access to private repositories.
+The CRUX discovery pilot can work without GitHub authentication for public repositories. The GitHub App connection adds a repository chooser, bounded private-repository discovery, and—when separately permitted—an explicit draft-PR action for exact observation patches.
 
 The connection is intentionally separate from organisational meaning:
 
@@ -35,14 +35,14 @@ CRUX asks GitHub which CRUX App installations that user can access
    ↓
 CRUX discards the user token
    ↓
-CRUX stores only the verified installation IDs in a signed HttpOnly cookie
+CRUX stores the verified installation IDs plus separate read/write repository allow-lists in a signed HttpOnly cookie
    ↓
 When a repository is read, CRUX mints a short-lived installation token server-side
 ```
 
 GitHub warns that the `installation_id` supplied to an App setup URL can be spoofed. CRUX therefore ignores that value and sends the browser back through user authorisation before accepting any installation.
 
-The connection cookie contains verified installation IDs, the repository IDs this user-and-App combination could access at authorisation time, and an expiry. It is HMAC-signed, HttpOnly, SameSite=Lax and Secure in production. It expires after one hour.
+The connection cookie contains verified installation IDs, the repository IDs this user-and-App combination could read at authorisation time, the narrower repository IDs where the user also had write access, and an expiry. It is HMAC-signed, HttpOnly, SameSite=Lax and Secure in production. It expires after one hour.
 
 ## Registering the GitHub App
 
@@ -55,12 +55,19 @@ For the current pilot, use:
 - **Request user authorization during installation:** off; CRUX runs the explicit user-authorisation flow itself
 - **Webhooks:** not required for this slice
 
-Repository permissions:
+Repository permissions for **discovery only**:
 
 - **Metadata:** read
 - **Contents:** read
 
-Install the App only on repositories the user wants CRUX to inspect. GitHub's selected-repository installation option is preferred.
+To exercise the **Create draft review PR** capability, the same App installation must additionally be approved for:
+
+- **Contents:** write
+- **Pull requests:** write
+
+CRUX still mints a read-scoped installation token for discovery. It requests a write-capable token only after the user explicitly chooses **Create draft review PR**, after the exact adapter has passed against the current base commit.
+
+Install the App only on repositories the user wants CRUX to inspect. GitHub's selected-repository installation option is preferred. Existing installations may need to approve the App permission upgrade before PR creation becomes available.
 
 ## Vercel environment
 
@@ -94,19 +101,30 @@ After a person selects a repository, CRUX:
 
 The installation token remains server-side. The current pilot records at most the first 100 user-accessible repositories per installation in the signed connection; pagination is a later hardening step if real use requires larger installations.
 
-## Deliberate limits
+## Draft observation PR safety
 
-This first App connection is **read-only**.
+The pilot now contains a write path, but it is deliberately narrower than the read connection.
 
-It does not yet:
+A draft PR can be created only when all of these are true:
 
-- create branches;
-- change source files;
-- open pull requests;
-- subscribe to repository webhooks;
-- persist GitHub account/workspace identity in CRUX.
+1. the repository is in the signed user/App read allow-list;
+2. the authorising GitHub user also had repository write access when the connection was created;
+3. a deterministic CRUX patch adapter exists for this exact discovered use;
+4. the adapter re-reads and passes against one immutable current base commit;
+5. the target review branch does not already exist;
+6. the installed GitHub App can mint a token scoped to **Contents: write** and **Pull requests: write**;
+7. the user explicitly presses **Create draft review PR**.
 
-The next observation-PR step should be a deliberate permission upgrade. It should request only the extra GitHub permissions needed to create a branch/commit and open a pull request, and it should still require an explicit user action before creating the PR. CRUX should never silently merge it.
+CRUX then creates four blobs, one tree, one commit, one new review branch and a **draft** pull request. It never updates or force-pushes an existing review branch and never merges the PR. If pull-request creation fails after branch creation, CRUX attempts to remove the new branch.
+
+The first deterministic adapter is intentionally narrow: Open Recommendations Local → `source.extract`. Other discoveries remain proposal-only until a tested adapter exists.
+
+Still out of scope:
+
+- automatic merging;
+- arbitrary AI-generated source edits;
+- repository webhooks;
+- persistent GitHub account/workspace identity in CRUX.
 
 ## Test bar
 
@@ -117,4 +135,5 @@ Before enabling this on production:
 - public discovery must still return the Open Recs regression candidates;
 - private scanning must remain impossible without a verified installation cookie;
 - the connection UI must remain usable when the GitHub App is not configured;
-- a real private repository should be tested only after the App and Vercel secrets are configured.
+- a real private repository should be tested only after the App and Vercel secrets are configured;
+- draft-PR creation should be live-tested only after the App's write permission upgrade has been explicitly approved.
