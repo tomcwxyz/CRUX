@@ -1,7 +1,7 @@
 # CRUX roadmap
 
 **Status:** active prototype  
-**Updated:** 18 September 2026
+**Updated:** 19 September 2026
 
 ## Direction
 
@@ -93,9 +93,10 @@ Ship Check is the first source-code discovery producer, not a dependency. The sa
 - [x] turn the Open Recs `source.extract` proposal into a real reviewable PR (#25), opt-in and metadata-only, without merging it;
 - [x] lock the dependency-free Open Recs observation payload against CRUX's canonical ingest schema;
 - [ ] observe whether a person can recognise the discovered candidates without CRUX terminology;
-- [ ] make human confirmation create a canonical CRUX declaration rather than remaining UI state;
-- [ ] add the plain-language **What power does the AI have?** step before minting an exact SystemVersion;
-- [ ] bind the observation hook to that human-confirmed exact SystemVersion;
+- [x] make human confirmation create a canonical CRUX declaration rather than remaining UI state;
+- [x] add the plain-language **What power does the AI have?** step before minting an exact SystemVersion;
+- [x] bind the observation hook to that human-confirmed exact SystemVersion;
+- [x] export the confirmed internal draft as a reference-valid portable `crux-bundle/0.1`;
 - [x] pass a real gateway/runtime observation through the same discovery contract and onboarding without source-code evidence;
 - [ ] add a GitHub App/private-repository connection and repository chooser;
 - [ ] let an authorised GitHub connection open the generated observation PR from CRUX;
