@@ -30,6 +30,6 @@ export async function GET() {
     ok: true,
     configured: true,
     connected: Boolean(connection),
-    installation_count: connection?.installation_ids.length ?? 0,
+    installation_count: connection?.installations.length ?? 0,
   });
 }
