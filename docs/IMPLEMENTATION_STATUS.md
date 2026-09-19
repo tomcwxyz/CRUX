@@ -84,7 +84,11 @@ The browser connection uses GitHub user authorisation to establish the intersect
 
 The App setup redirect's `installation_id` is deliberately ignored and re-verified through user authorisation. Private repository reads use short-lived installation tokens, are checked against the signed user-scoped repository allow-list, and feed the same bounded `crux-discovery/0.1` logic as public repositories.
 
-This implementation is code/CI tested but has **not yet been exercised against a real private repository** because the production GitHub App registration and secrets are not configured. See `docs/GITHUB_APP_CONNECTION.md`.
+This implementation is code/CI tested but has **not yet been exercised against a real private repository** because the production GitHub App registration and secrets are not configured.
+
+The pilot also contains a fail-closed draft-PR path for deterministic observation adapters. Read and write repository scopes are stored separately. PR creation re-resolves the current default-branch SHA, regenerates the patch at that immutable commit, refuses an existing review branch, requests a write-scoped installation token only after those checks, creates one commit, and opens a draft PR. It never auto-merges.
+
+The first adapter is intentionally limited to Open Recs `source.extract`. The write path is not yet live-validated because the production GitHub App has not been configured/approved for Contents + Pull requests write. See `docs/GITHUB_APP_CONNECTION.md`.
 
 ## Disclosure safety
 

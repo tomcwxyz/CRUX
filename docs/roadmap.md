@@ -100,7 +100,8 @@ Ship Check is the first source-code discovery producer, not a dependency. The sa
 - [x] pass a real gateway/runtime observation through the same discovery contract and onboarding without source-code evidence;
 - [x] add a GitHub App/private-repository connection and repository chooser;
 - [ ] configure the GitHub App on production and run one real private-repository discovery end-to-end;
-- [ ] let an authorised GitHub connection open the generated observation PR from CRUX;
+- [ ] approve the App write-permission upgrade and run the first live CRUX-created draft observation PR end-to-end;
+- [x] let an authorised GitHub connection open the generated observation PR from CRUX;
 - [ ] build the actual account/platform connection for a non-source-code producer (gateway or workflow platform) and test discovery from that live connector.
 
 The first real discovery run found two candidate uses from executable Open Recs evidence — `chat.search` and `source.extract` — plus shared AI SDK/provider infrastructure. The Ship Check regression excludes Markdown and test/spec evidence and keeps discovery concise. CRUX's hosted public-GitHub probe is deliberately lighter-weight than Ship Check and now uses the same discovery envelope.

@@ -30,7 +30,13 @@ export async function GET() {
       connection.installations.map(async (installation) => {
         const repositories = await listGithubInstallationRepositories(installation.id, config);
         const allowed = new Set(installation.repository_ids);
-        return repositories.filter((repository) => allowed.has(repository.id));
+        const writable = new Set(installation.write_repository_ids);
+        return repositories
+          .filter((repository) => allowed.has(repository.id))
+          .map((repository) => ({
+            ...repository,
+            user_can_write: writable.has(repository.id),
+          }));
       }),
     );
     const repositories = groups
