@@ -1,4 +1,13 @@
+import { cookies } from "next/headers";
 import { discoverAIFromSourceSnapshot } from "@crux/core";
+import {
+  GITHUB_API_VERSION,
+  GITHUB_CONNECTION_COOKIE,
+  createGithubInstallationToken,
+  decodeGithubConnection,
+  getGithubAppConfig,
+  githubAppConfigured,
+} from "../../../lib/github-app";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,6 +17,7 @@ const MAX_FILE_CHARS = 60_000;
 const MAX_TOTAL_CHARS = 2_000_000;
 
 type RepoRef = { owner: string; repo: string };
+type TreeEntry = { path: string; sha: string; size?: number };
 
 const parseRepo = (value: string): RepoRef | null => {
   const trimmed = value.trim().replace(/\.git$/, "");
@@ -19,10 +29,11 @@ const parseRepo = (value: string): RepoRef | null => {
   return null;
 };
 
-const githubHeaders = () => ({
+const githubHeaders = (token?: string) => ({
   Accept: "application/vnd.github+json",
+  "X-GitHub-Api-Version": GITHUB_API_VERSION,
   "User-Agent": "crux-discovery-pilot",
-  ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
 });
 
 const sourcePath = (path: string) =>
@@ -42,43 +53,97 @@ const priority = (path: string) => {
   return 10;
 };
 
-const fetchJson = async <T>(url: string): Promise<T> => {
+const fetchJson = async <T>(url: string, token?: string): Promise<T> => {
   const response = await fetch(url, {
-    headers: githubHeaders(),
+    headers: githubHeaders(token),
     cache: "no-store",
   });
   if (!response.ok) {
     const message = response.status === 404
-      ? "Repository or branch was not found, or the repository is not public."
+      ? "Repository or branch was not found, or this GitHub connection cannot access it."
       : `GitHub returned ${response.status} while CRUX was reading the repository.`;
     throw new Error(message);
   }
   return response.json() as Promise<T>;
 };
 
-const scanPublicRepo = async (repoRef: RepoRef) => {
+const installationTokenFor = async (installationId?: number) => {
+  if (installationId === undefined) return undefined;
+  if (!githubAppConfigured()) {
+    throw new Error("The CRUX GitHub App is not configured on this deployment.");
+  }
+
+  const config = getGithubAppConfig();
+  const cookieStore = await cookies();
+  const connection = decodeGithubConnection(
+    cookieStore.get(GITHUB_CONNECTION_COOKIE)?.value,
+    config.connectionSecret,
+  );
+  if (!connection?.installation_ids.includes(installationId)) {
+    throw new Error("This browser session is not connected to that GitHub installation.");
+  }
+  return createGithubInstallationToken(installationId, config);
+};
+
+const fetchSourceFile = async ({
+  repoRef,
+  repoUrl,
+  branch,
+  entry,
+  token,
+}: {
+  repoRef: RepoRef;
+  repoUrl: string;
+  branch: string;
+  entry: TreeEntry;
+  token?: string;
+}) => {
+  if (token) {
+    const blob = await fetchJson<{ content?: string; encoding?: string }>(
+      `${repoUrl}/git/blobs/${encodeURIComponent(entry.sha)}`,
+      token,
+    );
+    if (!blob.content || blob.encoding !== "base64") return null;
+    return {
+      path: entry.path,
+      content: Buffer.from(blob.content.replace(/\n/g, ""), "base64")
+        .toString("utf8")
+        .slice(0, MAX_FILE_CHARS),
+    };
+  }
+
+  const rawUrl = `https://raw.githubusercontent.com/${encodeURIComponent(repoRef.owner)}/${encodeURIComponent(repoRef.repo)}/${encodeURIComponent(branch)}/${entry.path.split("/").map(encodeURIComponent).join("/")}`;
+  const response = await fetch(rawUrl, { cache: "no-store" });
+  if (!response.ok) return null;
+  return { path: entry.path, content: (await response.text()).slice(0, MAX_FILE_CHARS) };
+};
+
+const scanRepo = async (repoRef: RepoRef, installationId?: number) => {
+  const token = await installationTokenFor(installationId);
   const repoUrl = `https://api.github.com/repos/${encodeURIComponent(repoRef.owner)}/${encodeURIComponent(repoRef.repo)}`;
-  const repo = await fetchJson<{ default_branch: string; html_url: string; full_name: string }>(repoUrl);
+  const repo = await fetchJson<{
+    default_branch: string;
+    html_url: string;
+    full_name: string;
+    private: boolean;
+  }>(repoUrl, token);
   const branch = repo.default_branch;
   const tree = await fetchJson<{
     truncated?: boolean;
-    tree: Array<{ path?: string; type?: string; size?: number }>;
-  }>(`${repoUrl}/git/trees/${encodeURIComponent(branch)}?recursive=1`);
+    tree: Array<{ path?: string; type?: string; size?: number; sha?: string }>;
+  }>(`${repoUrl}/git/trees/${encodeURIComponent(branch)}?recursive=1`, token);
 
-  const paths = tree.tree
-    .filter((item) => item.type === "blob" && item.path && sourcePath(item.path))
+  const entries: TreeEntry[] = tree.tree
+    .filter((item): item is { path: string; type: string; size?: number; sha: string } =>
+      item.type === "blob" && Boolean(item.path && item.sha) && sourcePath(item.path!),
+    )
     .filter((item) => !item.size || item.size <= MAX_FILE_CHARS * 4)
-    .map((item) => item.path!)
-    .sort((left, right) => priority(left) - priority(right) || left.localeCompare(right))
+    .map((item) => ({ path: item.path, sha: item.sha, ...(item.size ? { size: item.size } : {}) }))
+    .sort((left, right) => priority(left.path) - priority(right.path) || left.path.localeCompare(right.path))
     .slice(0, MAX_FILES);
 
   const fetched = await Promise.all(
-    paths.map(async (path) => {
-      const rawUrl = `https://raw.githubusercontent.com/${encodeURIComponent(repoRef.owner)}/${encodeURIComponent(repoRef.repo)}/${encodeURIComponent(branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
-      const response = await fetch(rawUrl, { cache: "no-store" });
-      if (!response.ok) return null;
-      return { path, content: (await response.text()).slice(0, MAX_FILE_CHARS) };
-    }),
+    entries.map((entry) => fetchSourceFile({ repoRef, repoUrl, branch, entry, token })),
   );
 
   let totalChars = 0;
@@ -92,7 +157,7 @@ const scanPublicRepo = async (repoRef: RepoRef) => {
   }
 
   const report = discoverAIFromSourceSnapshot({
-    provider: "github-probe",
+    provider: installationId ? "github-app" : "github-probe",
     label: `${repo.full_name}#${branch}`,
     externalRef: repo.html_url,
     files,
@@ -103,49 +168,62 @@ const scanPublicRepo = async (repoRef: RepoRef) => {
     report,
     scan: {
       repository: repo.full_name,
+      private: repo.private,
       branch,
       tree_truncated: Boolean(tree.truncated),
-      files_considered: paths.length,
+      files_considered: entries.length,
       files_read: files.length,
       content_chars_read: totalChars,
-      mode: "bounded-public-github",
+      mode: installationId ? "github-app" : "bounded-public-github",
     },
   };
 };
 
-const respond = async (value: string) => {
+const respond = async (value: string, installationId?: number) => {
   const repoRef = parseRepo(value);
   if (!repoRef) {
     return Response.json({
       ok: false,
       code: "invalid_repository",
-      message: "Use a public GitHub URL or owner/repository name.",
+      message: "Use a GitHub repository in owner/repository form.",
     }, { status: 400 });
   }
 
   try {
-    const result = await scanPublicRepo(repoRef);
+    const result = await scanRepo(repoRef, installationId);
     return Response.json(result);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "CRUX could not scan this repository.";
+    const status = /not connected|not configured/i.test(message) ? 401 : 502;
     return Response.json({
       ok: false,
       code: "github_discovery_failed",
-      message: error instanceof Error ? error.message : "CRUX could not scan this repository.",
-    }, { status: 502 });
+      message,
+    }, { status });
   }
 };
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  return respond(url.searchParams.get("repo") ?? "");
+  const installationValue = url.searchParams.get("installation_id");
+  const installationId = installationValue ? Number(installationValue) : undefined;
+  return respond(
+    url.searchParams.get("repo") ?? "",
+    Number.isSafeInteger(installationId) && (installationId ?? 0) > 0 ? installationId : undefined,
+  );
 }
 
 export async function POST(request: Request) {
-  let body: { repo?: string };
+  let body: { repo?: string; installation_id?: number };
   try {
-    body = (await request.json()) as { repo?: string };
+    body = (await request.json()) as { repo?: string; installation_id?: number };
   } catch {
     return Response.json({ ok: false, code: "invalid_json" }, { status: 400 });
   }
-  return respond(body.repo ?? "");
+  return respond(
+    body.repo ?? "",
+    Number.isSafeInteger(body.installation_id) && (body.installation_id ?? 0) > 0
+      ? body.installation_id
+      : undefined,
+  );
 }
