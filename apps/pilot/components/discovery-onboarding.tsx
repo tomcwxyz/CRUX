@@ -19,6 +19,17 @@ type PatchReadiness =
   | { status: "blocked"; reason: string }
   | { status: "error"; reason: string };
 
+type PullRequestState =
+  | {
+      status: "created";
+      pull_request_number: number;
+      pull_request_url: string;
+      branch: string;
+      base_sha: string;
+    }
+  | { status: "blocked"; code: string; reason: string }
+  | { status: "error"; reason: string };
+
 const questionCopy: Record<DiscoveryQuestion, string> = {
   purpose: "What is this AI use for?",
   people_affected: "Who can be affected by it?",
@@ -40,6 +51,8 @@ type DiscoveryOnboardingProps = {
   connectionMeta?: string;
   initialStage?: Stage;
   showConnectorChoices?: boolean;
+  githubInstallationId?: number | undefined;
+  githubUserCanWrite?: boolean | undefined;
 };
 
 export function DiscoveryOnboarding({
@@ -48,6 +61,8 @@ export function DiscoveryOnboarding({
   connectionMeta = "GitHub · scanned by Ship Check · metadata-only discovery",
   initialStage = "connect",
   showConnectorChoices = true,
+  githubInstallationId,
+  githubUserCanWrite = false,
 }: DiscoveryOnboardingProps = {}) {
   const report = useMemo(() => DiscoveryReportSchema.parse(reportData), [reportData]);
   const candidates = useMemo(() => suggestAIUseCandidates(report), [report]);
@@ -64,6 +79,8 @@ export function DiscoveryOnboarding({
   const [showPatch, setShowPatch] = useState(false);
   const [patchReadiness, setPatchReadiness] = useState<PatchReadiness | null>(null);
   const [checkingPatch, setCheckingPatch] = useState(false);
+  const [creatingPullRequest, setCreatingPullRequest] = useState(false);
+  const [pullRequestState, setPullRequestState] = useState<PullRequestState | null>(null);
   const observationPlan = useMemo(
     () => candidate ? buildObservationPlan(report, candidate) : null,
     [report, candidate],
@@ -153,6 +170,48 @@ export function DiscoveryOnboarding({
       setCheckingPatch(false);
     }
   };
+  const createDraftPullRequest = async () => {
+    if (
+      !declaration ||
+      !githubInstallationId ||
+      !repositoryName ||
+      patchReadiness?.status !== "ready" ||
+      patchProposal?.generation.state !== "adapter_available"
+    ) {
+      return;
+    }
+
+    setCreatingPullRequest(true);
+    setPullRequestState(null);
+    try {
+      const response = await fetch("/api/github/observation-patch/create", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          repository: repositoryName,
+          installation_id: githubInstallationId,
+          adapter_id: patchProposal.generation.adapter_id,
+          system_version_ref: declaration.system_version_ref,
+        }),
+      });
+      const result = (await response.json()) as {
+        ok: boolean;
+        message?: string;
+        result?: PullRequestState;
+      };
+      if (!response.ok || !result.ok || !result.result) {
+        throw new Error(result.message ?? "CRUX could not create the draft pull request.");
+      }
+      setPullRequestState(result.result);
+    } catch (error) {
+      setPullRequestState({
+        status: "error",
+        reason: error instanceof Error ? error.message : "CRUX could not create the draft pull request.",
+      });
+    } finally {
+      setCreatingPullRequest(false);
+    }
+  };
   const downloadDraft = () => {
     if (!declaration) return;
     const bundle = portableBundleFromDiscoveryDeclaration(declaration);
@@ -174,6 +233,7 @@ export function DiscoveryOnboarding({
     setActionControl("human_approval");
     setShowPatch(false);
     setPatchReadiness(null);
+    setPullRequestState(null);
     setStage("discover");
   };
 
@@ -328,10 +388,26 @@ export function DiscoveryOnboarding({
                   <strong>Exact patch ready on {patchReadiness.checked_ref}</strong>
                   {patchReadiness.changes.map((change) => <span key={change.path}>✓ {change.mode}: {change.path} — {change.purpose}</span>)}
                   <span>Proposed branch: {patchReadiness.branch_name}</span>
+                  {githubInstallationId && githubUserCanWrite && !pullRequestState && <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
+                    <button className="btn" type="button" onClick={() => void createDraftPullRequest()} disabled={creatingPullRequest}>
+                      {creatingPullRequest ? "Creating review PR…" : "Create draft review PR"}
+                    </button>
+                  </div>}
+                  {githubInstallationId && !githubUserCanWrite && <span>GitHub says this connected user can read this repository but cannot write to it, so CRUX will not offer PR creation.</span>}
+                  {!githubInstallationId && <span>Connect this repository through the CRUX GitHub App to create the patch as a review PR.</span>}
                 </div>}
+                {pullRequestState?.status === "created" && <div className="patch-list">
+                  <strong>Draft PR #{pullRequestState.pull_request_number} created for review.</strong>
+                  <span>Branch: {pullRequestState.branch}</span>
+                  <span>Base checked again at {pullRequestState.base_sha.slice(0, 12)}.</span>
+                  <a href={pullRequestState.pull_request_url} target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Open the draft pull request on GitHub</a>
+                  <span>CRUX will not merge it.</span>
+                </div>}
+                {pullRequestState?.status === "blocked" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>PR creation blocked: {pullRequestState.reason}</div>}
+                {pullRequestState?.status === "error" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>PR creation failed: {pullRequestState.reason}</div>}
                 {patchReadiness?.status === "blocked" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>Exact patch blocked: {patchReadiness.reason}</div>}
                 {patchReadiness?.status === "error" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>Patch check failed: {patchReadiness.reason}</div>}
-                <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>CRUX will only offer repository writes when an exact adapter passes its source checks. Pull-request creation will require a separate explicit GitHub write capability and will never auto-merge.</div>
+                <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>CRUX only offers repository writes after an exact adapter passes its source checks. Creating a draft PR repeats the repository, user-write, App-permission and current-source checks server-side. It never updates an existing review branch and never auto-merges.</div>
               </div>}
             </div>}
             <p className="detail" style={{color:"rgba(255,255,255,.72)"}}>Runtime evidence may challenge the declaration, but never silently rewrites it. A generated patch should remain reviewable and disabled until explicit CRUX configuration is present.</p>
