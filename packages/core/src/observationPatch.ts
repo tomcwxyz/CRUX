@@ -109,7 +109,7 @@ export const buildObservationPatchProposal = (
     generation: exactAdapterFor({
       report,
       candidate,
-      targetPath: plan.primary_path,
+      ...(plan.primary_path ? { targetPath: plan.primary_path } : {}),
     }),
   };
 };
