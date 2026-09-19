@@ -9,6 +9,7 @@ import {
   getGithubAppConfig,
   githubInstallUrl,
   listUserGithubInstallations,
+  listUserInstallationRepositoryIds,
 } from "../../../../lib/github-app";
 
 export const runtime = "nodejs";
@@ -38,24 +39,38 @@ export async function GET(request: Request) {
       config,
     });
     const installations = await listUserGithubInstallations(userToken);
-    const installationIds = installations
-      .filter((installation) => String(installation.app_id) === String(config.appId))
-      .map((installation) => installation.id);
+    const verifiedInstallations = installations
+      .filter((installation) => String(installation.app_id) === String(config.appId));
 
-    if (installationIds.length === 0) {
+    if (verifiedInstallations.length === 0) {
       return NextResponse.redirect(githubInstallUrl(config));
+    }
+
+    const installationRepositories = await Promise.all(
+      verifiedInstallations.map(async (installation) => ({
+        id: installation.id,
+        repository_ids: await listUserInstallationRepositoryIds(userToken, installation.id),
+      })),
+    );
+
+    const scopedInstallations = installationRepositories.filter(
+      (installation) => installation.repository_ids.length > 0,
+    );
+
+    if (scopedInstallations.length === 0) {
+      return redirectToDiscover(origin, "no-repositories");
     }
 
     cookieStore.set(
       GITHUB_CONNECTION_COOKIE,
       encodeGithubConnection({
         version: 1,
-        installation_ids: installationIds,
-        expires_at: Date.now() + 8 * 60 * 60 * 1000,
+        installations: scopedInstallations,
+        expires_at: Date.now() + 60 * 60 * 1000,
       }, config.connectionSecret),
       {
         ...connectionCookieOptions(),
-        maxAge: 8 * 60 * 60,
+        maxAge: 60 * 60,
       },
     );
 
