@@ -53,6 +53,28 @@ const priority = (path: string) => {
   return 10;
 };
 
+const mapWithConcurrency = async <Input, Output>(
+  values: Input[],
+  limit: number,
+  worker: (value: Input) => Promise<Output>,
+): Promise<Output[]> => {
+  const output: Output[] = new Array(values.length);
+  let nextIndex = 0;
+
+  const run = async () => {
+    while (nextIndex < values.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      output[index] = await worker(values[index]!);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(limit, values.length) }, () => run()),
+  );
+  return output;
+};
+
 const fetchJson = async <T>(url: string, token?: string): Promise<T> => {
   const response = await fetch(url, {
     headers: githubHeaders(token),
@@ -153,8 +175,10 @@ const scanRepo = async (repoRef: RepoRef, installationId?: number) => {
     .sort((left, right) => priority(left.path) - priority(right.path) || left.path.localeCompare(right.path))
     .slice(0, MAX_FILES);
 
-  const fetched = await Promise.all(
-    entries.map((entry) => fetchSourceFile({ repoRef, repoUrl, branch, entry, token })),
+  const fetched = await mapWithConcurrency(
+    entries,
+    token ? 10 : 24,
+    (entry) => fetchSourceFile({ repoRef, repoUrl, branch, entry, token }),
   );
 
   let totalChars = 0;
