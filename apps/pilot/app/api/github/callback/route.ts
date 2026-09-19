@@ -9,7 +9,7 @@ import {
   getGithubAppConfig,
   githubInstallUrl,
   listUserGithubInstallations,
-  listUserInstallationRepositoryIds,
+  listUserInstallationRepositoryAccess,
 } from "../../../../lib/github-app";
 
 export const runtime = "nodejs";
@@ -47,10 +47,17 @@ export async function GET(request: Request) {
     }
 
     const installationRepositories = await Promise.all(
-      verifiedInstallations.map(async (installation) => ({
-        id: installation.id,
-        repository_ids: await listUserInstallationRepositoryIds(userToken, installation.id),
-      })),
+      verifiedInstallations.map(async (installation) => {
+        const access = await listUserInstallationRepositoryAccess(
+          userToken,
+          installation.id,
+        );
+        return {
+          id: installation.id,
+          repository_ids: access.repository_ids,
+          write_repository_ids: access.write_repository_ids,
+        };
+      }),
     );
 
     const scopedInstallations = installationRepositories.filter(
