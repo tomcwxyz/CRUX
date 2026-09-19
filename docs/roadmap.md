@@ -98,7 +98,8 @@ Ship Check is the first source-code discovery producer, not a dependency. The sa
 - [x] bind the observation hook to that human-confirmed exact SystemVersion;
 - [x] export the confirmed internal draft as a reference-valid portable `crux-bundle/0.1`;
 - [x] pass a real gateway/runtime observation through the same discovery contract and onboarding without source-code evidence;
-- [ ] add a GitHub App/private-repository connection and repository chooser;
+- [x] add a GitHub App/private-repository connection and repository chooser;
+- [ ] configure the GitHub App on production and run one real private-repository discovery end-to-end;
 - [ ] let an authorised GitHub connection open the generated observation PR from CRUX;
 - [ ] build the actual account/platform connection for a non-source-code producer (gateway or workflow platform) and test discovery from that live connector.
 
