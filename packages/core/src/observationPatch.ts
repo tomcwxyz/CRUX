@@ -8,7 +8,7 @@ export type ObservationPatchGeneration =
     }
   | {
       state: "adapter_available";
-      adapter_id: "open-recs-source-extract";
+      adapter_id: "open-recs-source-extract" | "soundings-ask";
       reason: string;
     };
 
@@ -54,6 +54,19 @@ const exactAdapterFor = ({
       adapter_id: "open-recs-source-extract",
       reason:
         "CRUX has a deterministic adapter for the already-tested Open Recs source.extract observation change. The adapter still validates exact source anchors before it can produce a patch.",
+    };
+  }
+
+  if (
+    repository === "https://github.com/tomcwxyz/soundings" &&
+    workflows.has("ask") &&
+    targetPath === "server/soundings/ask/orchestrator.py"
+  ) {
+    return {
+      state: "adapter_available",
+      adapter_id: "soundings-ask",
+      reason:
+        "CRUX has a deterministic adapter for the CI-tested Soundings Ask observation change. The adapter validates the Python Anthropic loop anchors before it can produce a patch.",
     };
   }
 
