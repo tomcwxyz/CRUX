@@ -91,6 +91,29 @@ pnpm pilot
 
 The authoring pilot remains usable without accounts or hosted persistence.
 
+### Discovery before declaration
+
+The pilot now also tests a second entry point: start from a project that already contains AI rather than from a blank transparency form.
+
+The current journey is:
+
+```text
+CONNECT → DISCOVER → CONFIRM → CREATE DRAFT → OBSERVE → RECONCILE
+```
+
+For the hosted pilot, a public GitHub repository can be scanned through a bounded source/config probe. The deeper Ship Check scanner uses the same `crux-discovery/0.1` envelope.
+
+Discovery deliberately stops at technical evidence. A person still supplies the organisational meaning CRUX cannot infer: organisation, purpose, affected people, consequence and what power the AI has — **Suggest / Recommend / Decide / Act**. If AI can act, the author also confirms what constrains that action.
+
+Confirmation now creates an internal canonical Organisation → AI Use → System → exact SystemVersion record and can export it as a portable `crux-bundle/0.1`. It does **not** invent claims, evidence or outcomes.
+
+Two real application regressions currently exercise discovery:
+
+- **Open Recommendations Local** — TypeScript / Vercel AI SDK, including `chat.search` and `source.extract`;
+- **Soundings** — Python / direct Anthropic SDK, identifying the **Ask** workflow and its real `messages.create` boundary.
+
+A first observation proposal for Open Recs `source.extract` is open as a reviewable PR rather than being applied automatically. The hook is opt-in, metadata-only and bound to an exact CRUX SystemVersion.
+
 ## Disclosure is a boundary
 
 CRUX uses a canonical working bundle and derived disclosure projections.
