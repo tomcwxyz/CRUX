@@ -84,11 +84,21 @@ export const buildObservationPatchProposal = (
   const plan = buildObservationPlan(report, candidate);
   const workflow = safeWorkflow(candidate);
 
+  const generation = exactAdapterFor({
+    report,
+    candidate,
+    ...(plan.primary_path ? { targetPath: plan.primary_path } : {}),
+  });
+  const isSoundings = generation.state === "adapter_available" &&
+    generation.adapter_id === "soundings-ask";
+
   return {
     status: "proposal",
     ...(plan.primary_path ? { target_path: plan.primary_path } : {}),
     add_file: {
-      path: "src/lib/crux/observe.ts",
+      path: isSoundings
+        ? "server/soundings/ask/crux_observe.py"
+        : "src/lib/crux/observe.ts",
       purpose:
         "Small opt-in metadata-only emitter. It should no-op unless all CRUX environment variables are present and must never make the application workflow fail.",
     },
@@ -111,7 +121,9 @@ export const buildObservationPatchProposal = (
         purpose: "Stable producer identity for idempotent provenance.",
       },
     ],
-    integration_snippet: `void emitCruxAIInvocation({\n  workflow: "${workflow}",\n  provider: /* existing provider name */,\n  operation: "generate",\n});`,
+    integration_snippet: isSoundings
+      ? `asyncio.create_task(\n    emit_crux_ai_invocation(\n        workflow="${workflow}",\n        provider="anthropic",\n        operation="messages.create",\n    )\n)`
+      : `void emitCruxAIInvocation({\n  workflow: "${workflow}",\n  provider: /* existing provider name */,\n  operation: "generate",\n});`,
     review_checks: [
       "No prompt, completion, reasoning, retrieved document, source document, tool argument or tool result is included.",
       "The hook is disabled unless explicit CRUX configuration is present.",
@@ -119,10 +131,6 @@ export const buildObservationPatchProposal = (
       "The observation targets the confirmed workflow boundary rather than automatically instrumenting every shared provider call.",
       "A unit test asserts the emitted payload contains only allow-listed metadata.",
     ],
-    generation: exactAdapterFor({
-      report,
-      candidate,
-      ...(plan.primary_path ? { targetPath: plan.primary_path } : {}),
-    }),
+    generation,
   };
 };
