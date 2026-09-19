@@ -1,4 +1,14 @@
-import { GITHUB_API_VERSION } from "../../../../../lib/github-app";
+import { cookies } from "next/headers";
+import {
+  GITHUB_API_VERSION,
+  GITHUB_CONNECTION_COOKIE,
+  createGithubInstallationToken,
+  decodeGithubConnection,
+  getGithubAppConfig,
+  githubAppConfigured,
+  githubConnectionAllowsRepository,
+  type GithubConnection,
+} from "../../../../../lib/github-app";
 import {
   getObservationPatchAdapter,
 } from "../../../../../lib/observation-patch-registry";
@@ -13,24 +23,70 @@ type GithubContent = {
   encoding?: string;
 };
 
-const headers = () => ({
+const headers = (token?: string) => ({
   Accept: "application/vnd.github+json",
   "X-GitHub-Api-Version": GITHUB_API_VERSION,
   "User-Agent": "crux-discovery-pilot",
-  ...(process.env.GITHUB_TOKEN
-    ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-    : {}),
+  ...(token
+    ? { Authorization: `Bearer ${token}` }
+    : process.env.GITHUB_TOKEN
+      ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+      : {}),
 });
+
+const verifiedInstallationContext = async (
+  installationId: number | undefined,
+): Promise<
+  | {
+      installationId: number;
+      token: string;
+      connection: GithubConnection;
+    }
+  | undefined
+> => {
+  if (installationId === undefined) return undefined;
+  if (!githubAppConfigured()) {
+    throw new Error("The CRUX GitHub App is not configured on this deployment.");
+  }
+
+  const config = getGithubAppConfig();
+  const cookieStore = await cookies();
+  const connection = decodeGithubConnection(
+    cookieStore.get(GITHUB_CONNECTION_COOKIE)?.value,
+    config.connectionSecret,
+  );
+  if (
+    !connection?.installations.some(
+      (installation) => installation.id === installationId,
+    )
+  ) {
+    throw new Error(
+      "This browser session is not connected to that GitHub installation.",
+    );
+  }
+
+  return {
+    installationId,
+    connection,
+    token: await createGithubInstallationToken(
+      installationId,
+      config,
+      { contents: "read" },
+    ),
+  };
+};
 
 const getFile = async ({
   repository,
   path,
   ref,
+  token,
   optional = false,
 }: {
   repository: string;
   path: string;
   ref: string;
+  token?: string;
   optional?: boolean;
 }): Promise<RepositoryPatchFile | null> => {
   const response = await fetch(
@@ -38,7 +94,10 @@ const getFile = async ({
       .split("/")
       .map(encodeURIComponent)
       .join("/")}?ref=${encodeURIComponent(ref)}`,
-    { headers: headers(), cache: "no-store" },
+    {
+      headers: headers(token),
+      cache: "no-store",
+    },
   );
 
   if (optional && response.status === 404) return null;
@@ -65,6 +124,7 @@ const getFile = async ({
 export async function POST(request: Request) {
   let body: {
     repository?: string;
+    installation_id?: number;
     adapter_id?: string;
     system_version_ref?: string;
   };
@@ -103,10 +163,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const installationId =
+    Number.isSafeInteger(body.installation_id) &&
+    (body.installation_id ?? 0) > 0
+      ? body.installation_id
+      : undefined;
+
   try {
+    const installation = await verifiedInstallationContext(installationId);
     const repositoryResponse = await fetch(
       `https://api.github.com/repos/${body.repository}`,
-      { headers: headers(), cache: "no-store" },
+      {
+        headers: headers(installation?.token),
+        cache: "no-store",
+      },
     );
     if (!repositoryResponse.ok) {
       throw new Error(
@@ -114,8 +184,23 @@ export async function POST(request: Request) {
       );
     }
     const repository = (await repositoryResponse.json()) as {
+      id: number;
       default_branch?: string;
     };
+
+    if (
+      installation &&
+      !githubConnectionAllowsRepository(
+        installation.connection,
+        installation.installationId,
+        repository.id,
+      )
+    ) {
+      throw new Error(
+        "This GitHub user connection is not allowed to read that repository.",
+      );
+    }
+
     if (!repository.default_branch) {
       throw new Error("GitHub did not return the repository default branch.");
     }
@@ -127,6 +212,7 @@ export async function POST(request: Request) {
           repository: body.repository!,
           path: file.path,
           ref,
+          ...(installation?.token ? { token: installation.token } : {}),
           ...(file.optional ? { optional: true } : {}),
         }),
       ),
@@ -170,16 +256,20 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "CRUX could not check patch readiness.";
+    const status = /not connected|not configured|not allowed/i.test(message)
+      ? 401
+      : 502;
     return Response.json(
       {
         ok: false,
         code: "patch_readiness_failed",
-        message:
-          error instanceof Error
-            ? error.message
-            : "CRUX could not check patch readiness.",
+        message,
       },
-      { status: 502 },
+      { status },
     );
   }
 }
