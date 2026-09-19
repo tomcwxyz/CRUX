@@ -144,5 +144,14 @@ describe("buildObservationPatchProposal", () => {
       adapter_id: "soundings-ask",
       reason: expect.stringContaining("Soundings Ask"),
     });
+    expect(proposal.add_file.path).toBe(
+      "server/soundings/ask/crux_observe.py",
+    );
+    expect(proposal.integration_snippet).toContain(
+      "emit_crux_ai_invocation",
+    );
+    expect(proposal.integration_snippet).toContain(
+      'operation="messages.create"',
+    );
   });
 });
