@@ -27,9 +27,11 @@ export async function GET() {
 
   try {
     const groups = await Promise.all(
-      connection.installation_ids.map((installationId) =>
-        listGithubInstallationRepositories(installationId, config),
-      ),
+      connection.installations.map(async (installation) => {
+        const repositories = await listGithubInstallationRepositories(installation.id, config);
+        const allowed = new Set(installation.repository_ids);
+        return repositories.filter((repository) => allowed.has(repository.id));
+      }),
     );
     const repositories = groups
       .flat()
