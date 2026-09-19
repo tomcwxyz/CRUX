@@ -76,6 +76,16 @@ The first real observation patch is Open Recs PR #25. Its typecheck/lint/unit/bu
 
 This is technical evidence about the path, not evidence that people can understand or use it successfully without help.
 
+### GitHub repository connection
+
+A read-only GitHub App connection is now implemented in the pilot for repository selection and private-repository discovery.
+
+The browser connection uses GitHub user authorisation to establish the intersection of repositories accessible to both the user and the installed CRUX App. CRUX stores only signed installation/repository IDs for one hour; user and installation access tokens remain server-side and are not placed in client state.
+
+The App setup redirect's `installation_id` is deliberately ignored and re-verified through user authorisation. Private repository reads use short-lived installation tokens, are checked against the signed user-scoped repository allow-list, and feed the same bounded `crux-discovery/0.1` logic as public repositories.
+
+This implementation is code/CI tested but has **not yet been exercised against a real private repository** because the production GitHub App registration and secrets are not configured. See `docs/GITHUB_APP_CONNECTION.md`.
+
 ## Disclosure safety
 
 A critical review on 18 September identified that the original disclosure projector filtered whole objects but could preserve internal fields inside a visible object.
