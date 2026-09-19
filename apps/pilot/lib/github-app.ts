@@ -9,13 +9,19 @@ export const GITHUB_API_VERSION = "2026-03-10";
 export const GITHUB_CONNECTION_COOKIE = "crux_github_installations";
 export const GITHUB_OAUTH_STATE_COOKIE = "crux_github_oauth_state";
 
+export type GithubVerifiedInstallation = {
+  id: number;
+  repository_ids: number[];
+};
+
 export type GithubConnection = {
   version: 1;
-  installation_ids: number[];
+  installations: GithubVerifiedInstallation[];
   expires_at: number;
 };
 
 export type GithubRepository = {
+  id: number;
   installation_id: number;
   full_name: string;
   private: boolean;
@@ -95,22 +101,54 @@ export const decodeGithubConnection = (
     const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as Partial<GithubConnection>;
     if (
       parsed.version !== 1 ||
-      !Array.isArray(parsed.installation_ids) ||
-      !parsed.installation_ids.every((id) => Number.isSafeInteger(id) && id > 0) ||
+      !Array.isArray(parsed.installations) ||
       typeof parsed.expires_at !== "number" ||
       parsed.expires_at <= now
     ) {
       return null;
     }
+
+    const installations: GithubVerifiedInstallation[] = [];
+    for (const installation of parsed.installations) {
+      if (
+        !installation ||
+        !Number.isSafeInteger(installation.id) ||
+        installation.id <= 0 ||
+        !Array.isArray(installation.repository_ids) ||
+        !installation.repository_ids.every((id) => Number.isSafeInteger(id) && id > 0)
+      ) {
+        return null;
+      }
+      installations.push({
+        id: installation.id,
+        repository_ids: [...new Set(installation.repository_ids)],
+      });
+    }
+
     return {
       version: 1,
-      installation_ids: [...new Set(parsed.installation_ids)],
+      installations,
       expires_at: parsed.expires_at,
     };
   } catch {
     return null;
   }
 };
+
+export const githubConnectionAllowsInstallation = (
+  connection: GithubConnection,
+  installationId: number,
+) => connection.installations.some((installation) => installation.id === installationId);
+
+export const githubConnectionAllowsRepository = (
+  connection: GithubConnection,
+  installationId: number,
+  repositoryId: number,
+) => connection.installations.some(
+  (installation) =>
+    installation.id === installationId &&
+    installation.repository_ids.includes(repositoryId),
+);
 
 export const createGithubOauthState = () => randomBytes(24).toString("base64url");
 
@@ -199,6 +237,24 @@ export const listUserGithubInstallations = async (userToken: string) => {
   return body.installations ?? [];
 };
 
+export const listUserInstallationRepositoryIds = async (
+  userToken: string,
+  installationId: number,
+) => {
+  const response = await fetch(
+    `https://api.github.com/user/installations/${installationId}/repositories?per_page=100`,
+    {
+      headers: githubHeaders(userToken),
+      cache: "no-store",
+    },
+  );
+  if (!response.ok) throw new Error(await parseGithubError(response));
+  const body = await response.json() as {
+    repositories?: Array<{ id: number }>;
+  };
+  return [...new Set((body.repositories ?? []).map((repository) => repository.id))];
+};
+
 export const createGithubInstallationToken = async (
   installationId: number,
   config = getGithubAppConfig(),
@@ -237,6 +293,7 @@ export const listGithubInstallationRepositories = async (
   if (!response.ok) throw new Error(await parseGithubError(response));
   const body = await response.json() as {
     repositories?: Array<{
+      id: number;
       full_name: string;
       private: boolean;
       default_branch: string;
@@ -245,6 +302,7 @@ export const listGithubInstallationRepositories = async (
     }>;
   };
   return (body.repositories ?? []).map((repository) => ({
+    id: repository.id,
     installation_id: installationId,
     full_name: repository.full_name,
     private: repository.private,
