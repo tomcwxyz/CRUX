@@ -67,7 +67,7 @@ const fetchJson = async <T>(url: string, token?: string): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
-const installationTokenFor = async (installationId?: number) => {
+const installationContextFor = async (installationId?: number) => {
   if (installationId === undefined) return undefined;
   if (!githubAppConfigured()) {
     throw new Error("The CRUX GitHub App is not configured on this deployment.");
@@ -79,10 +79,15 @@ const installationTokenFor = async (installationId?: number) => {
     cookieStore.get(GITHUB_CONNECTION_COOKIE)?.value,
     config.connectionSecret,
   );
-  if (!connection?.installation_ids.includes(installationId)) {
+  const installation = connection?.installations.find((item) => item.id === installationId);
+  if (!installation) {
     throw new Error("This browser session is not connected to that GitHub installation.");
   }
-  return createGithubInstallationToken(installationId, config);
+
+  return {
+    token: await createGithubInstallationToken(installationId, config),
+    repositoryIds: new Set(installation.repository_ids),
+  };
 };
 
 const fetchSourceFile = async ({
@@ -119,14 +124,20 @@ const fetchSourceFile = async ({
 };
 
 const scanRepo = async (repoRef: RepoRef, installationId?: number) => {
-  const token = await installationTokenFor(installationId);
+  const installation = await installationContextFor(installationId);
+  const token = installation?.token;
   const repoUrl = `https://api.github.com/repos/${encodeURIComponent(repoRef.owner)}/${encodeURIComponent(repoRef.repo)}`;
   const repo = await fetchJson<{
+    id: number;
     default_branch: string;
     html_url: string;
     full_name: string;
     private: boolean;
   }>(repoUrl, token);
+
+  if (installation && !installation.repositoryIds.has(repo.id)) {
+    throw new Error("This GitHub user connection is not allowed to read that repository.");
+  }
   const branch = repo.default_branch;
   const tree = await fetchJson<{
     truncated?: boolean;
