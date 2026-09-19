@@ -12,6 +12,7 @@ export const GITHUB_OAUTH_STATE_COOKIE = "crux_github_oauth_state";
 export type GithubVerifiedInstallation = {
   id: number;
   repository_ids: number[];
+  write_repository_ids: number[];
 };
 
 export type GithubConnection = {
@@ -115,13 +116,21 @@ export const decodeGithubConnection = (
         !Number.isSafeInteger(installation.id) ||
         installation.id <= 0 ||
         !Array.isArray(installation.repository_ids) ||
-        !installation.repository_ids.every((id) => Number.isSafeInteger(id) && id > 0)
+        !installation.repository_ids.every((id) => Number.isSafeInteger(id) && id > 0) ||
+        (installation.write_repository_ids !== undefined &&
+          (!Array.isArray(installation.write_repository_ids) ||
+            !installation.write_repository_ids.every((id) => Number.isSafeInteger(id) && id > 0)))
       ) {
         return null;
       }
+      const repositoryIds = [...new Set(installation.repository_ids)];
+      const repositoryIdSet = new Set(repositoryIds);
       installations.push({
         id: installation.id,
-        repository_ids: [...new Set(installation.repository_ids)],
+        repository_ids: repositoryIds,
+        write_repository_ids: [
+          ...new Set(installation.write_repository_ids ?? []),
+        ].filter((id) => repositoryIdSet.has(id)),
       });
     }
 
@@ -148,6 +157,16 @@ export const githubConnectionAllowsRepository = (
   (installation) =>
     installation.id === installationId &&
     installation.repository_ids.includes(repositoryId),
+);
+
+export const githubConnectionAllowsWriteRepository = (
+  connection: GithubConnection,
+  installationId: number,
+  repositoryId: number,
+) => connection.installations.some(
+  (installation) =>
+    installation.id === installationId &&
+    installation.write_repository_ids.includes(repositoryId),
 );
 
 export const createGithubOauthState = () => randomBytes(24).toString("base64url");
@@ -237,7 +256,7 @@ export const listUserGithubInstallations = async (userToken: string) => {
   return body.installations ?? [];
 };
 
-export const listUserInstallationRepositoryIds = async (
+export const listUserInstallationRepositoryAccess = async (
   userToken: string,
   installationId: number,
 ) => {
@@ -250,14 +269,46 @@ export const listUserInstallationRepositoryIds = async (
   );
   if (!response.ok) throw new Error(await parseGithubError(response));
   const body = await response.json() as {
-    repositories?: Array<{ id: number }>;
+    repositories?: Array<{
+      id: number;
+      permissions?: { push?: boolean; admin?: boolean; maintain?: boolean };
+    }>;
   };
-  return [...new Set((body.repositories ?? []).map((repository) => repository.id))];
+  const repositories = body.repositories ?? [];
+  return {
+    repository_ids: [...new Set(repositories.map((repository) => repository.id))],
+    write_repository_ids: [
+      ...new Set(
+        repositories
+          .filter((repository) =>
+            Boolean(
+              repository.permissions?.push ||
+              repository.permissions?.admin ||
+              repository.permissions?.maintain,
+            ),
+          )
+          .map((repository) => repository.id),
+      ),
+    ],
+  };
 };
+
+export const listUserInstallationRepositoryIds = async (
+  userToken: string,
+  installationId: number,
+) =>
+  (await listUserInstallationRepositoryAccess(userToken, installationId))
+    .repository_ids;
+
+export type GithubInstallationTokenPermissions = Record<
+  string,
+  "read" | "write"
+>;
 
 export const createGithubInstallationToken = async (
   installationId: number,
   config = getGithubAppConfig(),
+  permissions?: GithubInstallationTokenPermissions,
 ) => {
   const jwt = createGithubAppJwt({
     appId: config.appId,
@@ -271,7 +322,7 @@ export const createGithubInstallationToken = async (
         ...githubHeaders(jwt),
         "content-type": "application/json",
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify(permissions ? { permissions } : {}),
       cache: "no-store",
     },
   );
@@ -285,7 +336,11 @@ export const listGithubInstallationRepositories = async (
   installationId: number,
   config = getGithubAppConfig(),
 ): Promise<GithubRepository[]> => {
-  const token = await createGithubInstallationToken(installationId, config);
+  const token = await createGithubInstallationToken(
+    installationId,
+    config,
+    { contents: "read" },
+  );
   const response = await fetch("https://api.github.com/installation/repositories?per_page=100", {
     headers: githubHeaders(token),
     cache: "no-store",
