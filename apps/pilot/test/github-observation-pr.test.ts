@@ -155,6 +155,72 @@ describe("GitHub observation pull request transaction", () => {
     ).toBe(false);
   });
 
+  it("returns an existing open review instead of duplicating its branch", async () => {
+    const mintToken = vi.fn(async () => "read-token");
+    const fetchImpl = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/repos/tomcwxyz/open-recs-local")) {
+          return jsonResponse({
+            id: 101,
+            full_name: "tomcwxyz/open-recs-local",
+            default_branch: "master",
+            html_url: "https://github.com/tomcwxyz/open-recs-local",
+          });
+        }
+        if (url.endsWith("/git/ref/heads/master")) {
+          return jsonResponse({ object: { sha: "base123" } });
+        }
+        const file = repositoryFiles(url);
+        if (file) return file;
+        if (
+          method === "GET" &&
+          url.endsWith("/git/ref/heads/crux/observe-source-extract")
+        ) {
+          return jsonResponse({ object: { sha: "existing-review-sha" } });
+        }
+        if (
+          method === "GET" &&
+          url.includes("/pulls?") &&
+          url.includes("state=open")
+        ) {
+          return jsonResponse([
+            {
+              number: 25,
+              html_url: "https://github.com/tomcwxyz/open-recs-local/pull/25",
+              state: "open",
+            },
+          ]);
+        }
+        throw new Error(`Unexpected fetch: ${method} ${url}`);
+      },
+    ) as unknown as typeof fetch;
+
+    const result = await createObservationPullRequest({
+      repository: "tomcwxyz/open-recs-local",
+      installationId: 12,
+      connection: connection(true),
+      adapterId: "open-recs-source-extract",
+      systemVersionRef: "system-version:open-recs:0.1",
+      fetchImpl,
+      mintToken,
+    });
+
+    expect(result).toEqual({
+      status: "existing_review",
+      repository: "tomcwxyz/open-recs-local",
+      branch: "crux/observe-source-extract",
+      pull_request_number: 25,
+      pull_request_url: "https://github.com/tomcwxyz/open-recs-local/pull/25",
+    });
+    expect(mintToken).toHaveBeenCalledTimes(1);
+    expect(
+      fetchImpl.mock.calls.some(([, init]) => init?.method === "POST"),
+    ).toBe(false);
+  });
+
   it("creates one immutable review commit and opens a draft PR", async () => {
     const mintToken = vi.fn(
       async (
