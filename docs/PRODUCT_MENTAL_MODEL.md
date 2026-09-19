@@ -1,13 +1,48 @@
 # CRUX product mental model
 
 **Status:** product north star for the next beta iteration  
-**Updated:** 18 September 2026
+**Updated:** 19 September 2026
 
 CRUX should not behave like an interface for editing a transparency schema.
 
 It should be a guided way to think clearly about AI in an organisation. The schema is the durable, portable output of that thinking.
 
 The canonical contracts remain important, but they are an implementation model rather than the user's mental model.
+
+## Discovery before declaration
+
+CRUX should not normally ask someone to model their organisation from a blank form when useful technical evidence already exists.
+
+The preferred entry journey is:
+
+```text
+Connect something already in use
+        ↓
+Discover bounded technical signals
+        ↓
+A person confirms whether they describe a real AI use
+        ↓
+Ask only for meaning technology cannot know
+        ↓
+Create an internal canonical draft
+        ↓
+Offer the smallest useful observation hook
+```
+
+Discovery is evidence, not declaration. Repository ownership does not establish organisational identity. Filenames do not establish purpose. A model call does not establish affected people, consequence or decision authority.
+
+The confirmation step therefore asks in ordinary language:
+
+- which organisation is using this;
+- what the AI use is for;
+- who can be affected;
+- whether it could materially affect a person, service, opportunity or entitlement;
+- what the AI can do: **Suggest / Recommend / Decide / Act**;
+- if it can act, what constrains that action.
+
+Those answers map into the existing canonical model underneath. Confirmation may create an internal Organisation, AI Use, System and exact SystemVersion, but it must not invent claims, evidence or outcomes.
+
+The draft should remain portable before accounts/workspaces exist. Runtime observation must bind to the exact human-confirmed SystemVersion rather than becoming a free-floating description of the application.
 
 ## The four questions
 
@@ -211,7 +246,7 @@ Safe transparency is a product requirement, not an export feature.
 
 ## What not to optimise next
 
-Until the mental model and comprehension are tested with people, avoid expanding:
+Until the mental model and comprehension are tested with people, avoid broad expansion of:
 
 - runtime telemetry breadth;
 - hosted ingestion infrastructure;
@@ -219,6 +254,8 @@ Until the mental model and comprehension are tested with people, avoid expanding
 - queues and delivery guarantees;
 - hosted MCP;
 - additional ontology categories that have not emerged from observed authoring problems.
+
+A small connector is justified when it directly tests the product journey — for example, letting someone choose a repository they already use or opening a generated observation change as a reviewable pull request. The connector is scaffolding for the product test, not a reason to build a general integration platform.
 
 The technical paths already built remain useful experiments and future options. They are not evidence that the product itself is validated.
 
