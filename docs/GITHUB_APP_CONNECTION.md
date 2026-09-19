@@ -42,7 +42,7 @@ When a repository is read, CRUX mints a short-lived installation token server-si
 
 GitHub warns that the `installation_id` supplied to an App setup URL can be spoofed. CRUX therefore ignores that value and sends the browser back through user authorisation before accepting any installation.
 
-The connection cookie contains only installation IDs plus an expiry. It is HMAC-signed, HttpOnly, SameSite=Lax and Secure in production. It expires after eight hours.
+The connection cookie contains verified installation IDs, the repository IDs this user-and-App combination could access at authorisation time, and an expiry. It is HMAC-signed, HttpOnly, SameSite=Lax and Secure in production. It expires after one hour.
 
 ## Registering the GitHub App
 
@@ -86,12 +86,13 @@ After a person selects a repository, CRUX:
 1. verifies the requested installation ID is in the signed connection cookie;
 2. mints a short-lived GitHub installation token;
 3. reads the repository metadata and recursive tree;
-4. selects at most 80 likely source/config files;
-5. excludes docs, tests, fixtures, build output and dependencies from primary evidence;
-6. reads selected private files through GitHub's blob API;
-7. passes the bounded snapshot into the same `crux-discovery/0.1` producer-neutral discovery logic used by public GitHub.
+4. verifies the repository ID was in the signed user-scoped allow-list captured during authorisation;
+5. selects at most 80 likely source/config files;
+6. excludes docs, tests, fixtures, build output and dependencies from primary evidence;
+7. reads selected private files through GitHub's blob API with bounded concurrency;
+8. passes the bounded snapshot into the same `crux-discovery/0.1` producer-neutral discovery logic used by public GitHub.
 
-The installation token remains server-side.
+The installation token remains server-side. The current pilot records at most the first 100 user-accessible repositories per installation in the signed connection; pagination is a later hardening step if real use requires larger installations.
 
 ## Deliberate limits
 
