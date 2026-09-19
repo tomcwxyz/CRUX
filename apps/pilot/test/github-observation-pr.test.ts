@@ -215,7 +215,9 @@ describe("GitHub observation pull request transaction", () => {
       pull_request_number: 25,
       pull_request_url: "https://github.com/tomcwxyz/open-recs-local/pull/25",
     });
-    expect(mintToken).toHaveBeenCalledTimes(1);
+    expect(mintToken).toHaveBeenCalledTimes(2);
+    expect(mintToken).toHaveBeenNthCalledWith(1, 12, { contents: "read" });
+    expect(mintToken).toHaveBeenNthCalledWith(2, 12, { pull_requests: "read" });
     expect(
       fetchImpl.mock.calls.some(([, init]) => init?.method === "POST"),
     ).toBe(false);
