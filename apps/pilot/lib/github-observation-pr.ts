@@ -55,6 +55,13 @@ export type ObservationPullRequestResult =
       pull_request_url: string;
     }
   | {
+      status: "existing_review";
+      repository: string;
+      branch: string;
+      pull_request_number: number;
+      pull_request_url: string;
+    }
+  | {
       status: "blocked";
       code:
         | "repository_not_allowed"
@@ -321,6 +328,30 @@ export const createObservationPullRequest = async ({
     readToken,
   );
   if (existingBranch.found) {
+    const owner = repository.split("/")[0] ?? "";
+    const pullsUrl = new URL(
+      `https://api.github.com/repos/${repository}/pulls`,
+    );
+    pullsUrl.searchParams.set("state", "open");
+    pullsUrl.searchParams.set("head", `${owner}:${patch.branch_name}`);
+    const pulls = await json<GithubPull[]>(
+      fetchImpl,
+      pullsUrl.toString(),
+      readToken,
+    );
+    const existingPull = pulls.find(
+      (pull) => Boolean(pull.number && pull.html_url),
+    );
+    if (existingPull?.number && existingPull.html_url) {
+      return {
+        status: "existing_review",
+        repository,
+        branch: patch.branch_name,
+        pull_request_number: existingPull.number,
+        pull_request_url: existingPull.html_url,
+      };
+    }
+
     return {
       status: "blocked",
       code: "branch_exists",
