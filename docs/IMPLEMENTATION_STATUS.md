@@ -1,6 +1,6 @@
 # CRUX implementation status
 
-**Updated:** 18 September 2026
+**Updated:** 19 September 2026
 
 CRUX is at `0.1-beta.0`.
 
@@ -48,6 +48,33 @@ The canonical model and standalone tooling currently cover:
 - worked low-consequence, consequential-decision and bounded-action examples.
 
 None of those implementation facts should be read as evidence that the product is useful, understandable or suitable for organisational adoption yet.
+
+## Discovery-to-declaration path
+
+The prototype now exercises a product path that begins with existing software rather than a blank CRUX form:
+
+```text
+Connect → Discover → Confirm → Create canonical draft → Observe → Reconcile
+```
+
+Implemented and technically exercised:
+
+- `crux-discovery/0.1` as a producer-neutral discovery envelope;
+- a bounded hosted public-GitHub probe;
+- Ship Check as the deeper source-code producer using the same envelope;
+- generic TypeScript/JavaScript and Python provider/workflow discovery;
+- Open Recommendations Local regression: `chat.search` and `source.extract`;
+- Soundings regression: Python **Ask** workflow, Anthropic SDK import and real `messages.create` call;
+- candidate grouping that requires actual AI/workflow/runtime evidence, so weak review/governance clues cannot create an AI use by themselves;
+- plain-language confirmation of organisation, purpose, affected people, consequence and AI power;
+- mapping **Suggest / Recommend / Decide / Act** into the existing influence/agency model without adding ontology;
+- creation of an internal Organisation → AI Use → System → exact SystemVersion draft;
+- export of that draft as a reference-valid `crux-bundle/0.1` containing no invented claims, evidence or outcomes;
+- generation of a smallest-hook observation proposal bound to that exact SystemVersion.
+
+The first real observation patch is Open Recs PR #25. Its typecheck/lint/unit/build and local Playwright/Ollama e2e pass. The repository's hosted-mode e2e currently fails independently in its existing source-upload/admin path and the failure is documented on the PR. The PR remains open and unmerged.
+
+This is technical evidence about the path, not evidence that people can understand or use it successfully without help.
 
 ## Disclosure safety
 
@@ -130,16 +157,18 @@ These are the important product questions now.
 
 ## Current phase
 
-Infrastructure expansion is paused by default.
+Broad infrastructure expansion remains paused by default. Small integrations are allowed only where they directly exercise the current product test.
 
-The next unit of work is human learning:
+The immediate sequence is:
 
-1. make Funding Review an excellent teaching and comprehension example;
-2. run fast formative sessions with authors and non-authors;
-3. fix obvious copy, guidance and visual failures quickly;
-4. then run the more structured beta learning cycle;
-5. change the canonical schema only where observed use shows that it cannot faithfully represent something important;
-6. later build a deliberately independent CRUX reader as a real test of the open-contract claim.
+1. finish the bounded GitHub connection path so a person can select a public/private repository rather than paste a URL;
+2. let an authorised GitHub connection create the generated observation change as a reviewable PR, never silently merge it;
+3. run the discovery → confirm → canonical draft journey with people and observe whether the candidate and power questions make sense without CRUX terminology;
+4. make Funding Review an excellent teaching and comprehension example;
+5. run fast formative sessions with authors and non-authors;
+6. then run the structured beta learning cycle;
+7. change the canonical schema only where observed use shows that it cannot faithfully represent something important;
+8. later build a deliberately independent CRUX reader as a real test of the open-contract claim.
 
 ## Product boundary
 
