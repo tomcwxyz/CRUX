@@ -350,15 +350,16 @@ class AskOrchestrator:
         self._answer_cache = answer_cache
 
     async def _loop(self) -> None:
-        response = await asyncio.to_thread(
-            lambda: client.messages.create(
-                model=self._model,
-                messages=messages,
+        for _iteration in range(self._max_iterations):
+            response = await asyncio.to_thread(
+                lambda: client.messages.create(
+                    model=self._model,
+                    messages=messages,
+                )
             )
-        )
 
-        # A cybersecurity/safety classifier can decline a request: HTTP 200
-        return response
+            # A cybersecurity/safety classifier can decline a request: HTTP 200
+            return response
 `;
     const mintToken = vi.fn(async () => "read-token");
     const fetchMock = vi.fn(
