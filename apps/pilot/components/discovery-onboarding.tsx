@@ -469,7 +469,6 @@ export function DiscoveryOnboarding({
             <p className="detail" style={{color:"rgba(255,255,255,.72)"}}>Observed behaviour can challenge the description, but it never silently rewrites what people have declared.</p>
           </div>
         )}
-        )}
       </div>
     </section>
   );
