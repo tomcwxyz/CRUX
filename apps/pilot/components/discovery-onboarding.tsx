@@ -48,7 +48,7 @@ const sources = discoveryConnectors;
 
 
 const styles = `
-.discovery{overflow:hidden}.steps{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}.step{padding:14px 16px;border-right:1px solid var(--line);background:rgba(255,255,255,.16)}.step:last-child{border-right:0}.step.on{background:var(--chalk);box-shadow:inset 0 -3px 0 var(--rust)}.step span{display:block;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}.step strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;margin-top:4px}.disc-canvas{padding:clamp(22px,4vw,46px);background:rgba(255,253,248,.72)}.disc-head{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(250px,.75fr);gap:28px;align-items:start}.disc-head h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(36px,5vw,60px);font-weight:400;line-height:1;letter-spacing:-.04em;margin:5px 0 12px}.disc-head p{color:var(--muted);font-size:15px;line-height:1.55;margin:0}.principle{border-left:3px solid var(--rust);padding-left:14px;color:var(--muted);font-size:13px;line-height:1.5}.source-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:24px}.source-card{border:1px solid var(--line);border-radius:18px;padding:18px;background:rgba(255,255,255,.36);text-align:left}.source-card strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:400}.source-card span{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:6px}.source-card.active{border:2px solid rgba(64,88,74,.45);background:rgba(64,88,74,.04)}.connect-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--chalk)}.connected{display:flex;gap:9px;align-items:center}.dot{width:9px;height:9px;border-radius:50%;background:var(--moss)}.found{margin-top:23px;display:flex;justify-content:space-between;gap:14px;align-items:end}.found h3{font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:400;margin:3px 0}.candidate-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.candidate-pill{border:1px solid var(--line);border-radius:999px;padding:9px 12px;background:rgba(255,255,255,.34);cursor:pointer;text-align:left}.candidate-pill.on{background:var(--moss);border-color:var(--moss);color:var(--chalk)}.candidate-pill strong{font-size:12px}.candidate-pill small{display:block;font-size:9px;opacity:.72;margin-top:2px;text-transform:uppercase;letter-spacing:.08em}.candidate{margin-top:14px;border:1px solid var(--line);border-radius:22px;background:var(--chalk);overflow:hidden}.candidate-top{padding:22px 22px 18px;display:flex;justify-content:space-between;gap:16px;align-items:start}.candidate h3{font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;margin:4px 0 6px}.eyebrow2{font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:var(--rust)}.confidence{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:6px 9px;border-radius:999px;background:rgba(64,88,74,.09);color:var(--moss)}.split{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}.split>div{padding:20px}.split>div+div{border-left:1px solid var(--line)}.split h4{font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:400;margin:0 0 12px}.signal{display:flex;gap:9px;padding:10px 0;border-top:1px solid var(--line)}.signal:first-of-type{border-top:0}.mark{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;flex:0 0 25px;background:rgba(64,88,74,.09);color:var(--moss);font-weight:900}.signal strong{display:block;font-size:13px}.signal small{display:block;color:var(--muted);line-height:1.35;margin-top:3px}.unknown{display:flex;gap:9px;padding:9px 0;color:var(--muted);font-size:13px;line-height:1.4}.unknown b{font-weight:900;color:var(--rust)}.choice-row{display:flex;gap:8px;flex-wrap:wrap;padding:18px 22px;border-top:1px solid var(--line);background:rgba(255,255,255,.25)}.confirm{margin-top:22px;border:1px solid rgba(168,76,50,.28);border-radius:22px;padding:22px;background:rgba(168,76,50,.035)}.confirm-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:16px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:800}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:13px;background:var(--chalk);padding:11px 12px;font:inherit}.field textarea{min-height:82px;resize:vertical}.why{font-size:11px;color:var(--muted);line-height:1.4}.ready{margin-top:22px;border-radius:22px;background:var(--moss);color:var(--chalk);padding:24px}.ready h3{font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;margin:3px 0 8px}.ready p{max-width:720px;line-height:1.55;color:rgba(255,255,255,.82)}.observe-plan{margin-top:18px;border:1px solid rgba(255,255,255,.24);border-radius:18px;padding:18px;background:rgba(255,255,255,.07)}.observe-plan h4{font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:400;margin:0 0 8px}.observe-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.observe-box{border-top:1px solid rgba(255,255,255,.22);padding-top:11px}.observe-box strong{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}.observe-box span{display:block;font-size:12px;line-height:1.45;color:rgba(255,255,255,.76)}.patch-proposal{margin-top:14px;padding:15px;border-radius:14px;background:rgba(0,0,0,.14);font-size:12px;line-height:1.5}.patch-proposal code{display:block;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0;padding:10px;border-radius:10px;background:rgba(0,0,0,.18);font-size:11px}.patch-list{display:grid;gap:5px;margin-top:10px;color:rgba(255,255,255,.78)}.flow{display:flex;align-items:center;gap:8px;margin-top:18px;overflow-x:auto}.flow-node{min-width:145px;border:1px solid rgba(255,255,255,.3);border-radius:15px;padding:13px 15px}.flow-node span{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;opacity:.7}.flow-node strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;margin-top:5px}.arrow{opacity:.6}.detail{margin-top:14px;font-size:12px;color:var(--muted)}@media(max-width:760px){.steps,.source-grid,.split,.confirm-grid,.disc-head{grid-template-columns:1fr}.step{border-right:0;border-bottom:1px solid var(--line)}.split>div+div{border-left:0;border-top:1px solid var(--line)}.field.full{grid-column:auto}}
+.discovery{overflow:hidden}.steps{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}.step{padding:14px 16px;border-right:1px solid var(--line);background:rgba(255,255,255,.16)}.step:last-child{border-right:0}.step.on{background:var(--chalk);box-shadow:inset 0 -3px 0 var(--rust)}.step span{display:block;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}.step strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;margin-top:4px}.disc-canvas{padding:clamp(22px,4vw,46px);background:rgba(255,253,248,.72)}.disc-head{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(250px,.75fr);gap:28px;align-items:start}.disc-head h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(36px,5vw,60px);font-weight:400;line-height:1;letter-spacing:-.04em;margin:5px 0 12px}.disc-head p{color:var(--muted);font-size:15px;line-height:1.55;margin:0}.principle{border-left:3px solid var(--rust);padding-left:14px;color:var(--muted);font-size:13px;line-height:1.5}.source-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:24px}.source-card{border:1px solid var(--line);border-radius:18px;padding:18px;background:rgba(255,255,255,.36);text-align:left}.source-card strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:400}.source-card span{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:6px}.source-card.active{border:2px solid rgba(64,88,74,.45);background:rgba(64,88,74,.04)}.connect-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--chalk)}.connected{display:flex;gap:9px;align-items:center}.dot{width:9px;height:9px;border-radius:50%;background:var(--moss)}.found{margin-top:23px;display:flex;justify-content:space-between;gap:14px;align-items:end}.found h3{font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:400;margin:3px 0}.candidate-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.candidate-pill{border:1px solid var(--line);border-radius:999px;padding:9px 12px;background:rgba(255,255,255,.34);cursor:pointer;text-align:left}.candidate-pill.on{background:var(--moss);border-color:var(--moss);color:var(--chalk)}.candidate-pill strong{font-size:12px}.candidate-pill small{display:block;font-size:9px;opacity:.72;margin-top:2px;text-transform:uppercase;letter-spacing:.08em}.candidate{margin-top:14px;border:1px solid var(--line);border-radius:22px;background:var(--chalk);overflow:hidden}.candidate-top{padding:22px 22px 18px;display:flex;justify-content:space-between;gap:16px;align-items:start}.candidate h3{font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;margin:4px 0 6px}.eyebrow2{font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:var(--rust)}.confidence{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:6px 9px;border-radius:999px;background:rgba(64,88,74,.09);color:var(--moss)}.split{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}.split>div{padding:20px}.split>div+div{border-left:1px solid var(--line)}.split h4{font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:400;margin:0 0 12px}.signal{display:flex;gap:9px;padding:10px 0;border-top:1px solid var(--line)}.signal:first-of-type{border-top:0}.mark{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;flex:0 0 25px;background:rgba(64,88,74,.09);color:var(--moss);font-weight:900}.signal strong{display:block;font-size:13px}.signal small{display:block;color:var(--muted);line-height:1.35;margin-top:3px}.unknown{display:flex;gap:9px;padding:9px 0;color:var(--muted);font-size:13px;line-height:1.4}.unknown b{font-weight:900;color:var(--rust)}.choice-row{display:flex;gap:8px;flex-wrap:wrap;padding:18px 22px;border-top:1px solid var(--line);background:rgba(255,255,255,.25)}.confirm{margin-top:22px;border:1px solid rgba(168,76,50,.28);border-radius:22px;padding:22px;background:rgba(168,76,50,.035)}.confirm-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:16px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:800}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:13px;background:var(--chalk);padding:11px 12px;font:inherit}.field textarea{min-height:82px;resize:vertical}.why{font-size:11px;color:var(--muted);line-height:1.4}.ready{margin-top:22px;border-radius:22px;background:var(--moss);color:var(--chalk);padding:24px}.ready h3{font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;margin:3px 0 8px}.ready p{max-width:720px;line-height:1.55;color:rgba(255,255,255,.82)}.observe-plan{margin-top:18px;border:1px solid rgba(255,255,255,.24);border-radius:18px;padding:18px;background:rgba(255,255,255,.07)}.observe-plan h4{font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:400;margin:0 0 8px}.observe-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.observe-box{border-top:1px solid rgba(255,255,255,.22);padding-top:11px}.observe-box strong{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}.observe-box span{display:block;font-size:12px;line-height:1.45;color:rgba(255,255,255,.76)}.patch-proposal{margin-top:14px;padding:15px;border-radius:14px;background:rgba(0,0,0,.14);font-size:12px;line-height:1.5}.patch-proposal code{display:block;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0;padding:10px;border-radius:10px;background:rgba(0,0,0,.18);font-size:11px}.patch-list{display:grid;gap:5px;margin-top:10px;color:rgba(255,255,255,.78)}.observe-action{margin-top:18px;border:1px solid rgba(255,255,255,.28);border-radius:18px;padding:20px;background:rgba(255,255,255,.1)}.observe-action h4{font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:400;margin:4px 0 8px}.observe-action p{margin:0;color:rgba(255,255,255,.82)}.observe-status{display:flex;align-items:flex-start;gap:10px;margin-top:14px;padding:12px 14px;border-radius:13px;background:rgba(0,0,0,.12);font-size:12px;line-height:1.45}.observe-status b{font-size:16px;line-height:1}.technical-toggle{margin-top:14px}.technical-toggle summary{cursor:pointer;font-size:11px;color:rgba(255,255,255,.72);text-decoration:underline;text-underline-offset:3px}.flow{display:flex;align-items:center;gap:8px;margin-top:18px;overflow-x:auto}.flow-node{min-width:145px;border:1px solid rgba(255,255,255,.3);border-radius:15px;padding:13px 15px}.flow-node span{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;opacity:.7}.flow-node strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;margin-top:5px}.arrow{opacity:.6}.detail{margin-top:14px;font-size:12px;color:var(--muted)}@media(max-width:760px){.steps,.source-grid,.split,.confirm-grid,.disc-head{grid-template-columns:1fr}.step{border-right:0;border-bottom:1px solid var(--line)}.split>div+div{border-left:0;border-top:1px solid var(--line)}.field.full{grid-column:auto}}
 `;
 
 type DiscoveryOnboardingProps = {
@@ -124,7 +124,6 @@ export function DiscoveryOnboarding({
   const stageIndex = { connect: 0, discover: 1, confirm: 2, observe: 3 }[stage];
   const goDiscover = () => setStage("discover");
   const goConfirm = () => setStage("confirm");
-  const goObserve = () => { if (declaration) setStage("observe"); };
   const repositoryName = (() => {
     if (report.source.external_ref) {
       try {
@@ -177,6 +176,16 @@ export function DiscoveryOnboarding({
       });
     } finally {
       setCheckingPatch(false);
+    }
+  };
+  const goObserve = () => {
+    if (!declaration) return;
+    setStage("observe");
+    if (
+      patchProposal?.generation.state === "adapter_available" &&
+      repositoryName
+    ) {
+      void checkExactPatch();
     }
   };
   const createDraftPullRequest = async () => {
@@ -252,9 +261,9 @@ export function DiscoveryOnboarding({
       <div className="steps">
         {[
           ["Connect", "Where AI already lives"],
-          ["Discover", "CRUX finds signals"],
-          ["Confirm", "You add meaning"],
-          ["Observe", "Reality keeps feeding back"],
+          ["Discover", "CRUX notices what is there"],
+          ["Confirm", "You add what code cannot know"],
+          ["Observe", "Keep it connected to reality"],
         ].map(([label, copy], index) => (
           <div className={`step ${index === stageIndex ? "on" : ""}`} key={label}>
             <span>0{index + 1} · {label}</span>
@@ -346,7 +355,7 @@ export function DiscoveryOnboarding({
                   <div className="field"><label>What can the AI do here?</label><select value={power} onChange={(event)=>setPower(event.target.value)}><option value="suggest">Suggest</option><option value="recommend">Recommend</option><option value="decide">Decide</option><option value="act">Act</option></select><div className="why">This maps plain language to CRUX influence/agency underneath.</div></div>
                   {power === "act" && <div className="field"><label>Before the AI action takes effect…</label><select value={actionControl} onChange={(event)=>setActionControl(event.target.value)}><option value="human_approval">A person must approve it</option><option value="rule_bounded">A rule bounds when it can happen</option><option value="automatic_bounded">It can happen automatically within defined limits</option></select></div>}
                 </div>
-                <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}><button className="btn primary" type="button" onClick={goObserve} disabled={!canConfirm}>Confirm and create draft record</button><button className="btn ghost" type="button" onClick={()=>setStage("discover")}>Back to discovery</button></div>
+                <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}><button className="btn primary" type="button" onClick={goObserve} disabled={!canConfirm}>Confirm this AI use</button><button className="btn ghost" type="button" onClick={()=>setStage("discover")}>Back to discovery</button></div>
               </div>
             )}
           </>
@@ -354,78 +363,112 @@ export function DiscoveryOnboarding({
 
         {stage === "observe" && (
           <div className="ready">
-            <div className="eyebrow2" style={{color:"rgba(255,255,255,.72)"}}>Ready to observe</div>
-            <h3>{candidate.name} now has a canonical internal draft.</h3>
-            <p><strong>Organisation:</strong> {organisationName}<br/><strong>Purpose:</strong> {purpose}<br/><strong>Affected:</strong> {affected || "No groups recorded"}<br/><strong>AI can:</strong> {power}{power === "act" ? ` · ${actionControl.replaceAll("_", " ")}` : ""}</p>
-            {declaration && <div className="observe-plan" style={{marginTop:12}}>
-              <div className="eyebrow2" style={{color:"rgba(255,255,255,.7)"}}>Canonical draft created</div>
-              <h4>{declaration.system_version_ref}</h4>
-              <p>The discovery candidate has become an internal Organisation → AI Use → System → exact SystemVersion record. No claim, evidence or outcome has been invented.</p>
-              <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
-                <button className="btn" type="button" onClick={downloadDraft}>Download portable draft</button>
+            <div className="eyebrow2" style={{color:"rgba(255,255,255,.72)"}}>Confirmed</div>
+            <h3>Keep {candidate.name} connected to what actually happens.</h3>
+            <p>You have described this AI use in human terms. CRUX can now compare that account with small, bounded runtime observations rather than asking you to keep the record current by hand.</p>
+
+            {observationPlan && patchProposal?.generation.state === "adapter_available" && (
+              <div className="observe-action">
+                <div className="eyebrow2" style={{color:"rgba(255,255,255,.7)"}}>CRUX can set this up</div>
+                <h4>A small reviewable change is available.</h4>
+                <p>CRUX has a tested observation hook for this exact workflow. It records {observationPlan.metadata.join(", ")}. It does not send {observationPlan.excluded_content.join(", ")}.</p>
+
+                {checkingPatch && (
+                  <div className="observe-status"><b>○</b><span>Checking the current repository before offering any change…</span></div>
+                )}
+
+                {patchReadiness?.status === "ready" && !pullRequestState && (
+                  <>
+                    <div className="observe-status"><b>✓</b><span>The current repository still matches the tested change. CRUX will re-check it again before writing anything.</span></div>
+                    {githubInstallationId && githubUserCanWrite ? (
+                      <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
+                        <button className="btn" type="button" onClick={() => void createDraftPullRequest()} disabled={creatingPullRequest}>
+                          {creatingPullRequest ? "Preparing review PR…" : "Create review PR"}
+                        </button>
+                        <span style={{fontSize:11,color:"rgba(255,255,255,.72)",alignSelf:"center"}}>One reviewable change. CRUX will not merge it.</span>
+                      </div>
+                    ) : githubInstallationId ? (
+                      <div className="observe-status"><b>○</b><span>This GitHub connection can inspect the repository but cannot create a review branch. Reconnect GitHub with repository write access when you want CRUX to prepare the change.</span></div>
+                    ) : (
+                      <div className="observe-status"><b>○</b><span>The exact change is ready. Connect this repository through GitHub to let CRUX prepare it as a review PR; nothing is written from a public scan.</span></div>
+                    )}
+                  </>
+                )}
+
+                {pullRequestState?.status === "created" && (
+                  <div className="observe-status"><b>✓</b><span>Draft PR #{pullRequestState.pull_request_number} is ready for review. <a href={pullRequestState.pull_request_url} target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Open it on GitHub</a>. CRUX has not merged it.</span></div>
+                )}
+                {pullRequestState?.status === "existing_review" && (
+                  <div className="observe-status"><b>✓</b><span>This observation change is already under review in PR #{pullRequestState.pull_request_number}. <a href={pullRequestState.pull_request_url} target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Open the existing review</a>. CRUX did not duplicate or update it.</span></div>
+                )}
+                {pullRequestState?.status === "blocked" && <div className="observe-status"><b>○</b><span>CRUX did not create a PR: {pullRequestState.reason}</span></div>}
+                {pullRequestState?.status === "error" && <div className="observe-status"><b>○</b><span>CRUX could not create the review PR: {pullRequestState.reason}</span></div>}
+                {patchReadiness?.status === "blocked" && <div className="observe-status"><b>○</b><span>CRUX will not change this automatically because the tested source shape no longer matches: {patchReadiness.reason}</span></div>}
+                {patchReadiness?.status === "error" && <div className="observe-status"><b>○</b><span>CRUX could not safely check the current repository: {patchReadiness.reason}</span></div>}
+
+                <details className="technical-toggle" open={showPatch}>
+                  <summary onClick={(event) => { event.preventDefault(); setShowPatch((value) => !value); }}>
+                    {showPatch ? "Hide technical details" : "See technical details"}
+                  </summary>
+                  {showPatch && (
+                    <div className="patch-proposal">
+                      <strong>What CRUX proposes</strong>
+                      <div className="patch-list">
+                        <span>Add: {patchProposal.add_file.path}</span>
+                        {patchProposal.target_path && <span>Edit: {patchProposal.target_path}</span>}
+                        <span>Configure: {patchProposal.environment.map((item) => item.name).join(" · ")}</span>
+                        {declaration && <span>Bind to: {declaration.system_version_ref}</span>}
+                        {patchReadiness?.status === "ready" && <span>Checked against: {patchReadiness.checked_ref}</span>}
+                      </div>
+                      <code>{patchProposal.integration_snippet}</code>
+                      <div className="patch-list">{patchProposal.review_checks.map((check) => <span key={check}>✓ {check}</span>)}</div>
+                      <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>{patchProposal.generation.reason}</div>
+                    </div>
+                  )}
+                </details>
               </div>
-            </div>}
-            <div className="flow"><div className="flow-node"><span>Discovery</span><strong>Technical signals</strong></div><span className="arrow">→</span><div className="flow-node"><span>Declaration</span><strong>Human confirmed meaning</strong></div><span className="arrow">→</span><div className="flow-node"><span>Runtime</span><strong>Observe what actually runs</strong></div><span className="arrow">→</span><div className="flow-node"><span>CRUX</span><strong>Reconcile reality</strong></div></div>
-            {observationPlan && <div className="observe-plan">
-              <div className="eyebrow2" style={{color:"rgba(255,255,255,.7)"}}>Smallest useful observation hook</div>
-              <h4>{observationPlan.primary_path ?? "Existing runtime connector"}</h4>
-              <p>{observationPlan.rationale}</p>
-              <div className="observe-grid">
-                <div className="observe-box"><strong>Record</strong><span>{observationPlan.metadata.join(" · ")}</span></div>
-                <div className="observe-box"><strong>Never send</strong><span>{observationPlan.excluded_content.join(" · ")}</span></div>
+            )}
+
+            {observationPlan && patchProposal?.generation.state === "manual_review_required" && (
+              <div className="observe-action">
+                <div className="eyebrow2" style={{color:"rgba(255,255,255,.7)"}}>Observation point found</div>
+                <h4>CRUX knows where to look, but will not guess how to edit this project.</h4>
+                <p>{observationPlan.rationale} The technical proposal is available for a developer to review, but CRUX has no tested exact adapter for this code shape yet.</p>
+                <details className="technical-toggle">
+                  <summary>See technical proposal</summary>
+                  <div className="patch-proposal">
+                    <div className="patch-list">
+                      <span>Add: {patchProposal.add_file.path}</span>
+                      {patchProposal.target_path && <span>Edit: {patchProposal.target_path}</span>}
+                    </div>
+                    <code>{patchProposal.integration_snippet}</code>
+                    <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>{patchProposal.generation.reason}</div>
+                  </div>
+                </details>
               </div>
-              <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
-                <button className="btn" type="button" onClick={() => setShowPatch((value) => !value)}>{showPatch ? "Hide patch proposal" : "Generate patch proposal"}</button>
-              </div>
-              {showPatch && patchProposal && <div className="patch-proposal">
-                <strong>Proposed change</strong>
-                <div className="patch-list">
-                  <span>Add: {patchProposal.add_file.path}</span>
-                  {patchProposal.target_path && <span>Edit: {patchProposal.target_path}</span>}
-                  <span>Configure: {patchProposal.environment.map((item) => item.name).join(" · ")}</span>
-                  {declaration && <span>Set CRUX_SYSTEM_VERSION_REF={declaration.system_version_ref}</span>}
+            )}
+
+            <details className="technical-toggle">
+              <summary>Your CRUX record</summary>
+              {declaration && (
+                <div className="observe-plan">
+                  <h4>{candidate.name}</h4>
+                  <div className="observe-grid">
+                    <div className="observe-box"><strong>Organisation</strong><span>{organisationName}</span></div>
+                    <div className="observe-box"><strong>Purpose</strong><span>{purpose}</span></div>
+                    <div className="observe-box"><strong>Affected</strong><span>{affected || "No groups recorded"}</span></div>
+                    <div className="observe-box"><strong>AI can</strong><span>{power}{power === "act" ? ` · ${actionControl.replaceAll("_", " ")}` : ""}</span></div>
+                  </div>
+                  <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
+                    <button className="btn" type="button" onClick={downloadDraft}>Download portable record</button>
+                  </div>
                 </div>
-                <code>{patchProposal.integration_snippet}</code>
-                <div className="patch-list">{patchProposal.review_checks.map((check) => <span key={check}>✓ {check}</span>)}</div>
-                <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>{patchProposal.generation.reason}</div>
-                {patchProposal.generation.state === "adapter_available" && declaration && <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
-                  <button className="btn" type="button" onClick={() => void checkExactPatch()} disabled={checkingPatch}>
-                    {checkingPatch ? "Checking repository…" : "Check exact patch readiness"}
-                  </button>
-                </div>}
-                {patchReadiness?.status === "ready" && <div className="patch-list">
-                  <strong>Exact patch ready on {patchReadiness.checked_ref}</strong>
-                  {patchReadiness.changes.map((change) => <span key={change.path}>✓ {change.mode}: {change.path} — {change.purpose}</span>)}
-                  <span>Proposed branch: {patchReadiness.branch_name}</span>
-                  {githubInstallationId && githubUserCanWrite && !pullRequestState && <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}>
-                    <button className="btn" type="button" onClick={() => void createDraftPullRequest()} disabled={creatingPullRequest}>
-                      {creatingPullRequest ? "Creating review PR…" : "Create draft review PR"}
-                    </button>
-                  </div>}
-                  {githubInstallationId && !githubUserCanWrite && <span>GitHub says this connected user can read this repository but cannot write to it, so CRUX will not offer PR creation.</span>}
-                  {!githubInstallationId && <span>Connect this repository through the CRUX GitHub App to create the patch as a review PR.</span>}
-                </div>}
-                {pullRequestState?.status === "created" && <div className="patch-list">
-                  <strong>Draft PR #{pullRequestState.pull_request_number} created for review.</strong>
-                  <span>Branch: {pullRequestState.branch}</span>
-                  <span>Base checked again at {pullRequestState.base_sha.slice(0, 12)}.</span>
-                  <a href={pullRequestState.pull_request_url} target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Open the draft pull request on GitHub</a>
-                  <span>CRUX will not merge it.</span>
-                </div>}
-                {pullRequestState?.status === "existing_review" && <div className="patch-list">
-                  <strong>Observation change is already under review in PR #{pullRequestState.pull_request_number}.</strong>
-                  <a href={pullRequestState.pull_request_url} target="_blank" rel="noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Open the existing draft pull request on GitHub</a>
-                  <span>CRUX did not update or duplicate the existing review branch.</span>
-                </div>}
-                {pullRequestState?.status === "blocked" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>PR creation blocked: {pullRequestState.reason}</div>}
-                {pullRequestState?.status === "error" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>PR creation failed: {pullRequestState.reason}</div>}
-                {patchReadiness?.status === "blocked" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>Exact patch blocked: {patchReadiness.reason}</div>}
-                {patchReadiness?.status === "error" && <div className="detail" style={{color:"rgba(255,255,255,.8)"}}>Patch check failed: {patchReadiness.reason}</div>}
-                <div className="detail" style={{color:"rgba(255,255,255,.68)"}}>CRUX only offers repository writes after an exact adapter passes its source checks. Creating a draft PR repeats the repository, user-write, App-permission and current-source checks server-side. It never updates an existing review branch and never auto-merges.</div>
-              </div>}
-            </div>}
-            <p className="detail" style={{color:"rgba(255,255,255,.72)"}}>Runtime evidence may challenge the declaration, but never silently rewrites it. A generated patch should remain reviewable and disabled until explicit CRUX configuration is present.</p>
+              )}
+            </details>
+
+            <p className="detail" style={{color:"rgba(255,255,255,.72)"}}>Observed behaviour can challenge the description, but it never silently rewrites what people have declared.</p>
           </div>
+        )}
         )}
       </div>
     </section>
