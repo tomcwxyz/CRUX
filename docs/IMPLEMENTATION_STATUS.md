@@ -78,6 +78,8 @@ A second materially different patch is Soundings PR #60: Python, direct Anthropi
 
 CRUX now has deterministic fail-closed adapters for those two CI-tested patch shapes. The same patch-readiness and GitHub review transaction selects the adapter by exact repository/workflow, rechecks source anchors, and refuses to guess for other code shapes.
 
+The onboarding surface now hides that machinery by default. When a confirmed use has a tested exact adapter, CRUX checks readiness automatically and leads with one action: **Create review PR**. Source paths, environment variables, generated snippets and exact refs remain available under technical details. Public scans and read-only connections can inspect readiness but are never offered a write action.
+
 This is technical evidence about the path, not evidence that people can understand or use it successfully without help.
 
 ### GitHub repository connection
