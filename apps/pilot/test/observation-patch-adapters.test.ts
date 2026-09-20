@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateOpenRecsSourceExtractPatch } from "../lib/observation-patch-adapters";
+import { generateSoundingsAskPatch } from "../lib/soundings-observation-patch";
 
 const extract = `import type { RepoContext } from '@/lib/repositories/types';
 
@@ -79,6 +80,114 @@ describe("Open Recs observation patch adapter", () => {
           ),
         },
         { path: ".env.example", content: "APP_MODE=local\n" },
+      ],
+    });
+
+    expect(patch.status).toBe("blocked");
+    if (patch.status === "blocked") {
+      expect(patch.reason).toContain("already");
+    }
+  });
+});
+
+
+const soundingsOrchestrator = `import asyncio
+
+from soundings.ask.dispatcher import ToolDispatcher
+
+class AskOrchestrator:
+    def __init__(self) -> None:
+        self._answer_cache = answer_cache
+
+    async def _loop(self) -> None:
+        for _iteration in range(self._max_iterations):
+            response = await asyncio.to_thread(
+                lambda: client.messages.create(
+                    model=self._model,
+                    messages=messages,
+                )
+            )
+
+            # A cybersecurity/safety classifier can decline a request: HTTP 200
+            return response
+`;
+
+describe("Soundings Ask observation patch adapter", () => {
+  it("generates the CI-tested bounded Python patch when exact anchors are present", () => {
+    const patch = generateSoundingsAskPatch({
+      repository: "tomcwxyz/soundings",
+      systemVersionRef: "system-version:soundings-ask:0.1",
+      files: [
+        {
+          path: "server/soundings/ask/orchestrator.py",
+          sha: "orchestrator-sha",
+          content: soundingsOrchestrator,
+        },
+        {
+          path: ".env.example",
+          sha: "env-sha",
+          content: "SOUNDINGS_ENV=dev\n",
+        },
+      ],
+    });
+
+    expect(patch.status).toBe("ready");
+    if (patch.status !== "ready") return;
+
+    expect(patch.adapter_id).toBe("soundings-ask");
+    expect(patch.changes).toHaveLength(4);
+    const orchestrator = patch.changes.find(
+      (change) => change.path === "server/soundings/ask/orchestrator.py",
+    );
+    expect(orchestrator?.content).toContain(
+      "from soundings.ask.crux_observe import emit_crux_ai_invocation",
+    );
+    expect(orchestrator?.content).toContain(
+      "self._crux_observation_tasks: set[asyncio.Task[None]] = set()",
+    );
+    expect(orchestrator?.content).toContain('workflow="ask"');
+    expect(orchestrator?.content).toContain('operation="messages.create"');
+    expect(orchestrator?.content).not.toContain("CRUX_SYSTEM_VERSION_REF=");
+    expect(patch.pull_request_body).toContain(
+      "system-version:soundings-ask:0.1",
+    );
+    expect(patch.pull_request_body).toContain("does not merge it automatically");
+  });
+
+  it("refuses to guess when the Ask loop anchors have moved", () => {
+    const patch = generateSoundingsAskPatch({
+      repository: "tomcwxyz/soundings",
+      systemVersionRef: "system-version:soundings-ask:0.1",
+      files: [
+        {
+          path: "server/soundings/ask/orchestrator.py",
+          content: "class AskOrchestrator: pass\n",
+        },
+        { path: ".env.example", content: "SOUNDINGS_ENV=dev\n" },
+      ],
+    });
+
+    expect(patch).toEqual({
+      status: "blocked",
+      adapter_id: "soundings-ask",
+      reason: expect.stringContaining("will not guess"),
+    });
+  });
+
+  it("refuses to stack a second Soundings Ask integration", () => {
+    const patch = generateSoundingsAskPatch({
+      repository: "tomcwxyz/soundings",
+      systemVersionRef: "system-version:soundings-ask:0.1",
+      files: [
+        {
+          path: "server/soundings/ask/orchestrator.py",
+          content: soundingsOrchestrator,
+        },
+        { path: ".env.example", content: "SOUNDINGS_ENV=dev\n" },
+        {
+          path: "server/soundings/ask/crux_observe.py",
+          content: "already here\n",
+        },
       ],
     });
 

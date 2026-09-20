@@ -15,7 +15,7 @@ export type RepositoryPatchChange = {
 export type GeneratedObservationPatch =
   | {
       status: "ready";
-      adapter_id: "open-recs-source-extract";
+      adapter_id: "open-recs-source-extract" | "soundings-ask";
       title: string;
       branch_name: string;
       commit_message: string;
@@ -25,7 +25,7 @@ export type GeneratedObservationPatch =
     }
   | {
       status: "blocked";
-      adapter_id: "open-recs-source-extract";
+      adapter_id: "open-recs-source-extract" | "soundings-ask";
       reason: string;
     };
 

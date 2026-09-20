@@ -154,6 +154,9 @@ export function DiscoveryOnboarding({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           repository: repositoryName,
+          ...(githubInstallationId
+            ? { installation_id: githubInstallationId }
+            : {}),
           adapter_id: patchProposal.generation.adapter_id,
           system_version_ref: declaration.system_version_ref,
         }),

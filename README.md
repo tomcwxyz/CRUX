@@ -112,7 +112,12 @@ Two real application regressions currently exercise discovery:
 - **Open Recommendations Local** — TypeScript / Vercel AI SDK, including `chat.search` and `source.extract`;
 - **Soundings** — Python / direct Anthropic SDK, identifying the **Ask** workflow and its real `messages.create` boundary.
 
-A first observation proposal for Open Recs `source.extract` is open as a reviewable PR rather than being applied automatically. The hook is opt-in, metadata-only and bound to an exact CRUX SystemVersion.
+Two observation patches now exercise the same review machinery on materially different stacks:
+
+- **Open Recs `source.extract`** — TypeScript / Vercel AI SDK; review PR #25;
+- **Soundings Ask** — Python / direct Anthropic SDK / tool-use loop; review PR #60.
+
+Both target-repository patches are opt-in, metadata-only and remain open for review rather than being merged automatically. CRUX has deterministic adapters only for these CI-tested shapes; other discoveries remain proposal-only until a tested adapter exists.
 
 ## Disclosure is a boundary
 

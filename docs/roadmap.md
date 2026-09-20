@@ -91,6 +91,8 @@ Ship Check is the first source-code discovery producer, not a dependency. The sa
 - [x] discover the materially different Python/Anthropic **Soundings Ask** workflow with the same Ship Check command and generic rules;
 - [x] generate a smallest-hook observation proposal from a confirmed candidate;
 - [x] turn the Open Recs `source.extract` proposal into a real reviewable PR (#25), opt-in and metadata-only, without merging it;
+- [x] turn Soundings `Ask` into a second real reviewable observation PR (#60), opt-in and metadata-only, and pass Soundings' own Ruff/mypy/UI/full-server CI without merging it;
+- [x] encode both green target-repository patches as deterministic fail-closed adapters behind the same patch-readiness and draft-PR machinery;
 - [x] lock the dependency-free Open Recs observation payload against CRUX's canonical ingest schema;
 - [ ] observe whether a person can recognise the discovered candidates without CRUX terminology;
 - [x] make human confirmation create a canonical CRUX declaration rather than remaining UI state;

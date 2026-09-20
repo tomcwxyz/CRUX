@@ -6,10 +6,8 @@ import {
   githubConnectionAllowsRepository,
   githubConnectionAllowsWriteRepository,
 } from "./github-app";
-import {
-  generateOpenRecsSourceExtractPatch,
-  type RepositoryPatchFile,
-} from "./observation-patch-adapters";
+import type { RepositoryPatchFile } from "./observation-patch-adapters";
+import { getObservationPatchAdapter } from "./observation-patch-registry";
 
 type FetchLike = typeof fetch;
 
@@ -219,7 +217,8 @@ export const createObservationPullRequest = async ({
     permissions: Record<string, "read" | "write">,
   ) => Promise<string>;
 }): Promise<ObservationPullRequestResult> => {
-  if (adapterId !== "open-recs-source-extract") {
+  const adapter = getObservationPatchAdapter(adapterId, repository);
+  if (!adapter) {
     return {
       status: "blocked",
       code: "adapter_blocked",
@@ -271,43 +270,23 @@ export const createObservationPullRequest = async ({
   const baseSha = branchRef.object?.sha;
   if (!baseSha) throw new Error("GitHub did not return the default-branch commit SHA.");
 
-  const [extract, env, observe, observeTest] = await Promise.all([
-    readRepositoryFile({
-      fetchImpl,
-      repository,
-      path: "src/lib/jobs/handlers/extract.ts",
-      ref: baseSha,
-      token: readToken,
-    }),
-    readRepositoryFile({
-      fetchImpl,
-      repository,
-      path: ".env.example",
-      ref: baseSha,
-      token: readToken,
-    }),
-    readRepositoryFile({
-      fetchImpl,
-      repository,
-      path: "src/lib/crux/observe.ts",
-      ref: baseSha,
-      token: readToken,
-      optional: true,
-    }),
-    readRepositoryFile({
-      fetchImpl,
-      repository,
-      path: "src/lib/crux/observe.test.ts",
-      ref: baseSha,
-      token: readToken,
-      optional: true,
-    }),
-  ]);
+  const fetched = await Promise.all(
+    adapter.files.map((file) =>
+      readRepositoryFile({
+        fetchImpl,
+        repository,
+        path: file.path,
+        ref: baseSha,
+        token: readToken,
+        ...(file.optional ? { optional: true } : {}),
+      }),
+    ),
+  );
 
-  const patch = generateOpenRecsSourceExtractPatch({
+  const patch = adapter.generate({
     repository,
     systemVersionRef,
-    files: [extract, env, observe, observeTest].filter(
+    files: fetched.filter(
       (file): file is RepositoryPatchFile => Boolean(file),
     ),
   });

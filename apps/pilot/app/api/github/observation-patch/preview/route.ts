@@ -1,5 +1,18 @@
-import { GITHUB_API_VERSION } from "../../../../../lib/github-app";
-import { generateOpenRecsSourceExtractPatch } from "../../../../../lib/observation-patch-adapters";
+import { cookies } from "next/headers";
+import {
+  GITHUB_API_VERSION,
+  GITHUB_CONNECTION_COOKIE,
+  createGithubInstallationToken,
+  decodeGithubConnection,
+  getGithubAppConfig,
+  githubAppConfigured,
+  githubConnectionAllowsRepository,
+  type GithubConnection,
+} from "../../../../../lib/github-app";
+import {
+  getObservationPatchAdapter,
+} from "../../../../../lib/observation-patch-registry";
+import type { RepositoryPatchFile } from "../../../../../lib/observation-patch-adapters";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,32 +23,81 @@ type GithubContent = {
   encoding?: string;
 };
 
-const headers = () => ({
+const headers = (token?: string) => ({
   Accept: "application/vnd.github+json",
   "X-GitHub-Api-Version": GITHUB_API_VERSION,
   "User-Agent": "crux-discovery-pilot",
-  ...(process.env.GITHUB_TOKEN
-    ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-    : {}),
+  ...(token
+    ? { Authorization: `Bearer ${token}` }
+    : process.env.GITHUB_TOKEN
+      ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+      : {}),
 });
+
+const verifiedInstallationContext = async (
+  installationId: number | undefined,
+): Promise<
+  | {
+      installationId: number;
+      token: string;
+      connection: GithubConnection;
+    }
+  | undefined
+> => {
+  if (installationId === undefined) return undefined;
+  if (!githubAppConfigured()) {
+    throw new Error("The CRUX GitHub App is not configured on this deployment.");
+  }
+
+  const config = getGithubAppConfig();
+  const cookieStore = await cookies();
+  const connection = decodeGithubConnection(
+    cookieStore.get(GITHUB_CONNECTION_COOKIE)?.value,
+    config.connectionSecret,
+  );
+  if (
+    !connection?.installations.some(
+      (installation) => installation.id === installationId,
+    )
+  ) {
+    throw new Error(
+      "This browser session is not connected to that GitHub installation.",
+    );
+  }
+
+  return {
+    installationId,
+    connection,
+    token: await createGithubInstallationToken(
+      installationId,
+      config,
+      { contents: "read" },
+    ),
+  };
+};
 
 const getFile = async ({
   repository,
   path,
   ref,
+  token,
   optional = false,
 }: {
   repository: string;
   path: string;
   ref: string;
+  token?: string;
   optional?: boolean;
-}) => {
+}): Promise<RepositoryPatchFile | null> => {
   const response = await fetch(
     `https://api.github.com/repos/${repository}/contents/${path
       .split("/")
       .map(encodeURIComponent)
       .join("/")}?ref=${encodeURIComponent(ref)}`,
-    { headers: headers(), cache: "no-store" },
+    {
+      headers: headers(token),
+      cache: "no-store",
+    },
   );
 
   if (optional && response.status === 404) return null;
@@ -62,6 +124,7 @@ const getFile = async ({
 export async function POST(request: Request) {
   let body: {
     repository?: string;
+    installation_id?: number;
     adapter_id?: string;
     system_version_ref?: string;
   };
@@ -72,11 +135,23 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, code: "invalid_json" }, { status: 400 });
   }
 
-  if (
-    body.repository !== "tomcwxyz/open-recs-local" ||
-    body.adapter_id !== "open-recs-source-extract" ||
-    !body.system_version_ref
-  ) {
+  if (!body.repository || !body.adapter_id || !body.system_version_ref) {
+    return Response.json(
+      {
+        ok: false,
+        code: "invalid_request",
+        message:
+          "Repository, exact observation adapter and SystemVersion are required.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const adapter = getObservationPatchAdapter(
+    body.adapter_id,
+    body.repository,
+  );
+  if (!adapter) {
     return Response.json(
       {
         ok: false,
@@ -88,10 +163,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const installationId =
+    Number.isSafeInteger(body.installation_id) &&
+    (body.installation_id ?? 0) > 0
+      ? body.installation_id
+      : undefined;
+
   try {
+    const installation = await verifiedInstallationContext(installationId);
     const repositoryResponse = await fetch(
-      "https://api.github.com/repos/tomcwxyz/open-recs-local",
-      { headers: headers(), cache: "no-store" },
+      `https://api.github.com/repos/${body.repository}`,
+      {
+        headers: headers(installation?.token),
+        cache: "no-store",
+      },
     );
     if (!repositoryResponse.ok) {
       throw new Error(
@@ -99,40 +184,45 @@ export async function POST(request: Request) {
       );
     }
     const repository = (await repositoryResponse.json()) as {
+      id: number;
       default_branch?: string;
     };
-    const ref = repository.default_branch ?? "master";
 
-    const [extract, env, observe, observeTest] = await Promise.all([
-      getFile({
-        repository: body.repository,
-        path: "src/lib/jobs/handlers/extract.ts",
-        ref,
-      }),
-      getFile({
-        repository: body.repository,
-        path: ".env.example",
-        ref,
-      }),
-      getFile({
-        repository: body.repository,
-        path: "src/lib/crux/observe.ts",
-        ref,
-        optional: true,
-      }),
-      getFile({
-        repository: body.repository,
-        path: "src/lib/crux/observe.test.ts",
-        ref,
-        optional: true,
-      }),
-    ]);
+    if (
+      installation &&
+      !githubConnectionAllowsRepository(
+        installation.connection,
+        installation.installationId,
+        repository.id,
+      )
+    ) {
+      throw new Error(
+        "This GitHub user connection is not allowed to read that repository.",
+      );
+    }
 
-    const patch = generateOpenRecsSourceExtractPatch({
+    if (!repository.default_branch) {
+      throw new Error("GitHub did not return the repository default branch.");
+    }
+    const ref = repository.default_branch;
+
+    const fetched = await Promise.all(
+      adapter.files.map((file) =>
+        getFile({
+          repository: body.repository!,
+          path: file.path,
+          ref,
+          ...(installation?.token ? { token: installation.token } : {}),
+          ...(file.optional ? { optional: true } : {}),
+        }),
+      ),
+    );
+
+    const patch = adapter.generate({
       repository: body.repository,
       systemVersionRef: body.system_version_ref,
-      files: [extract, env, observe, observeTest].filter(
-        (file): file is NonNullable<typeof file> => Boolean(file),
+      files: fetched.filter(
+        (file): file is RepositoryPatchFile => Boolean(file),
       ),
     });
 
@@ -166,16 +256,20 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "CRUX could not check patch readiness.";
+    const status = /not connected|not configured|not allowed/i.test(message)
+      ? 401
+      : 502;
     return Response.json(
       {
         ok: false,
         code: "patch_readiness_failed",
-        message:
-          error instanceof Error
-            ? error.message
-            : "CRUX could not check patch readiness.",
+        message,
       },
-      { status: 502 },
+      { status },
     );
   }
 }

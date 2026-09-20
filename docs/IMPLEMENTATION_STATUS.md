@@ -74,6 +74,10 @@ Implemented and technically exercised:
 
 The first real observation patch is Open Recs PR #25. Its typecheck/lint/unit/build and local Playwright/Ollama e2e pass. The repository's hosted-mode e2e currently fails independently in its existing source-upload/admin path and the failure is documented on the PR. The PR remains open and unmerged.
 
+A second materially different patch is Soundings PR #60: Python, direct Anthropic SDK and a repeated tool-use loop. It adds an opt-in metadata-only observation after each `messages.create` response. Soundings' own Ruff check, Ruff format check, strict mypy, UI tests and full server/Postgres test suite pass. PR #60 also remains open and unmerged.
+
+CRUX now has deterministic fail-closed adapters for those two CI-tested patch shapes. The same patch-readiness and GitHub review transaction selects the adapter by exact repository/workflow, rechecks source anchors, and refuses to guess for other code shapes.
+
 This is technical evidence about the path, not evidence that people can understand or use it successfully without help.
 
 ### GitHub repository connection

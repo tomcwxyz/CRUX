@@ -328,4 +328,122 @@ describe("GitHub observation pull request transaction", () => {
       draft: true,
     });
   });
+
+  it("returns the existing Soundings Ask review without repository writes", async () => {
+    const soundingsConnection: GithubConnection = {
+      version: 1,
+      installations: [
+        {
+          id: 12,
+          repository_ids: [202],
+          write_repository_ids: [202],
+        },
+      ],
+      expires_at: Date.now() + 60_000,
+    };
+    const orchestrator = `import asyncio
+
+from soundings.ask.dispatcher import ToolDispatcher
+
+class AskOrchestrator:
+    def __init__(self) -> None:
+        self._answer_cache = answer_cache
+
+    async def _loop(self) -> None:
+        for _iteration in range(self._max_iterations):
+            response = await asyncio.to_thread(
+                lambda: client.messages.create(
+                    model=self._model,
+                    messages=messages,
+                )
+            )
+
+            # A cybersecurity/safety classifier can decline a request: HTTP 200
+            return response
+`;
+    const mintToken = vi.fn(async () => "read-token");
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.endsWith("/repos/tomcwxyz/soundings")) {
+          return jsonResponse({
+            id: 202,
+            full_name: "tomcwxyz/soundings",
+            default_branch: "main",
+            html_url: "https://github.com/tomcwxyz/soundings",
+          });
+        }
+        if (url.endsWith("/git/ref/heads/main")) {
+          return jsonResponse({ object: { sha: "soundings-base" } });
+        }
+        if (url.includes("server/soundings/ask/orchestrator.py")) {
+          return jsonResponse({
+            sha: "orchestrator-sha",
+            encoding: "base64",
+            content: Buffer.from(orchestrator).toString("base64"),
+          });
+        }
+        if (url.includes(".env.example")) {
+          return jsonResponse({
+            sha: "env-sha",
+            encoding: "base64",
+            content: Buffer.from("SOUNDINGS_ENV=dev\n").toString("base64"),
+          });
+        }
+        if (
+          url.includes("server/soundings/ask/crux_observe.py") ||
+          url.includes("server/tests/test_crux_observe.py")
+        ) {
+          return jsonResponse({ message: "Not Found" }, 404);
+        }
+        if (
+          method === "GET" &&
+          url.endsWith("/git/ref/heads/crux/observe-ask")
+        ) {
+          return jsonResponse({ object: { sha: "soundings-review-sha" } });
+        }
+        if (
+          method === "GET" &&
+          url.includes("/pulls?") &&
+          url.includes("state=open")
+        ) {
+          return jsonResponse([
+            {
+              number: 60,
+              html_url: "https://github.com/tomcwxyz/soundings/pull/60",
+              state: "open",
+            },
+          ]);
+        }
+        throw new Error(`Unexpected fetch: ${method} ${url}`);
+      },
+    );
+    const fetchImpl = fetchMock as unknown as typeof fetch;
+
+    const result = await createObservationPullRequest({
+      repository: "tomcwxyz/soundings",
+      installationId: 12,
+      connection: soundingsConnection,
+      adapterId: "soundings-ask",
+      systemVersionRef: "system-version:soundings-ask:0.1",
+      fetchImpl,
+      mintToken,
+    });
+
+    expect(result).toEqual({
+      status: "existing_review",
+      repository: "tomcwxyz/soundings",
+      branch: "crux/observe-ask",
+      pull_request_number: 60,
+      pull_request_url: "https://github.com/tomcwxyz/soundings/pull/60",
+    });
+    expect(mintToken).toHaveBeenCalledTimes(2);
+    expect(mintToken).toHaveBeenNthCalledWith(1, 12, { contents: "read" });
+    expect(mintToken).toHaveBeenNthCalledWith(2, 12, { pull_requests: "read" });
+    expect(
+      fetchMock.mock.calls.some(([, init]) => init?.method === "POST"),
+    ).toBe(false);
+  });
 });
