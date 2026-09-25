@@ -9,15 +9,7 @@ import {
   renameActionPoint,
   renameDecisionPoint,
 } from "../lib/authoring";
-import { ReceiptEditor } from "./receipt-editor";
-
-const authorityOptions: Decision["authority"][] = [
-  "human",
-  "rule",
-  "ai",
-  "hybrid",
-  "external",
-];
+import { authorityOptions } from "../lib/labels";
 
 const influenceOptions: AIInfluence[] = [
   "assistive",
@@ -193,7 +185,7 @@ export function AuthorityEditor({
                     if (nextDecision) nextDecision.authority = event.target.value as Decision["authority"];
                   })}
                 >
-                  {authorityOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+                  {authorityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
               <div className="field" style={{ gridColumn: "span 4" }}>
@@ -387,17 +379,6 @@ export function AuthorityEditor({
         </div>
       )}
       <button className="btn" style={{ marginTop: 12 }} type="button" onClick={addAction}>+ Add action</button>
-
-      <div className="divider" />
-      <div className="kicker">Specific case</div>
-      <p className="small muted">
-        Move from the declared process to one concrete example: what did AI contribute, what happened next, and who ultimately had authority?
-      </p>
-      <ReceiptEditor
-        bundle={bundle}
-        systemVersionId={systemVersionId}
-        onBundleChange={onBundleChange}
-      />
     </div>
   );
 }

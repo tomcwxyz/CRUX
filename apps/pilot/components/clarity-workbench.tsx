@@ -14,6 +14,7 @@ import writingAssistantJson from "../../../examples/writing-assistant/crux.json"
 import fundingReviewJson from "../../../examples/funding-review/crux.json";
 import boundedActionJson from "../../../examples/bounded-action/crux.json";
 import { appendAIUse } from "../lib/authoring";
+import { authorityLabel, evidenceKindLabel } from "../lib/labels";
 import { observedBehaviourForVersion } from "../lib/observed";
 import { createStarterBundle } from "../lib/starter";
 import { AuthorityEditor } from "./authority-editor";
@@ -365,7 +366,7 @@ const humanCheckpoint = (view: ViewModel) => {
   const person = view.version?.nodes.find((node) => node.type === "human");
   if (person) return person.name;
   const decision = view.version?.decisions[0];
-  if (decision?.authority) return `${decision.authority.replaceAll("_", " ")} authority`;
+  if (decision?.authority) return authorityLabel(decision.authority);
   return "Not recorded";
 };
 
@@ -711,7 +712,7 @@ export function ClarityWorkbench() {
                   {view.version?.decisions.length ? view.version.decisions.map((decision) => (
                     <div className="authority-line" key={decision.id}>
                       <strong>{decision.name}</strong>
-                      <span>Final authority: {decision.authority.replaceAll("_", " ")}</span>
+                      <span>Final authority: {authorityLabel(decision.authority)}</span>
                       <span>{decision.reviewBeforeEffect ? "Human review happens before effect" : "No pre-effect review is recorded"}</span>
                     </div>
                   )) : <div className="clarity-unknown"><strong>Decision authority is not recorded.</strong><p>That may be appropriate for a simple assistive use, or it may be a gap worth resolving.</p></div>}
@@ -776,7 +777,7 @@ export function ClarityWorkbench() {
                         </div>
                         <div>
                           <strong>{evidence.summary}</strong>
-                          <p>{relationshipLabel(relationship)} the statement · {evidence.kind.replaceAll("_", " ")}</p>
+                          <p>{relationshipLabel(relationship)} the statement · {evidenceKindLabel(evidence.kind)}</p>
                           {evidence.limitations.length ? <p className="caution">Limitation: {evidence.limitations.join(" · ")}</p> : null}
                           {evidence.externalRefs[0] ? <a href={evidence.externalRefs[0]} target="_blank" rel="noreferrer">Open source reference ↗</a> : null}
                         </div>
@@ -817,7 +818,7 @@ export function ClarityWorkbench() {
                     <div><span>Outcome</span><strong>{receipt.outcome}</strong></div>
                   </div>
                   <div className="case-footer">
-                    <span><strong>Final authority:</strong> {receipt.finalAuthority}</span>
+                    <span><strong>Final authority:</strong> {authorityLabel(receipt.finalAuthority)}</span>
                     <span><strong>Challenge:</strong> {receipt.challenge?.available ? receipt.challenge.description ?? receipt.challenge.uri ?? "Available" : "No challenge route recorded"}</span>
                   </div>
                 </article>

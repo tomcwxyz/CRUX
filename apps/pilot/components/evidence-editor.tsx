@@ -7,21 +7,8 @@ import type {
   EvidenceKind,
   EvidenceRelationship,
 } from "@crux/schemas";
+import { evidenceKindOptions } from "../lib/labels";
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
-
-const evidenceKinds: Array<{ value: EvidenceKind; label: string }> = [
-  { value: "human_review", label: "Human review" },
-  { value: "evaluation", label: "Evaluation or test" },
-  { value: "system_configuration", label: "System configuration" },
-  { value: "production_observation", label: "Production observation" },
-  { value: "audit", label: "Audit" },
-  { value: "assurance", label: "Assurance" },
-  { value: "incident", label: "Incident" },
-  { value: "receipt", label: "Outcome / receipt" },
-  { value: "policy", label: "Policy or organisational record" },
-  { value: "research", label: "Research" },
-  { value: "other", label: "Other" },
-];
 
 const relationshipOptions: Array<{ value: EvidenceRelationship; label: string }> = [
   { value: "supports", label: "Supports the statement" },
@@ -208,7 +195,7 @@ export function EvidenceEditor({
             <div className="field" style={{ gridColumn: "span 6" }}>
               <label htmlFor={`evidence-kind-${claimId}`}>Evidence type</label>
               <select id={`evidence-kind-${claimId}`} className="select" value={kind} onChange={(event) => setKind(event.target.value as EvidenceKind)}>
-                {evidenceKinds.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                {evidenceKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </div>
             <div className="field" style={{ gridColumn: "span 6" }}>
