@@ -6,6 +6,7 @@ import {
   evidenceKindLabel,
   influenceLabel,
   knowledgeStatusLabel,
+  processStepLabel,
   relationshipLabel,
   reversibilityLabel,
 } from "./labels";
@@ -215,19 +216,6 @@ const stepRole = (type: string): ReaderStep["role"] => {
   return "other";
 };
 
-const stepRoleLabel: Record<string, string> = {
-  input: "Information",
-  data_source: "Information",
-  transformation: "Step",
-  ai: "AI",
-  rule: "Rule",
-  decision: "Decision",
-  human: "Person",
-  action: "Action",
-  output: "Outcome",
-  external_system: "External system",
-};
-
 const toChallenge = (
   value: ChallengeInput | undefined,
 ): ReaderChallenge | undefined => {
@@ -304,7 +292,7 @@ export const buildReaderModel = (source: ReaderSource, selectedUseId?: string): 
   const steps: ReaderStep[] = nodes.map((node, index) => ({
     id: node.id,
     role: stepRole(node.type),
-    roleLabel: stepRoleLabel[node.type] ?? node.type.replaceAll("_", " "),
+    roleLabel: processStepLabel(node.type),
     name: node.name,
     ...(node.description ? { description: node.description } : {}),
     // One rule everywhere: only claim AI stops where a person takes over.

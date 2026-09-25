@@ -78,6 +78,19 @@ export const knowledgeStatusOptions: Array<Option<KnowledgeStatus>> = [
   { value: "withheld", label: "has been withheld" },
 ];
 
+export const processStepOptions: Array<Option<string>> = [
+  { value: "input", label: "Information" },
+  { value: "data_source", label: "Information" },
+  { value: "transformation", label: "Step" },
+  { value: "ai", label: "AI" },
+  { value: "rule", label: "Rule" },
+  { value: "decision", label: "Decision" },
+  { value: "human", label: "Person" },
+  { value: "action", label: "Action" },
+  { value: "output", label: "Outcome" },
+  { value: "external_system", label: "External system" },
+];
+
 export type ActionControl = "human_approval" | "rule_bounded" | "automatic_bounded";
 
 export const actionControlOptions: Array<Option<ActionControl>> = [
@@ -98,4 +111,5 @@ export const evidenceKindLabel = (value: string) => labelFrom(evidenceKindOption
 export const relationshipLabel = (value: string) => labelFrom(relationshipOptions, value);
 export const reversibilityLabel = (value: string) => labelFrom(reversibilityOptions, value);
 export const knowledgeStatusLabel = (value: string) => labelFrom(knowledgeStatusOptions, value);
+export const processStepLabel = (value: string) => labelFrom(processStepOptions, value);
 export const actionControlLabel = (value: string) => labelFrom(actionControlOptions, value);

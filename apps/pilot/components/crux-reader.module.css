@@ -2,6 +2,9 @@
    class names here are locally scoped by CSS modules, so they cannot collide. */
 
 .reader { background: rgba(255, 253, 248, .72); border: 1px solid var(--line); border-radius: 28px; box-shadow: var(--shadow); overflow: hidden; }
+.bare { background: transparent; }
+.bare .canvas { padding: 0; background: transparent; }
+.bare .note { margin: 0 0 18px; }
 
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .35); }
 

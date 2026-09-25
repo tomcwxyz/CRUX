@@ -18,6 +18,8 @@ type CruxReaderProps = {
   note?: ReactNode;
   /** Optional "What to notice" guidance for a worked example. */
   teaching?: Partial<Record<Question, string>>;
+  /** Set false when the host page already provides the surrounding card. */
+  framed?: boolean;
 };
 
 const audienceCopy: Record<Audience, { label: string; job: string; intro: string; kicker: string }> = {
@@ -50,7 +52,7 @@ const questions: Array<{ id: Question; number: string; title: string; copy: stri
   { id: "happened", number: "04", title: "What happened here?", copy: "A particular case is different from the general description: what AI contributed, who acted and what followed." },
 ];
 
-export function CruxReader({ model, onAudienceChange, availableAudiences = audiences, toolbar, note, teaching }: CruxReaderProps) {
+export function CruxReader({ model, onAudienceChange, availableAudiences = audiences, toolbar, note, teaching, framed = true }: CruxReaderProps) {
   const anchor = useId().replace(/:/g, "");
   const sectionId = (question: Question) => `${anchor}-${question}`;
   const copy = audienceCopy[model.audience];
@@ -79,7 +81,7 @@ export function CruxReader({ model, onAudienceChange, availableAudiences = audie
   const happened = section("happened", <HappenedSection model={model} />);
 
   return (
-    <section className={styles.reader} aria-label="CRUX record">
+    <section className={framed ? styles.reader : styles.bare} aria-label="CRUX record">
       {toolbar ? <div className={styles.toolbar}>{toolbar}</div> : null}
 
       {onAudienceChange ? (
