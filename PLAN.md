@@ -46,18 +46,19 @@ Principles:
 - [x] Visible keyboard focus styles.
 - [x] Commit `pnpm-lock.yaml`; CI installs with `--frozen-lockfile`.
 
-### Phase 1 — One Reader (plan before building; >50 lines)
+### Phase 1 — One Reader ✅ (branch `phase-1-reader`)
 
-- [ ] Extract a single `CruxReader` with one view model built from either the canonical bundle (internal) or a disclosure projection (public / affected person) — the disclosure boundary must stay intact.
-- [ ] Sections follow the four questions and use SAYS / SHOWS / HAPPENED / UNKNOWN in every audience view (the public view currently shows evidence without the claim it supports).
-- [ ] Replace the home, `/author` read mode and `/live` reading views with it.
-- [ ] Tests: the Reader renders only projection fields for public and affected-person views.
+- [x] One pure view model, `apps/pilot/lib/reader-model.ts`, built from either the working record (internal) or a disclosure projection (public / affected person). The audience comes from the source, so a canonical model cannot render under a "Public" label.
+- [x] One component, `apps/pilot/components/crux-reader.tsx` (CSS module), following the four questions with SAYS / SHOWS / HAPPENED / UNKNOWN in every audience view. The affected-person view puts the case first.
+- [x] Home, `/author` read mode and `/live` public / affected tabs all use it (UI code: 929 lines removed, 743 added, including the new Reader).
+- [x] Fixed on the way: a selected AI use missing from a projection was replaced by a *different* use's public account; it now says "not included". `/live` showed raw values and took the first claim regardless of use. A model marked "not applicable" was reported as unknown.
+- [x] Tests: view-model tests across all four examples (disclosure safety, scoping, labels, drafts, the selection regression) and server-render tests. A Vitest config compiles JSX (no new dependencies).
 
 ### Phase 2 — Every journey ends in the Reader
 
 - [ ] After discovery confirmation, open the Reader on the in-memory draft (no persistence required).
 - [ ] "Download portable record" becomes a secondary action, not the only way out.
-- [ ] Guided authoring "See how this reads" uses the same Reader.
+- [x] Guided authoring "See how this reads" uses the same Reader (done in Phase 1).
 
 ### Phase 3 — Information architecture and copy (plan first)
 
@@ -71,17 +72,16 @@ Principles:
 ### Phase 4 — Visual system (plan first)
 
 - [ ] Replace per-component minified style strings with one stylesheet or CSS modules; resolve colliding global class names (`.card`, `.step`, `.field`, `.boundary`, `.flow`, `.mark`, `.arrow`).
-- [ ] Remove CSS left unused after Phase 0 (e.g. `.question-strip`, `.teaching-card`, `.claim`).
+- [ ] Remove CSS left unused after Phases 0–1: `globals.css` reading-view rules (e.g. `.question-strip`, `.teaching-card`, `.claim`, `.story-*`, `.reasoning-*`, `.case-flow`) and `/live`'s orphaned rules (`.public-summary`, `.public-fact`, `.evidence-row`, `.case-step`, `.case-bottom`).
 - [ ] Typeface pair via `next/font` (no new dependency) — **typeface choice needed**.
 - [ ] Minimum label size of 11px (currently 26 labels at 8–10px).
 - [ ] Distinctive marks for SAYS / SHOWS / HAPPENED / UNKNOWN and consistent AI / person / decision / action node styles.
-- [ ] Promote "AI stops here" from caption to a clear visual boundary.
+- [x] Promote "AI stops here" from caption to a clear visual boundary (in the Reader; one rule everywhere: an AI step directly followed by a person).
 - [ ] Favicon.
 
 ## Later / not yet scheduled
 
 - Splitting discovery signals into separate AI uses (replaces the removed button).
-- Collapse the minified single-line JSX in `audience-workbench` once the Reader replaces it.
 - `apps/pilot/tsconfig.tsbuildinfo` and Playwright's `.playwright-mcp/` output are not git-ignored.
 
 ## Decision log
@@ -91,3 +91,6 @@ Principles:
 | 2026-09-24 | Adopt "one reader, one journey" as the product direction. |
 | 2026-09-24 | Remove the non-functional "signals belong to different uses" button rather than fake it. |
 | 2026-09-24 | Case records remain limited to consequential uses (matches the mental model's proportionality principle). |
+| 2026-09-25 | Public and affected-person Reader models are built only from `redactBundle` projections; runtime activity exists only on internal models, by construction. |
+| 2026-09-25 | "AI stops here" is drawn only where an AI step is directly followed by a person step (a decision step may itself be rule- or AI-made). |
+| 2026-09-25 | New UI styles use CSS modules (built into Next); the pattern for Phase 4. |
