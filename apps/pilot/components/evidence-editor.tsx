@@ -7,15 +7,8 @@ import type {
   EvidenceKind,
   EvidenceRelationship,
 } from "@crux/schemas";
-import { evidenceKindOptions } from "../lib/labels";
+import { evidenceKindOptions, relationshipOptions } from "../lib/labels";
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
-
-const relationshipOptions: Array<{ value: EvidenceRelationship; label: string }> = [
-  { value: "supports", label: "Supports the statement" },
-  { value: "qualifies", label: "Adds an important caveat" },
-  { value: "contradicts", label: "Challenges the statement" },
-  { value: "inconclusive", label: "Does not settle it" },
-];
 
 const disclosureOptions: Array<{ value: DisclosureLevel; label: string }> = [
   { value: "public", label: "Public" },
