@@ -82,6 +82,7 @@ Principles:
 ## Later / not yet scheduled
 
 - Splitting discovery signals into separate AI uses (replaces the removed button).
+- **Decide:** should the Reader show claims that target a decision or action directly (a valid target kind)? Today, as before Phase 1, only claims on the AI use, system or version are shown. No example or authoring path creates such claims yet.
 - `apps/pilot/tsconfig.tsbuildinfo` and Playwright's `.playwright-mcp/` output are not git-ignored.
 
 ## Decision log

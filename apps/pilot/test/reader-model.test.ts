@@ -85,6 +85,34 @@ describe("buildReaderModel", () => {
     expect(buildReaderModel({ kind: "working", bundle: moved }).cases).toHaveLength(0);
   });
 
+  it("reads only the current version when a system has several", () => {
+    const twoVersions = structuredClone(funding);
+    const current = twoVersions.system_versions[0]!;
+    const older = structuredClone(current);
+    older.id = "system-version:funding-assistant:2.2";
+    older.version = "2.2";
+    older.decisions = older.decisions.map((decision) => ({ ...decision, id: "decision:old", name: "Old eligibility decision" }));
+    twoVersions.system_versions.push(older);
+    twoVersions.claims.push({
+      ...structuredClone(funding.claims[0]!),
+      id: "claim:old-version",
+      statement: "A statement about the older version only.",
+      applies_to: [{ kind: "system_version", ref: older.id }],
+    });
+    twoVersions.receipts.push({ ...structuredClone(funding.receipts[0]!), id: "receipt:old", system_version_ref: older.id, outcome: "An outcome from the older version." });
+
+    for (const model of [
+      buildReaderModel({ kind: "working", bundle: twoVersions }),
+      buildReaderModel({ kind: "disclosure", projection: redactBundle(twoVersions, "affected_party") }),
+    ]) {
+      const serialised = JSON.stringify(model);
+      expect(model.system?.version).toBe("2.3");
+      expect(serialised).not.toContain("A statement about the older version only.");
+      expect(serialised).not.toContain("Old eligibility decision");
+      expect(serialised).not.toContain("An outcome from the older version.");
+    }
+  });
+
   // Regression: the previous disclosure view fell back to ai_uses[0], so a
   // selected internal-only use showed a *different* use's public account.
   it("never substitutes another AI use when the selected one is not disclosed", () => {

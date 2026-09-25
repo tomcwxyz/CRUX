@@ -23,6 +23,8 @@ describe("CruxReader", () => {
     expect(html).toContain(">HAPPENED<");
     expect(html.indexOf("What happened here?")).toBeLessThan(html.indexOf("Where is AI involved?"));
     expect(html).toContain("About the wider AI process");
+    expect(html).not.toContain(funding.ai_uses[0]!.purpose);
+    expect(html).not.toContain("System-reported activity");
   });
 
   it("disables audiences that are not available, such as for an invalid draft", () => {
