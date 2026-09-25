@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AudienceWorkbench } from "../components/audience-workbench";
+import { HomeReader } from "../components/home-reader";
 
 export default function HomePage() {
   return (
@@ -30,7 +30,7 @@ export default function HomePage() {
         </p>
       </section>
 
-      <AudienceWorkbench />
+      <HomeReader />
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
         <Link className="btn primary" href="/discover">Start with discovery</Link>
