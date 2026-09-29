@@ -1,14 +1,14 @@
 # CRUX
 
-**Open evidence and provenance for organisational AI.**
+**Make AI use understandable.**
 
-CRUX is a guided way to think clearly about AI in an organisation.
+CRUX helps organisations understand, evidence and explain how AI is being used.
 
 The product starts with four ordinary questions:
 
 1. **Where is AI involved?**
 2. **What power does it have here?**
-3. **Why should I believe what the organisation says?**
+3. **What supports what the organisation says?**
 4. **What happened in this particular case?**
 
 The schema is the durable, portable output of that thinking — not the user's mental model.

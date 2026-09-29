@@ -1,35 +1,38 @@
 import Link from "next/link";
-import { ClarityWorkbench } from "../../components/clarity-workbench";
+import { MentalModelWorkbench } from "../../components/mental-model-workbench";
 
 export default function AuthorPage() {
   return (
     <main className="shell">
       <header className="topbar">
         <div className="brand">
-          <span className="wordmark">CRUX</span>
-          <span className="beta">authoring</span>
+          <Link className="wordmark" href="/">CRUX</Link>
+          <span className="beta">AI use record</span>
         </div>
         <div className="toolbar-group">
-          <Link className="btn ghost" href="/">Back to audience views</Link>
-          <div className="top-note">Describe the use internally; CRUX derives safer audience views from the record.</div>
+          <Link className="btn ghost" href="/">All AI uses</Link>
+          <Link className="btn ghost" href="/discover">Connect a project instead</Link>
         </div>
       </header>
 
       <section className="hero" style={{ paddingTop: "clamp(30px, 5vw, 56px)", paddingBottom: 28 }}>
         <div>
-          <div className="eyebrow">Internal authoring</div>
-          <h1 style={{ fontSize: "clamp(42px, 6vw, 76px)", maxWidth: 860 }}>Describe one real use of AI.</h1>
+          <div className="eyebrow">Add an AI use</div>
+          <h1 style={{ fontSize: "clamp(42px, 6vw, 76px)", maxWidth: 860 }}>
+            Describe the work. CRUX handles the structure underneath.
+          </h1>
         </div>
         <p className="hero-copy">
-          Start with the work, authority and evidence. Public and affected-person views are separate reading experiences, not extra forms to fill in.
+          Start with where AI appears and what it can actually cause. Add evidence separately from claims,
+          and only record a case-level account when the use is consequential.
         </p>
       </section>
 
-      <ClarityWorkbench />
+      <MentalModelWorkbench />
 
       <footer className="footer-note">
-        <span>Authoring is an internal job. Audience-facing views should remain simpler and purpose-specific.</span>
-        <Link href="/">See the audience views</Link>
+        <span>A simple assistive use should stay simple. CRUX asks more only when the consequences justify it.</span>
+        <Link href="/">Back to AI uses</Link>
       </footer>
     </main>
   );
