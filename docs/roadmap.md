@@ -5,7 +5,7 @@
 
 ## Direction
 
-CRUX should be a guided way to think clearly about AI in an organisation.
+CRUX should make AI use understandable: where it appears, what power it has, what supports the claims made about it, and what happened in a particular case.
 
 The canonical schema is the portable output of that thinking, not the user's mental model.
 
@@ -13,7 +13,7 @@ The next beta is organised around four questions:
 
 1. **Where is AI involved?**
 2. **What power does it have here?**
-3. **Why should I believe what the organisation says?**
+3. **What supports what the organisation says?**
 4. **What happened in a particular case?**
 
 See `docs/PRODUCT_MENTAL_MODEL.md`.
