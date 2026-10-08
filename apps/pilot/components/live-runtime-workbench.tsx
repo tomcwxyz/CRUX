@@ -6,6 +6,9 @@ import {
   redactBundle,
   type CruxPortableBundle,
 } from "@crux/formats";
+import { authorityOptions, processStepLabel } from "../lib/labels";
+import { buildReaderModel } from "../lib/reader-model";
+import { CruxReader } from "./crux-reader";
 
 type Lens = "internal" | "public" | "affected_party";
 type ComparisonField = {
@@ -188,8 +191,15 @@ export function LiveRuntimeWorkbench() {
 
   const canonical = state?.bundle;
   const canonicalParts = useMemo(() => canonical ? parts(canonical) : null, [canonical]);
-  const publicProjection = useMemo(() => canonical ? redactBundle(canonical, "public") : null, [canonical]);
-  const affectedProjection = useMemo(() => canonical ? redactBundle(canonical, "affected_party") : null, [canonical]);
+  // Public and affected views read only the disclosure projection, never the live record.
+  const publicModel = useMemo(
+    () => canonical ? buildReaderModel({ kind: "disclosure", projection: redactBundle(canonical, "public") }, canonical.ai_uses[0]?.id) : null,
+    [canonical],
+  );
+  const affectedModel = useMemo(
+    () => canonical ? buildReaderModel({ kind: "disclosure", projection: redactBundle(canonical, "affected_party") }, canonical.ai_uses[0]?.id) : null,
+    [canonical],
+  );
   const latestEvents = useMemo(() => {
     if (!canonical || !state?.runtime.latest_run_ref) return [];
     return canonical.events.filter((event) => event.run_ref === state.runtime.latest_run_ref);
@@ -277,7 +287,7 @@ export function LiveRuntimeWorkbench() {
                   <div style={{ display: "contents" }} key={node.id}>
                     {index > 0 ? humanBoundary ? <div className="flow-boundary">AI stops here</div> : <div className="flow-arrow">→</div> : null}
                     <article className={`flow-node ${node.type === "ai" ? "ai" : ""} ${node.type === "human" ? "human" : ""} ${node.type === "decision" ? "decision" : ""}`}>
-                      <span>{node.type === "ai" ? "AI" : node.type === "human" ? "Person" : node.type}</span>
+                      <span>{processStepLabel(node.type)}</span>
                       <strong>{node.name}</strong>
                       {observed ? <span className="observed-badge">✓ observed in latest run</span> : null}
                     </article>
@@ -328,7 +338,7 @@ export function LiveRuntimeWorkbench() {
                   <div className="review-field full"><label>What did AI contribute?</label><textarea value={draft.aiSummary} onChange={(event) => setDraft({ ...draft, aiSummary: event.target.value })} /></div>
                   <div className="review-field full"><label>What happened because of that contribution?</label><textarea value={draft.effectOfAi} onChange={(event) => setDraft({ ...draft, effectOfAi: event.target.value })} /></div>
                   <div className="review-field full"><label>What did the person actually do?</label><textarea value={draft.humanInvolvement} onChange={(event) => setDraft({ ...draft, humanInvolvement: event.target.value })} /></div>
-                  <div className="review-field"><label>Who had final authority?</label><select value={draft.finalAuthority} onChange={(event) => setDraft({ ...draft, finalAuthority: event.target.value as ReviewDraft["finalAuthority"] })}><option value="human">A person</option><option value="rule">A rule</option><option value="ai">AI</option><option value="hybrid">Human + system</option><option value="external">External authority</option></select></div>
+                  <div className="review-field"><label>Who had final authority?</label><select value={draft.finalAuthority} onChange={(event) => setDraft({ ...draft, finalAuthority: event.target.value as ReviewDraft["finalAuthority"] })}>{authorityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
                   <div className="review-field"><label>What was the outcome?</label><textarea value={draft.outcome} onChange={(event) => setDraft({ ...draft, outcome: event.target.value })} /></div>
                   <div className="review-field full"><label>How can someone question or challenge it?</label><textarea value={draft.challengeDescription} onChange={(event) => setDraft({ ...draft, challengeDescription: event.target.value })} /></div>
                 </div>
@@ -338,57 +348,21 @@ export function LiveRuntimeWorkbench() {
           </>
         ) : null}
 
-        {lens === "public" && publicProjection ? (
-          <PublicView projection={publicProjection} />
+        {lens === "public" && publicModel ? (
+          <CruxReader framed={false} model={publicModel} note={audienceCopy.public.help} />
         ) : null}
 
-        {lens === "affected_party" && affectedProjection ? (
-          <AffectedView projection={affectedProjection} hasObservedUnreviewedCase={Boolean(state.runtime.pending_case)} />
+        {lens === "affected_party" && affectedModel ? (
+          <CruxReader
+            framed={false}
+            model={affectedModel}
+            note={state.runtime.pending_case && !affectedModel.cases.length
+              ? "A runtime case has been observed, but it is not shown here yet. A person still needs to confirm what the AI contribution meant, who had final authority, the outcome and the challenge route."
+              : audienceCopy.affected_party.help}
+          />
         ) : null}
       </div>
     </section>
   );
 }
 
-function PublicView({ projection }: { projection: ReturnType<typeof redactBundle> }) {
-  const use = projection.ai_uses[0];
-  const system = use ? projection.systems.find((item) => use.system_refs.includes(item.id)) : undefined;
-  const version = system?.current_version_ref ? projection.system_versions.find((item) => item.id === system.current_version_ref) : undefined;
-  const decision = version?.decisions[0];
-  const claim = projection.claims[0];
-  const evidence = claim ? projection.claim_evidence_links.filter((link) => link.claim_ref === claim.id).flatMap((link) => {
-    const item = projection.evidence.find((candidate) => candidate.id === link.evidence_ref);
-    return item ? [{ item, relationship: link.relationship }] : [];
-  }) : [];
-
-  return (
-    <>
-      <header className="live-head"><div><div className="kicker">{projection.organisations[0]?.name ?? "Organisation"} · public explanation</div><h2>{use?.name ?? "AI use"}</h2><p>{use?.public_summary ?? system?.description ?? "No public explanation is available."}</p></div><div className="live-help">{audienceCopy.public.help}</div></header>
-      <div className="public-summary"><div className="public-fact"><span>AI does</span><strong>{system?.influence.map((item) => item.replaceAll("_", " ")).join(" · ") || "Not stated"}</strong></div><div className="public-fact"><span>AI can act by itself</span><strong>{system?.agency === "none" ? "No" : "See process limits"}</strong></div><div className="public-fact"><span>Final authority</span><strong>{decision?.authority ?? "Not stated"}</strong></div></div>
-      <div className="vtitle"><h3>How it works</h3><span>Runtime telemetry is not automatically published here.</span></div>
-      <div className="flow">{(version?.process.nodes ?? []).map((node, index, nodes) => { const prior = nodes[index - 1]; const boundary = node.type === "human" && prior?.type === "ai"; return <div style={{display:"contents"}} key={node.id}>{index > 0 ? boundary ? <div className="flow-boundary">AI stops here</div> : <div className="flow-arrow">→</div> : null}<article className={`flow-node ${node.type === "ai" ? "ai" : ""} ${node.type === "human" ? "human" : ""} ${node.type === "decision" ? "decision" : ""}`}><span>{node.type}</span><strong>{node.name}</strong></article></div>; })}</div>
-      <div className="live-grid"><article className="live-card"><h3>What the organisation says</h3>{claim ? <strong>{claim.statement}</strong> : <div className="unknown">No public statement is visible.</div>}</article><article className="live-card"><h3>How we know</h3>{evidence.length ? evidence.map(({item, relationship}) => <div className="evidence-row" key={item.id}><span className="evidence-mark">✓</span><div><strong>{item.summary}</strong><small>{relationship} · {item.kind.replaceAll("_", " ")}</small></div></div>) : <div className="unknown">No public evidence is visible.</div>}</article></div>
-    </>
-  );
-}
-
-function AffectedView({ projection, hasObservedUnreviewedCase }: { projection: ReturnType<typeof redactBundle>; hasObservedUnreviewedCase: boolean }) {
-  const trace = projection.trace_views.find((item) => item.receipt)?.receipt;
-  const use = projection.ai_uses[0];
-  const system = use ? projection.systems.find((item) => use.system_refs.includes(item.id)) : undefined;
-
-  return (
-    <>
-      <header className="live-head"><div><div className="kicker">Affected-person explanation</div><h2>How AI was involved in this case</h2><p>{use?.public_summary ?? system?.description ?? "This case relates to an AI-supported process."}</p></div><div className="live-help">{audienceCopy.affected_party.help}</div></header>
-      {!trace ? (
-        <div className="unknown">{hasObservedUnreviewedCase ? "A runtime case has been observed, but it is not shown here yet. A person still needs to confirm what the AI contribution meant, who had final authority, the outcome and the challenge route." : "No reviewed case explanation is available yet."}</div>
-      ) : (
-        <article className="case">
-          <div className="kicker">Reviewed case explanation</div>
-          <div className="case-flow"><div className="case-step ai"><span>AI</span><strong>{trace.ai_summary}</strong></div><div className="case-step"><span>What happened next</span><strong>{trace.effect_of_ai}</strong></div><div className="case-step human"><span>Person</span><strong>{trace.human_involvement ?? "No human involvement was recorded."}</strong></div><div className="case-step"><span>Outcome</span><strong>{trace.outcome}</strong></div></div>
-          <div className="case-bottom"><div className="authority"><span>Final authority</span><strong>{trace.final_authority}</strong></div><div className="challenge"><span>Questions or concerns?</span><strong>{trace.challenge?.available ? trace.challenge.description ?? trace.challenge.uri ?? "A challenge route is available." : "No challenge route is recorded."}</strong></div></div>
-        </article>
-      )}
-    </>
-  );
-}

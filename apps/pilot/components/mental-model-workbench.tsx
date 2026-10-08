@@ -12,8 +12,10 @@ import {
 import type { AIAgency, AIInfluence } from "@crux/schemas";
 import { appendAIUse } from "../lib/authoring";
 import { observedBehaviourForVersion } from "../lib/observed";
+import { buildReaderModel } from "../lib/reader-model";
 import { createStarterBundle } from "../lib/starter";
 import { AuthorityEditor } from "./authority-editor";
+import { CruxReader } from "./crux-reader";
 import { EvidenceEditor } from "./evidence-editor";
 import { ReceiptEditor } from "./receipt-editor";
 
@@ -330,6 +332,7 @@ export function MentalModelWorkbench() {
   const [question, setQuestion] = useState<Question>("where");
   const [lens, setLens] = useState<Lens>("working");
   const [error, setError] = useState<string | null>(null);
+  const [readFullRecord, setReadFullRecord] = useState(false);
 
   const structural = useMemo(() => portableBundleSchema.safeParse(bundle), [bundle]);
   const references = useMemo(() => structural.success ? validateBundleReferences(structural.data) : null, [structural]);
@@ -338,6 +341,12 @@ export function MentalModelWorkbench() {
   const projection = useMemo(
     () => canonical && effectiveLens !== "working" ? redactBundle(canonical, effectiveLens) : null,
     [canonical, effectiveLens],
+  );
+  const readerModel = useMemo(
+    () => projection
+      ? buildReaderModel({ kind: "disclosure", projection }, selectedUseId)
+      : buildReaderModel({ kind: "working", bundle }, selectedUseId),
+    [projection, bundle, selectedUseId],
   );
   const view = useMemo(
     () => projection ? buildDisclosureView(projection, selectedUseId) : buildWorkingView(bundle, selectedUseId),
@@ -394,6 +403,7 @@ export function MentalModelWorkbench() {
       setSelectedUseId(parsed.ai_uses[0]?.id ?? "");
       setQuestion("where");
       setLens("working");
+      setReadFullRecord(false);
       setError(null);
     } catch (caught) {
       setError(formatError(caught));
@@ -406,6 +416,7 @@ export function MentalModelWorkbench() {
     setSelectedUseId(starter.ai_uses[0]?.id ?? "");
     setQuestion("edit");
     setLens("working");
+    setReadFullRecord(false);
     setError(null);
   };
 
@@ -415,6 +426,7 @@ export function MentalModelWorkbench() {
     setSelectedUseId(result.aiUseId);
     setQuestion("edit");
     setLens("working");
+    setReadFullRecord(false);
   };
 
   const baseName = slug(bundle.organisations[0]?.name ?? "crux");
@@ -431,10 +443,15 @@ export function MentalModelWorkbench() {
           {(["working", "public", "affected_party"] as Lens[]).map((item) => (
             <button key={item} className={`btn ${effectiveLens === item ? "primary" : "ghost"}`} type="button" disabled={item !== "working" && !canShare} onClick={() => { setLens(item); if (item !== "working" && question === "edit") setQuestion("where"); }}>{lensLabel[item]}</button>
           ))}
-          {effectiveLens === "working" ? <button className="btn primary" type="button" onClick={() => setQuestion("edit")}>Describe this use</button> : null}
+          <button className="btn ghost" type="button" aria-pressed={readFullRecord} onClick={() => { setReadFullRecord((current) => !current); if (question === "edit") setQuestion("where"); }}>{readFullRecord ? "Back to guided view" : "Read the full record"}</button>
+          {effectiveLens === "working" ? <button className="btn primary" type="button" onClick={() => { setReadFullRecord(false); setQuestion("edit"); }}>Describe this use</button> : null}
         </div>
       </div>
 
+      {readFullRecord ? (
+        <CruxReader model={readerModel} note={error ?? (!canShare ? "This record is still a draft. Public and affected-person views are unavailable until the record is structurally valid." : undefined)} />
+      ) : (
+      <>
       <div className="question-strip">
         {questions.map((item) => (
           <button className={`question-tab ${question === item.id ? "active" : ""}`} type="button" key={item.id} onClick={() => setQuestion(item.id)}>
@@ -463,6 +480,8 @@ export function MentalModelWorkbench() {
           <EditPanel bundle={bundle} use={use} system={system} versionId={version?.id} claim={claim} onMutate={mutate} onUseChange={updateUse} onSystemChange={updateSystem} onToggleInfluence={toggleInfluence} onBundleChange={setBundle} onAddUse={addUse} onGoTo={setQuestion} />
         ) : null}
       </div>
+      </>
+      )}
 
       <div className="mental-footer"><span><strong>SAYS</strong> is not the same as <strong>SHOWS</strong>.</span><span><strong>HAPPENED</strong> describes a particular case.</span><span><strong>UNKNOWN</strong> is allowed to stay unknown.</span></div>
     </section>

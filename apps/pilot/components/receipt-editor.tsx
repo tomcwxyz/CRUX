@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { CruxPortableBundle } from "@crux/formats";
 import type { AIInfluence, Decision, DisclosureLevel } from "@crux/schemas";
+import { authorityOptions } from "../lib/labels";
 import { appendManualReceipt } from "../lib/receipts";
 import { PilotQuestions } from "./pilot-questions";
 
@@ -12,14 +13,6 @@ const involvementOptions: Array<{ value: AIInfluence; label: string }> = [
   { value: "advisory", label: "Advised or recommended" },
   { value: "conditional", label: "Influenced a conditional step" },
   { value: "decisional", label: "Directly contributed to a decision" },
-];
-
-const authorityOptions: Array<{ value: Decision["authority"]; label: string }> = [
-  { value: "human", label: "A person" },
-  { value: "hybrid", label: "A person and an automated rule/system together" },
-  { value: "rule", label: "A fixed rule" },
-  { value: "ai", label: "The AI system" },
-  { value: "external", label: "Someone or something outside this system" },
 ];
 
 const disclosureOptions: Array<{ value: DisclosureLevel; label: string }> = [
