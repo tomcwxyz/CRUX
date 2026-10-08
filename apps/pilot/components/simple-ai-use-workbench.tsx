@@ -13,7 +13,7 @@ import {
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 import { buildReaderModel } from "../lib/reader-model";
 import { observedBehaviourForVersion } from "../lib/observed";
-import { savePendingConnection, takePendingReviewRecord } from "../lib/connection-handoff";
+import { savePendingAdvancedAnswers, savePendingConnection, takePendingReviewRecord } from "../lib/connection-handoff";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -161,6 +161,15 @@ export function SimpleAIUseWorkbench() {
     }
   };
 
+  const continueDetailed = () => {
+    try {
+      savePendingAdvancedAnswers(answers);
+      router.push("/author/advanced");
+    } catch {
+      setError("Could not carry your answers to the detailed editor in this browser.");
+    }
+  };
+
   const connectProject = () => {
     if (!bundle || !canonical) {
       setError("Download a valid record before connecting a project.");
@@ -280,9 +289,8 @@ export function SimpleAIUseWorkbench() {
               {needsDetailedAuthoring(answers) ? (
                 <div className={styles.important}>
                   <strong>We need a little more detail for this use.</strong>
-                  <p>If AI takes actions, or its role isn't clear yet, we shouldn't guess what it can do or what limits apply.</p>
-                  <Link className="btn" href="/author/advanced">Use the detailed editor →</Link>
-                  <p className={styles.small}>This editor doesn't yet carry your answers across automatically.</p>
+                  <p>AI may decide or act without a person, or we're not sure who controls it. We need to clarify this before producing an explanation.</p>
+                  <button className="btn" type="button" onClick={continueDetailed}>Continue with these answers →</button>
                 </div>
               ) : null}
               {error ? <p role="alert" className={styles.error}>{error}</p> : null}
