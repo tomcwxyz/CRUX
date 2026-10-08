@@ -16,6 +16,7 @@ import fundingReviewJson from "../../../../../examples/funding-review/crux.json"
 import { observedBehaviourForVersion } from "../../../lib/observed";
 import { createPilotPostgresStore } from "../../../lib/postgres-store";
 import { replacePilotScopeBundle } from "../../../lib/pilot-scope";
+import { allowBrowserOnlyDemo } from "../../../lib/browser-runtime-mode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -158,6 +159,9 @@ const optionalText = (value: unknown, max = 4_000) =>
 
 export async function GET() {
   if (!process.env.DATABASE_URL) {
+    if (allowBrowserOnlyDemo(false, process.env.VERCEL_ENV ?? (process.env.NODE_ENV === "development" ? "development" : undefined))) {
+      return response({ ok: true, browser_demo_only: true });
+    }
     return response({ ok: false, code: "database_not_configured" }, 503);
   }
 

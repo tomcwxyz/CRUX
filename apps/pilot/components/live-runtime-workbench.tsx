@@ -1,43 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  parsePortableBundle,
-  redactBundle,
-  type CruxPortableBundle,
-} from "@crux/formats";
-import { authorityOptions, processStepLabel } from "../lib/labels";
+import { parsePortableBundle, redactBundle, type CruxPortableBundle } from "@crux/formats";
+import { authorityOptions } from "../lib/labels";
 import { buildReaderModel } from "../lib/reader-model";
+import { explainModelCheck, latestRunModelCheck, reviewStage, type ModelCheck } from "../lib/runtime-story";
 import { CruxReader } from "./crux-reader";
+import {
+  resetBrowserDemo, restoreBrowserDemo, reviewBrowserDemo,
+  runBrowserDemo, storeBrowserDemo, type BrowserDemoState,
+} from "../lib/browser-runtime-demo";
+import styles from "./live-runtime-workbench.module.css";
 
-type Lens = "internal" | "public" | "affected_party";
-type ComparisonField = {
-  field: string;
-  declared?: string;
-  observed?: string;
-  status: "match" | "divergence" | "declared_unknown" | "observed_missing";
-};
-type Comparison = {
-  eventRef?: string;
-  runRef?: string;
-  occurredAt?: string;
-  componentName?: string;
-  comparable: boolean;
-  fields: ComparisonField[];
-};
+type View = "inside" | "public" | "person";
 type PendingCase = {
   run_ref: string;
   observed: {
     ai_invocation_count: number;
     human_review_count: number;
-    override_count: number;
     decision_count: number;
-    action_count: number;
-    escalation_count: number;
-  };
-  suggested: {
-    ai_summary: string;
-    human_involvement?: string;
   };
 };
 type RuntimeInfo = {
@@ -49,7 +30,7 @@ type RuntimeInfo = {
   latest_event_types: string[];
   observed_provider: string | null;
   observed_model: string | null;
-  comparisons: Comparison[];
+  comparisons: ModelCheck[];
   divergence_count: number;
   comparable_count: number;
   pending_case: PendingCase | null;
@@ -60,8 +41,8 @@ type LiveState = {
   bundle: CruxPortableBundle;
   runtime: RuntimeInfo;
   run_mode?: "live" | "demo";
+  browser_only?: boolean;
 };
-
 type ReviewDraft = {
   aiSummary: string;
   effectOfAi: string;
@@ -71,298 +52,369 @@ type ReviewDraft = {
   challengeDescription: string;
 };
 
-const audienceCopy: Record<Lens, { label: string; title: string; help: string }> = {
-  internal: {
-    label: "Internal",
-    title: "Compare the description with reality",
-    help: "Runtime evidence appears here first. Differences are things to review, not automatic judgements.",
-  },
-  public: {
-    label: "Public",
-    title: "Explain how the system works",
-    help: "Runtime telemetry never publishes itself. This view only uses the disclosure-safe public projection.",
-  },
-  affected_party: {
-    label: "Affected person",
-    title: "Explain what happened in this case",
-    help: "A case appears only after observed events have been reviewed and organisational meaning has been confirmed.",
-  },
+const inventedReview: ReviewDraft = {
+  aiSummary: "AI highlighted passages in a fictional funding application that may relate to eligibility.",
+  effectOfAi: "The highlighted passages were included in the material given to the funding officer.",
+  humanInvolvement: "A funding officer checked the original application and the AI's suggested passages.",
+  finalAuthority: "human",
+  outcome: "The funding officer made the eligibility decision in this fictional case.",
+  challengeDescription: "The applicant can ask the foundation how the decision was reached or raise a concern.",
 };
 
-const styles = `
-.live-shell{overflow:hidden}.live-top{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,.34)}.live-state{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.live-dot{width:9px;height:9px;border-radius:50%;background:var(--moss);box-shadow:0 0 0 4px rgba(64,88,74,.09)}.live-label{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.live-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}.live-tab{border:0;border-right:1px solid var(--line);padding:17px 19px;text-align:left;background:rgba(255,255,255,.16);cursor:pointer}.live-tab:last-child{border-right:0}.live-tab.on{background:var(--chalk);box-shadow:inset 0 -3px 0 var(--rust)}.live-tab span{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--rust)}.live-tab strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:400;margin-top:4px}
-.live-canvas{padding:clamp(22px,4vw,46px);background:rgba(255,253,248,.7)}.live-head{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr);gap:26px;margin-bottom:25px}.live-head h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(34px,5vw,58px);font-weight:400;letter-spacing:-.04em;line-height:1;margin:5px 0 10px}.live-head p{color:var(--muted);font-size:15px;line-height:1.55;margin:0}.live-help{border-left:3px solid var(--rust);padding-left:15px;color:var(--muted);font-size:13px;line-height:1.45}
-.runtime-strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin:18px 0 24px}.runtime-stat{padding:14px 16px;border-right:1px solid var(--line);background:rgba(255,255,255,.42)}.runtime-stat:last-child{border-right:0}.runtime-stat span{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:900;color:var(--muted);margin-bottom:5px}.runtime-stat strong{font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:400}.runtime-stat.warn strong{color:var(--rust)}
-.live-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 25px}.live-note{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 0}.flow{display:flex;align-items:stretch;gap:8px;overflow-x:auto;padding:4px 0 10px}.flow-node{min-width:145px;flex:1 0 145px;border:1px solid var(--line);border-radius:16px;padding:15px;background:var(--chalk);position:relative;min-height:112px}.flow-node.ai{border:2px solid rgba(168,76,50,.48);background:rgba(168,76,50,.04)}.flow-node.human{border:2px solid rgba(64,88,74,.42);background:rgba(64,88,74,.04)}.flow-node.decision{border-radius:4px 16px 4px 16px}.flow-node>span{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:900;color:var(--muted);margin-bottom:16px}.flow-node strong{font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;line-height:1.25}.observed-badge{display:inline-flex!important;margin-top:13px!important;padding:4px 7px;border-radius:999px;background:rgba(64,88,74,.1);color:var(--moss)!important;letter-spacing:.08em!important}.flow-arrow{display:grid;place-items:center;color:var(--muted);min-width:20px}.flow-boundary{min-width:74px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--rust);font-size:8px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;text-align:center}.flow-boundary:before{content:'';width:1px;height:42px;background:var(--rust);margin-bottom:5px}
-.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:19px}.live-card{border:1px solid var(--line);border-radius:19px;padding:19px;background:rgba(255,255,255,.4)}.live-card h3{font-family:Georgia,'Times New Roman',serif;font-size:23px;font-weight:400;margin:0 0 12px}.live-card p{color:var(--muted);font-size:13px;line-height:1.5}.compare-row{padding:10px 0;border-top:1px solid var(--line)}.compare-row:first-of-type{border-top:0}.compare-row span{font-size:9px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}.compare-values{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.compare-values div{border:1px solid var(--line);border-radius:12px;padding:10px}.compare-values small{display:block;color:var(--muted);margin-bottom:3px}.status{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:800;margin-top:7px;background:rgba(64,88,74,.09);color:var(--moss)}.status.warn{background:rgba(168,76,50,.08);color:var(--rust)}.unknown{border:1px dashed rgba(119,120,111,.55);border-radius:13px;padding:12px;color:var(--muted);font-size:13px;line-height:1.45}.unknown:before{content:'○';margin-right:7px}
-.review{margin-top:20px;border:1px solid rgba(168,76,50,.28);border-radius:22px;padding:clamp(18px,3vw,28px);background:rgba(168,76,50,.035)}.review h3{font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:400;margin:4px 0 8px}.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:16px}.review-field{display:grid;gap:6px}.review-field.full{grid-column:1/-1}.review-field label{font-size:11px;font-weight:800}.review-field textarea,.review-field select{width:100%;border:1px solid var(--line);border-radius:13px;background:var(--chalk);padding:11px 12px;font:inherit;line-height:1.45}.review-field textarea{min-height:80px;resize:vertical}.review-tip{border-left:3px solid var(--moss);padding-left:12px;color:var(--muted);font-size:12px;line-height:1.45;margin-top:12px}
-.public-summary{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin:20px 0}.public-fact{padding:15px 17px;border-right:1px solid var(--line)}.public-fact:last-child{border-right:0}.public-fact span{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}.public-fact strong{font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:400}.evidence-row{display:flex;gap:10px;padding:11px 0;border-top:1px solid var(--line)}.evidence-row:first-of-type{border-top:0}.evidence-mark{color:var(--moss);font-weight:900}.evidence-row small{display:block;color:var(--muted);margin-top:4px}
-.case{border:1px solid var(--line);border-radius:22px;padding:clamp(18px,3vw,28px);background:var(--chalk)}.case-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:16px}.case-step{border:1px solid var(--line);border-radius:15px;padding:15px;min-height:130px}.case-step.ai{border-color:rgba(168,76,50,.4);background:rgba(168,76,50,.04)}.case-step.human{border-color:rgba(64,88,74,.4);background:rgba(64,88,74,.04)}.case-step span{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}.case-step strong{font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;line-height:1.3}.case-bottom{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:13px}.authority,.challenge{padding:19px;border-radius:18px}.authority{background:var(--moss);color:var(--chalk)}.challenge{border:1px solid rgba(168,76,50,.3);background:rgba(168,76,50,.04)}.authority span,.challenge span{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px}.challenge span{color:var(--rust)}.authority strong,.challenge strong{font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:400;line-height:1.3}.error{border-left:3px solid var(--rust);padding:12px 14px;background:rgba(168,76,50,.06);border-radius:0 13px 13px 0;color:var(--rust);margin-bottom:16px}
-@media(max-width:850px){.live-head{grid-template-columns:1fr}.runtime-strip{grid-template-columns:1fr 1fr}.runtime-stat:nth-child(2){border-right:0}.runtime-stat:nth-child(-n+2){border-bottom:1px solid var(--line)}.live-grid{grid-template-columns:1fr}.case-flow{grid-template-columns:1fr 1fr}}@media(max-width:650px){.live-tabs,.runtime-strip,.public-summary,.case-flow,.case-bottom,.review-grid{grid-template-columns:1fr}.live-tab{border-right:0;border-bottom:1px solid var(--line)}.runtime-stat,.public-fact{border-right:0;border-bottom:1px solid var(--line)}.review-field.full{grid-column:auto}}
-`;
+const views: Array<{ id: View; label: string }> = [
+  { id: "inside", label: "Inside the organisation" },
+  { id: "public", label: "What the public sees" },
+  { id: "person", label: "What an applicant sees" },
+];
 
-const json = async (response: Response) => {
-  const text = await response.text();
-  if (!text) throw new Error(`CRUX runtime endpoint returned ${response.status} with no body.`);
-  const value = JSON.parse(text) as Record<string, unknown>;
-  if (!response.ok || value.ok !== true) {
-    throw new Error(typeof value.message === "string" ? value.message : `CRUX runtime request failed (${response.status}).`);
+async function readResponse(response: Response): Promise<LiveState> {
+  const raw = await response.text();
+  if (!raw) throw new Error("The demo did not return a response.");
+  const payload = JSON.parse(raw) as Record<string, unknown>;
+  if (!response.ok || payload.ok !== true) {
+    throw new Error(typeof payload.message === "string" ? payload.message : "The demo is unavailable.");
   }
-  return value;
-};
-
-const normaliseState = (value: Record<string, unknown>): LiveState => ({
-  revision: Number(value.revision),
-  bundle: parsePortableBundle(value.bundle),
-  runtime: value.runtime as RuntimeInfo,
-  ...(value.run_mode === "live" || value.run_mode === "demo" ? { run_mode: value.run_mode } : {}),
-});
-
-const parts = (bundle: CruxPortableBundle) => {
-  const use = bundle.ai_uses[0];
-  const system = use ? bundle.systems.find((item) => use.system_refs.includes(item.id)) : undefined;
-  const version = system?.current_version_ref
-    ? bundle.system_versions.find((item) => item.id === system.current_version_ref)
-    : undefined;
-  return { use, system, version };
-};
+  if (payload.browser_demo_only === true) return restoreBrowserDemo();
+  return {
+    revision: Number(payload.revision),
+    bundle: parsePortableBundle(payload.bundle),
+    runtime: payload.runtime as RuntimeInfo,
+    ...(payload.run_mode === "demo" || payload.run_mode === "live" ? { run_mode: payload.run_mode } : {}),
+  };
+}
 
 export function LiveRuntimeWorkbench() {
   const [state, setState] = useState<LiveState | null>(null);
-  const [lens, setLens] = useState<Lens>("internal");
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<ReviewDraft>({
-    aiSummary: "AI was invoked in the eligibility-evidence extraction step.",
-    effectOfAi: "The AI output was included in the material reviewed by the funding officer.",
-    humanInvolvement: "A funding officer reviewed the original application and the AI contribution before making the eligibility decision.",
-    finalAuthority: "human",
-    outcome: "The funding officer made the eligibility decision.",
-    challengeDescription: "The applicant can contact the foundation to ask how the eligibility decision was reached or to raise a concern.",
-  });
-
-  const load = async () => {
-    setBusy("load");
-    setError(null);
-    try {
-      const value = await json(await fetch("/api/live-runtime", { cache: "no-store" }));
-      setState(normaliseState(value));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load the live CRUX scope.");
-    } finally {
-      setBusy(null);
-    }
-  };
+  const [view, setView] = useState<View>("inside");
+  const [busy, setBusy] = useState<"loading" | "running" | "review" | "reset" | "real" | null>("loading");
+  const [error, setError] = useState("");
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [confirmedExample, setConfirmedExample] = useState(false);
+  const [draft, setDraft] = useState<ReviewDraft>(inventedReview);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    void (async () => {
+      try {
+        const next = await readResponse(await fetch("/api/live-runtime", { cache: "no-store" }));
+        if (active) setState(next);
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : "The demo is unavailable.");
+      } finally {
+        if (active) setBusy(null);
+      }
+    })();
+    return () => { active = false; };
   }, []);
 
-  const mutate = async (body: Record<string, unknown>, label: string) => {
-    setBusy(label);
-    setError(null);
+  const change = <T extends keyof ReviewDraft>(field: T, value: ReviewDraft[T]) =>
+    setDraft((old) => ({ ...old, [field]: value }));
+
+  const mutate = async (
+    body: Record<string, unknown>,
+    action: "running" | "review" | "reset" | "real",
+  ): Promise<LiveState | null> => {
+    if (busy) return null;
+    setBusy(action);
+    setError("");
     try {
-      const value = await json(await fetch("/api/live-runtime", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }));
-      const next = normaliseState(value);
+      let next: LiveState;
+      if (state?.browser_only === true && action !== "real") {
+        const local = state as BrowserDemoState;
+        if (action === "running") {
+          next = runBrowserDemo(local);
+        } else if (action === "review" && body.action === "review") {
+          if (typeof body.runRef !== "string") throw new Error("Missing run for review.");
+          next = reviewBrowserDemo(local, body.runRef, draft);
+        } else if (action === "reset") {
+          next = resetBrowserDemo();
+        } else {
+          throw new Error("Unsupported action for this browser-only example.");
+        }
+        storeBrowserDemo(next as BrowserDemoState);
+      } else {
+        next = await readResponse(await fetch("/api/live-runtime", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }));
+      }
       setState(next);
       return next;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "CRUX runtime action failed.");
+      setError(cause instanceof Error ? cause.message : "That action could not be completed.");
       return null;
     } finally {
       setBusy(null);
     }
   };
 
-  const review = async () => {
-    if (!state?.runtime.latest_run_ref) return;
-    const next = await mutate({
-      action: "review",
-      runRef: state.runtime.latest_run_ref,
-      ...draft,
-    }, "review");
-    if (next) setLens("affected_party");
+  const runExample = async (mode: "demo" | "live" = "demo") => {
+    const next = await mutate({ action: "run", mode }, mode === "demo" ? "running" : "real");
+    if (!next) return;
+    setView("inside");
+    setReviewOpen(false);
+    setConfirmedExample(false);
+    setDraft(inventedReview);
   };
 
-  const canonical = state?.bundle;
-  const canonicalParts = useMemo(() => canonical ? parts(canonical) : null, [canonical]);
-  // Public and affected views read only the disclosure projection, never the live record.
+  const publishExample = async () => {
+    if (!confirmedExample || !state?.runtime.pending_case || !state.runtime.latest_run_ref) return;
+    const runRef = state.runtime.latest_run_ref;
+    if (state.runtime.pending_case.run_ref !== runRef) return;
+    const next = await mutate({ action: "review", runRef, ...draft }, "review");
+    if (!next) return;
+    setReviewOpen(false);
+    setConfirmedExample(false);
+    setView("person");
+  };
+
+  const resetExample = async () => {
+    if (!window.confirm(state?.browser_only
+      ? "Reset this fictional example in your browser? Your other sessions are unaffected."
+      : "Reset the shared fictional demo? This clears the example runs and reviews for everyone using it.")) return;
+    const next = await mutate({ action: "reset" }, "reset");
+    if (!next) return;
+    setReviewOpen(false);
+    setConfirmedExample(false);
+    setView("inside");
+  };
+
+  const bundle = state?.bundle;
+  const use = bundle?.ai_uses[0];
+  const system = bundle?.systems.find((item) => use?.system_refs.includes(item.id));
+  const version = bundle?.system_versions.find((item) => item.id === system?.current_version_ref);
   const publicModel = useMemo(
-    () => canonical ? buildReaderModel({ kind: "disclosure", projection: redactBundle(canonical, "public") }, canonical.ai_uses[0]?.id) : null,
-    [canonical],
+    () => bundle ? buildReaderModel({ kind: "disclosure", projection: redactBundle(bundle, "public") }, bundle.ai_uses[0]?.id) : null,
+    [bundle],
   );
-  const affectedModel = useMemo(
-    () => canonical ? buildReaderModel({ kind: "disclosure", projection: redactBundle(canonical, "affected_party") }, canonical.ai_uses[0]?.id) : null,
-    [canonical],
+  const applicantModel = useMemo(
+    () => bundle ? buildReaderModel({ kind: "disclosure", projection: redactBundle(bundle, "affected_party") }, bundle.ai_uses[0]?.id) : null,
+    [bundle],
   );
-  const latestEvents = useMemo(() => {
-    if (!canonical || !state?.runtime.latest_run_ref) return [];
-    return canonical.events.filter((event) => event.run_ref === state.runtime.latest_run_ref);
-  }, [canonical, state?.runtime.latest_run_ref]);
-  const lastComparison = state?.runtime.comparisons.at(-1);
-
-  if (!state || !canonical || !canonicalParts) {
-    return (
-      <section className="workbench live-shell">
-        <style>{styles}</style>
-        <div className="live-canvas">
-          {error ? <div className="error">{error}</div> : null}
-          <div className="unknown">{busy ? "Loading the Neon-backed CRUX pilot scope…" : "No live scope is available yet."}</div>
-          {!busy ? <button className="btn" type="button" onClick={() => void load()}>Try again</button> : null}
-        </div>
-      </section>
-    );
-  }
-
-  const { use, system, version } = canonicalParts;
-  const latestRunReviewed = Boolean(state.runtime.reviewed_case);
+  const latestRunRef = state?.runtime.latest_run_ref ?? null;
+  const latestEvents = useMemo(() => !bundle || !latestRunRef ? [] :
+    bundle.events.filter((event) => event.run_ref === latestRunRef), [bundle, latestRunRef]);
+  const comparison = latestRunModelCheck(state?.runtime.comparisons ?? [], latestRunRef);
+  const explanation = explainModelCheck(comparison);
+  const stage = reviewStage(latestRunRef, state?.runtime.pending_case?.run_ref ?? null, state?.runtime.reviewed_case?.run_ref ?? null);
+  const currentCase = stage === "reviewed" && state?.runtime.reviewed_case
+    ? applicantModel?.cases.find((item) => item.id === state.runtime.reviewed_case?.receipt_ref)
+    : undefined;
+  const steps = (version?.process.nodes ?? []).filter((node) => node.type === "ai" || node.type === "human" || node.type === "decision");
 
   return (
-    <section className="workbench live-shell" aria-label="CRUX live runtime pilot">
-      <style>{styles}</style>
-
-      <div className="live-top">
-        <div className="live-state">
-          <span className="live-dot" />
-          <span className="live-label">Neon-backed synthetic pilot</span>
-          <span className="pill">revision {state.revision}</span>
-          {state.run_mode ? <span className="pill">last run: {state.run_mode}</span> : null}
-        </div>
-        <div className="live-state">
-          <button className="btn ghost" type="button" disabled={busy !== null} onClick={() => void load()}>Refresh</button>
-          <button className="btn ghost" type="button" disabled={busy !== null} onClick={() => void mutate({ action: "reset" }, "reset")}>Reset synthetic scope</button>
-        </div>
+    <section className={styles.screen} aria-label="CRUX runtime example">
+      <div className={styles.intro}>
+        <div className={styles.flag}><span aria-hidden="true">✳</span> Fictional example · {state?.browser_only ? "Runs only in your browser" : "Not a real funding application"}</div>
+        <h1>AI helps review an application. But what really happened?</h1>
+        <p>Imagine a charity using AI to find useful passages in funding applications. A funding officer is meant to check the information and make the decision.</p>
       </div>
 
-      <div className="live-tabs">
-        {(Object.keys(audienceCopy) as Lens[]).map((item) => (
-          <button key={item} type="button" className={`live-tab ${lens === item ? "on" : ""}`} onClick={() => setLens(item)}>
-            <span>{audienceCopy[item].label}</span>
-            <strong>{audienceCopy[item].title}</strong>
+      <nav className={styles.views} aria-label="Choose who is reading">
+        {views.map((item) => (
+          <button type="button" key={item.id} className={view === item.id ? styles.viewActive : styles.view}
+            aria-pressed={view === item.id} onClick={() => setView(item.id)}>
+            {item.label}
           </button>
         ))}
-      </div>
+      </nav>
 
-      <div className="live-canvas">
-        {error ? <div className="error">{error}</div> : null}
+      {error ? <div role="alert" className={styles.error}>The example couldn't be updated. <details><summary>Details</summary>{error}</details></div> : null}
+      {busy === "loading" && !state ? <p role="status" className={styles.empty}>Opening the example…</p> : null}
+      {!state && !busy ? (
+        <div className={styles.empty}>
+          <p>This interactive example needs its test data store. You can still <a href="/examples">see a completed example</a>.</p>
+          <button className="btn" type="button" onClick={() => window.location.reload()}>Try again</button>
+        </div>
+      ) : null}
 
-        {lens === "internal" ? (
-          <>
-            <header className="live-head">
-              <div>
-                <div className="kicker">{canonical.organisations[0]?.name ?? "Example Foundation"} · live internal view</div>
-                <h2>Does reality match the account?</h2>
-                <p>{use?.public_summary ?? system?.description ?? "Funding review runtime pilot"}</p>
-              </div>
-              <div className="live-help">{audienceCopy.internal.help}</div>
-            </header>
+      {view === "inside" && state ? (
+        <>
+          <div className={styles.sectionHeading}><span className={styles.number}>1</span><div><h2>What should happen?</h2><p>This is how the organisation says its process works.</p></div></div>
+          <div className={styles.flow}>
+            {steps.length ? steps.map((step, index) => {
+              const hasEvent = latestEvents.some((event) => event.process_node_ref === step.id);
+              return (
+                <div className={styles.flowPiece} key={step.id}>
+                  {index > 0 ? <span className={styles.arrow} aria-hidden="true">→</span> : null}
+                  <article className={`${styles.flowNode} ${step.type === "ai" ? styles.ai : step.type === "human" ? styles.person : styles.decision}`}>
+                    <span className={styles.nodeIcon} aria-hidden="true">{step.type === "ai" ? "✳" : step.type === "human" ? "◯" : "✓"}</span>
+                    <div><span className={styles.nodeRole}>{step.type === "ai" ? "AI" : step.type === "human" ? "Person" : "Decision"}</span>
+                      <strong>{step.type === "ai" ? "AI finds relevant information" : step.type === "human" ? "A person checks it" : "A person decides"}</strong></div>
+                    {latestRunRef ? <span className={styles.nodeStatus}>{hasEvent ? "Event recorded" : "No event in latest run"}</span> : null}
+                  </article>
+                </div>
+              );
+            }) : <p>The process description is unavailable.</p>}
+          </div>
+          <p className={styles.precision}>A recorded event shows that the software reported a step. It doesn't prove a person reviewed something properly.</p>
 
-            <div className="runtime-strip">
-              <div className="runtime-stat"><span>Observed runs</span><strong>{state.runtime.run_count}</strong></div>
-              <div className="runtime-stat"><span>Latest model</span><strong>{state.runtime.observed_model ?? "Not observed"}</strong></div>
-              <div className="runtime-stat"><span>Latest provider</span><strong>{state.runtime.observed_provider ?? "Not observed"}</strong></div>
-              <div className={`runtime-stat ${state.runtime.divergence_count ? "warn" : ""}`}><span>Differences to review</span><strong>{state.runtime.divergence_count}</strong></div>
+          <div className={styles.sectionHeading}><span className={styles.number}>2</span><div><h2>See what CRUX notices</h2><p>Run a made-up case, then compare the description with what the software reported.</p></div></div>
+          <div className={styles.actionPanel}>
+            <div className={styles.actionCopy}>
+              <strong>{!latestRunRef ? "There hasn't been an example run yet." : "The latest example has been recorded."}</strong>
+              <p>{!latestRunRef ? "Start the example to see how an observation appears." : "You can run another example, or look at the latest result below."}</p>
             </div>
+            <button type="button" className="btn primary" disabled={busy !== null || !state}
+              onClick={() => void runExample()}>
+              {busy === "running" ? "Recording the example…" : latestRunRef ? "Run another example →" : "Run the example →"}
+            </button>
+          </div>
+          <p className={styles.precision}>{state?.browser_only
+            ? "Preview mode: this creates fictional events using CRUX's normal recording and comparison rules, entirely in your browser. No database writes, real AI calls or other visitors' data are involved. Refreshing keeps the example in this tab."
+            : "This creates invented AI, review and decision events, sent through CRUX's real data-recording system. No real application or AI output is involved. This is a shared demo, so another visitor's latest run may appear here."}</p>
 
-            <div className="live-actions">
-              <button className="btn primary" type="button" disabled={busy !== null} onClick={() => void mutate({ action: "run", mode: "demo" }, "demo")}>{busy === "demo" ? "Running…" : "Run runtime demo"}</button>
-              {state.runtime.live_provider_enabled ? (
-                <button className="btn" type="button" disabled={busy !== null} onClick={() => void mutate({ action: "run", mode: "live" }, "live")}>{busy === "live" ? "Running…" : "Run real-provider probe"}</button>
-              ) : <span className="pill">Paid provider probe locked on public pilot</span>}
-            </div>
-            <p className="live-note">The interactive demo emits deterministic provider/model metadata, then passes through the real CRUX ingestion and Neon persistence path. The paid real-provider probe has been exercised in production but is disabled publicly by default. No prompt or model output is stored. Human-review and decision events are synthetic for this learning case.</p>
-
-            <div className="vtitle"><h3>What CRUX observed</h3><span>Runtime evidence is attached to the exact declared system version.</span></div>
-            <div className="flow">
-              {(version?.process.nodes ?? []).map((node, index, nodes) => {
-                const observed = latestEvents.some((event) => event.process_node_ref === node.id);
-                const prior = nodes[index - 1];
-                const humanBoundary = node.type === "human" && prior?.type === "ai";
-                return (
-                  <div style={{ display: "contents" }} key={node.id}>
-                    {index > 0 ? humanBoundary ? <div className="flow-boundary">AI stops here</div> : <div className="flow-arrow">→</div> : null}
-                    <article className={`flow-node ${node.type === "ai" ? "ai" : ""} ${node.type === "human" ? "human" : ""} ${node.type === "decision" ? "decision" : ""}`}>
-                      <span>{processStepLabel(node.type)}</span>
-                      <strong>{node.name}</strong>
-                      {observed ? <span className="observed-badge">✓ observed in latest run</span> : null}
-                    </article>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="live-grid">
-              <article className="live-card">
-                <h3>Declared ↔ observed</h3>
-                {!lastComparison ? <div className="unknown">Run the demo to compare runtime model metadata with the declaration.</div> : lastComparison.fields.map((field) => (
-                  <div className="compare-row" key={field.field}>
-                    <span>{field.field.replaceAll("_", " ")}</span>
-                    <div className="compare-values">
-                      <div><small>Declared</small><strong>{field.declared ?? "Not recorded"}</strong></div>
-                      <div><small>Observed</small><strong>{field.observed ?? "Not reported"}</strong></div>
+          {latestRunRef ? (
+            <>
+              <div className={styles.sectionHeading}><span className={styles.number}>3</span><div><h2>What did we learn?</h2><p>We only compare information that the software actually supplied.</p></div></div>
+              <section className={`${styles.result} ${styles[explanation.kind]}`} aria-live="polite">
+                <div className={styles.resultIcon} aria-hidden="true">{explanation.kind === "attention" ? "!" : explanation.kind === "match" ? "✓" : "?"}</div>
+                <div><h4>{explanation.heading}</h4><p>{explanation.explanation}</p></div>
+              </section>
+              {explanation.rows.length ? <div className={styles.checkRows}>
+                {explanation.rows.map((row) => (
+                  <div className={styles.checkRow} key={row.label}>
+                    <div><strong>{row.label}</strong><span>{row.meaning}</span></div>
+                    <div className={styles.pair}>
+                      <div><small>What was recorded</small><span>{row.expected}</span></div>
+                      <div><small>What we saw</small><span>{row.seen}</span></div>
                     </div>
-                    <div className={`status ${field.status === "divergence" ? "warn" : ""}`}>{field.status.replaceAll("_", " ")}</div>
                   </div>
                 ))}
-                {lastComparison?.fields.some((field) => field.status === "declared_unknown") ? <p>Runtime has filled an observational gap, but CRUX has not silently rewritten the organisation's declaration.</p> : null}
-              </article>
+              </div> : null}
 
-              <article className="live-card">
-                <h3>Case state</h3>
-                {!state.runtime.latest_run_ref ? <div className="unknown">No runtime case has been observed yet.</div> : latestRunReviewed ? (
-                  <>
-                    <div className="status">Reviewed and publishable to the affected-person view</div>
-                    <p>{state.runtime.reviewed_case?.outcome}</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="status warn">Observed, meaning not yet reviewed</div>
-                    <p>CRUX can see the event sequence, but it will not infer final authority, causal effect, outcome or challenge route from telemetry alone.</p>
-                  </>
-                )}
-              </article>
+              <div className={styles.sectionHeading}><span className={styles.number}>4</span><div><h2>What still needs a person?</h2><p>A log cannot tell us the whole story of a decision.</p></div></div>
+              {stage === "reviewed" ? (
+                <section className={styles.reviewIntro}>
+                  <span className={styles.reviewSymbol} aria-hidden="true">✓</span>
+                  <div><h4>This example outcome has been reviewed</h4><p>The invented case now has a human-confirmed explanation for an applicant.</p>
+                    <button className="btn primary" type="button" onClick={() => setView("person")}>See what the applicant sees →</button>
+                  </div>
+                </section>
+              ) : stage === "needs_review" ? (
+                <section className={styles.reviewIntro}>
+                  <span className={styles.reviewSymbol} aria-hidden="true">?</span>
+                  <div className={styles.reviewContent}>
+                    <h4>We saw events. We don't yet know what they mean.</h4>
+                    <p>This invented run reported an AI call, a review and a decision. We still need someone to confirm what AI contributed, who really decided and what happened.</p>
+                    {!reviewOpen ? <button className="btn primary" type="button" onClick={() => setReviewOpen(true)}>Review the example outcome →</button> : null}
+                  </div>
+                </section>
+              ) : <p className={styles.empty}>No case is ready for review. Try running the example again.</p>}
+
+              {stage === "needs_review" && reviewOpen ? (
+                <section className={styles.reviewForm} aria-label="Review an invented case">
+                  <h4>Check this invented outcome</h4>
+                  <p>We've filled in example answers to illustrate what someone responsible for the process would need to check. They're not facts established by the event log.</p>
+                  <div className={styles.fields}>
+                    <label>What did AI contribute?<textarea value={draft.aiSummary} onChange={(event) => change("aiSummary", event.target.value)}/></label>
+                    <label>How did that affect the work?<textarea value={draft.effectOfAi} onChange={(event) => change("effectOfAi", event.target.value)}/></label>
+                    <label>What did the person do?<textarea value={draft.humanInvolvement} onChange={(event) => change("humanInvolvement", event.target.value)}/></label>
+                    <label>Who made the decision?<select value={draft.finalAuthority} onChange={(event) => change("finalAuthority", event.target.value as ReviewDraft["finalAuthority"])}>{authorityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                    <label>What was the outcome?<textarea value={draft.outcome} onChange={(event) => change("outcome", event.target.value)}/></label>
+                    <label>How could someone question it?<textarea value={draft.challengeDescription} onChange={(event) => change("challengeDescription", event.target.value)}/></label>
+                  </div>
+                  <label className={styles.confirm}><input type="checkbox" checked={confirmedExample} onChange={(event) => setConfirmedExample(event.target.checked)} />
+                    <span>I've checked these <strong>fictional example answers</strong> and want to show how a reviewed case would appear to an applicant.</span></label>
+                  <div className={styles.buttons}>
+                    <button className="btn primary" type="button" onClick={() => void publishExample()} disabled={busy !== null || !confirmedExample || !draft.aiSummary.trim() || !draft.effectOfAi.trim() || !draft.outcome.trim()}>
+                      {busy === "review" ? "Saving example…" : "Show the applicant's explanation →"}
+                    </button>
+                    <button type="button" className="btn ghost" onClick={() => setReviewOpen(false)}>Close</button>
+                  </div>
+                  <p className={styles.precision}>{state?.browser_only
+                    ? "This fictional case is saved in your browser tab only. No organisation or applicant can see it."
+                    : "The reviewed case is saved in this shared fictional demo. It does not publish information about a real person or application."}</p>
+                </section>
+              ) : null}
+            </>
+          ) : null}
+        </>
+      ) : null}
+
+      {view === "public" && publicModel ? (
+        <div className={styles.reading}>
+          <div className={styles.readerHeader}>
+            <span className={styles.label}>A public explanation</span>
+            <h2>What does this organisation say its AI does?</h2>
+            <p>A member of the public sees the declared purpose and approved supporting evidence — not internal event logs.</p>
+          </div>
+          {publicModel.availability === "ready" ? (
+            <div className={styles.publicCard}>
+              <h4>{publicModel.use?.name}</h4>
+              <p className={styles.big}>{publicModel.use?.summary ?? "No public summary supplied."}</p>
+              <div className={styles.publicFacts}>
+                <div><strong>AI's role</strong><p>{publicModel.aiCan.join(", ") || "Not disclosed"}</p></div>
+                <div><strong>Who decides?</strong><p>{publicModel.decisions[0]?.authority ?? "Not disclosed"}</p></div>
+              </div>
+              <div className={styles.evidence}><h5>What supports this?</h5>
+                {publicModel.claims.length ? publicModel.claims.map((claim) => (
+                  <div key={claim.id}><p><strong>The organisation says:</strong> {claim.statement}</p>
+                    {claim.evidence.length ? claim.evidence.map((e) => <p key={e.id}>Evidence: {e.summary} ({e.relationship})</p>) : <p>This statement doesn't have publicly visible evidence yet.</p>}
+                  </div>
+                )) : <p>No public statements are available to check.</p>}
+              </div>
             </div>
+          ) : <p className={styles.empty}>This use has not been included in a public disclosure.</p>}
+          <details className={styles.more}><summary>See the complete public record</summary><CruxReader model={publicModel} framed={false}/></details>
+        </div>
+      ) : null}
 
-            {state.runtime.pending_case ? (
-              <section className="review">
-                <div className="kicker">Human review required</div>
-                <h3>Complete what runtime cannot know.</h3>
-                <p className="live-note">Observed: {state.runtime.pending_case.observed.ai_invocation_count} AI invocation · {state.runtime.pending_case.observed.human_review_count} human review · {state.runtime.pending_case.observed.decision_count} decision. Confirm the meaning before this becomes an affected-person case explanation.</p>
-                <div className="review-tip">These fields are prefilled for the synthetic Funding Review example so the flow is easy to test. In a real integration they must come from the organisation or case workflow, not from CRUX guessing.</div>
-                <div className="review-grid">
-                  <div className="review-field full"><label>What did AI contribute?</label><textarea value={draft.aiSummary} onChange={(event) => setDraft({ ...draft, aiSummary: event.target.value })} /></div>
-                  <div className="review-field full"><label>What happened because of that contribution?</label><textarea value={draft.effectOfAi} onChange={(event) => setDraft({ ...draft, effectOfAi: event.target.value })} /></div>
-                  <div className="review-field full"><label>What did the person actually do?</label><textarea value={draft.humanInvolvement} onChange={(event) => setDraft({ ...draft, humanInvolvement: event.target.value })} /></div>
-                  <div className="review-field"><label>Who had final authority?</label><select value={draft.finalAuthority} onChange={(event) => setDraft({ ...draft, finalAuthority: event.target.value as ReviewDraft["finalAuthority"] })}>{authorityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-                  <div className="review-field"><label>What was the outcome?</label><textarea value={draft.outcome} onChange={(event) => setDraft({ ...draft, outcome: event.target.value })} /></div>
-                  <div className="review-field full"><label>How can someone question or challenge it?</label><textarea value={draft.challengeDescription} onChange={(event) => setDraft({ ...draft, challengeDescription: event.target.value })} /></div>
-                </div>
-                <div className="live-actions" style={{ marginTop: 16, marginBottom: 0 }}><button className="btn primary" type="button" disabled={busy !== null} onClick={() => void review()}>{busy === "review" ? "Publishing…" : "Confirm and publish case explanation"}</button></div>
-              </section>
-            ) : null}
-          </>
-        ) : null}
+      {view === "person" && applicantModel ? (
+        <div className={styles.reading}>
+          <div className={styles.readerHeader}>
+            <span className={styles.label}>A person affected</span>
+            <h2>What could an applicant be told?</h2>
+            <p>General statements aren't enough to explain a particular outcome. A reviewed case must say what happened and who was responsible.</p>
+          </div>
+          {currentCase ? (
+            <div className={styles.personCard}>
+              <div className={styles.caseHeader}><span aria-hidden="true">✓</span><h4>A reviewed example</h4></div>
+              <p className={styles.big}>{currentCase.outcome}</p>
+              <div className={styles.caseSteps}>
+                <div><span>1 · AI's contribution</span><p>{currentCase.aiContribution}</p></div>
+                <div><span>2 · What happened next</span><p>{currentCase.person ?? currentCase.effect}</p></div>
+                <div><span>3 · Who had final authority</span><p>{currentCase.finalAuthority}</p></div>
+              </div>
+              <div className={styles.challenge}><strong>Questions or concerns?</strong><p>{currentCase.challenge?.text ?? "A way to challenge this has not been recorded."}</p></div>
+              <p className={styles.precision}>This is a human-reviewed explanation of a fictional case, not automatic proof from telemetry.</p>
+            </div>
+          ) : (
+            <div className={styles.unpublished}>
+              <span aria-hidden="true">○</span>
+              <h4>There isn't a reviewed explanation for the latest example yet.</h4>
+              <p>We might have a log saying a decision step was reached, but that alone cannot tell an applicant why something happened.</p>
+              <button className="btn primary" type="button" onClick={() => { setView("inside"); if (stage === "needs_review") setReviewOpen(true); }}>
+                {stage === "needs_review" ? "Review the outcome →" : "See the runtime example →"}
+              </button>
+            </div>
+          )}
+          <details className={styles.more}><summary>See the full affected-person disclosure</summary><CruxReader model={applicantModel} framed={false}/></details>
+        </div>
+      ) : null}
 
-        {lens === "public" && publicModel ? (
-          <CruxReader framed={false} model={publicModel} note={audienceCopy.public.help} />
-        ) : null}
-
-        {lens === "affected_party" && affectedModel ? (
-          <CruxReader
-            framed={false}
-            model={affectedModel}
-            note={state.runtime.pending_case && !affectedModel.cases.length
-              ? "A runtime case has been observed, but it is not shown here yet. A person still needs to confirm what the AI contribution meant, who had final authority, the outcome and the challenge route."
-              : audienceCopy.affected_party.help}
-          />
-        ) : null}
-      </div>
+      <details className={styles.technical}>
+        <summary>How this example works · technical details</summary>
+        <p>{state?.browser_only
+          ? "This is a browser-only preview using the real CRUX schema, instrumentation and comparison functions. Nothing is ingested into Neon, and no events are shared. No application content, prompts, responses or reasoning are stored."
+          : "This is a shared synthetic funding-review scope, stored using CRUX's actual ingestion and persistence path. A demo run uses invented model/provider metadata and invented review/decision events. No application content, model prompt, response, or reasoning is stored."}</p>
+        {state ? <dl className={styles.metadata}>
+          <div><dt>Recorded demo runs</dt><dd>{state.runtime.run_count}</dd></div>
+          <div><dt>Latest run reference</dt><dd>{latestRunRef ?? "No run"}</dd></div>
+          <div><dt>Scope revision</dt><dd>{state.revision}</dd></div>
+          <div><dt>Observed provider</dt><dd>{state.runtime.observed_provider ?? "Not reported"}</dd></div>
+          <div><dt>Observed model</dt><dd>{state.runtime.observed_model ?? "Not reported"}</dd></div>
+        </dl> : null}
+        <div className={styles.buttons}>
+          <button className="btn" type="button" disabled={busy !== null} onClick={() => window.location.reload()}>Refresh shared example</button>
+          <button className="btn ghost" type="button" disabled={busy !== null} onClick={() => void resetExample()}>Reset shared example</button>
+          {state?.runtime.live_provider_enabled ? <button className="btn" type="button" disabled={busy !== null} onClick={() => void runExample("live")}>Run real-provider test</button> : null}
+        </div>
+        <p>{state?.browser_only
+          ? "This preview never calls a real model or a production database. For durable ingestion, test the separately configured production runtime."
+          : "Paid real-provider testing is disabled in the public demo unless explicitly configured. Even a real model invocation does not prove a human checkpoint took place."}</p>
+      </details>
     </section>
   );
 }
-
