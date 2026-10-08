@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { ReaderModel } from "../lib/reader-model";
+import type { PilotObservedBehaviour } from "../lib/observed";
 import { CruxReader } from "./crux-reader";
 import styles from "./simple-ai-use.module.css";
 
@@ -9,15 +10,25 @@ type SimpleUseCardProps = {
   model: ReaderModel;
   actions?: ReactNode;
   note?: ReactNode;
+  observed?: PilotObservedBehaviour;
 };
 
 /** A short explanation first. Full CRUX reasoning is always available on demand. */
-export function SimpleUseCard({ model, actions, note }: SimpleUseCardProps) {
+export function SimpleUseCard({ model, actions, note, observed }: SimpleUseCardProps) {
   const evidence = model.claims.flatMap((claim) => claim.evidence.map((item) => ({ claim, item })));
   const observations = model.activity?.modelComparisons ?? 0;
   const attached = model.activity?.attachedObservations ?? 0;
   const differences = model.activity?.differencesToReview ?? 0;
   const authority = model.decisions[0]?.authority ?? model.humanCheckpoint ?? "Not yet recorded";
+  const fields = observed?.comparisons.flatMap((comparison) => comparison.fields) ?? [];
+  const checkedFields = fields.filter((field) => field.status === "match" || field.status === "divergence");
+  const changedFields = fields.filter((field) => field.status === "divergence");
+  const newFields = fields.filter((field) => field.status === "declared_unknown" && field.observed);
+  const runtimeMessage = !fields.length || !checkedFields.length
+    ? "Observations are available, but there isn't enough declared model information to compare them."
+    : changedFields.length
+      ? `${changedFields.length} difference${changedFields.length === 1 ? "" : "s"} in model/provider metadata need reviewing.`
+      : "The model/provider metadata we could compare matched. Other controls are not verified.";
 
   return (
     <article className={styles.record}>
@@ -46,6 +57,7 @@ export function SimpleUseCard({ model, actions, note }: SimpleUseCardProps) {
               <div key={item.id}>
                 <p>{item.summary}</p>
                 <small>{item.relationship} — about “{claim.statement}”</small>
+                {item.sourceUrl ? <a className={styles.source} href={item.sourceUrl} target="_blank" rel="noopener noreferrer">View source ↗</a> : null}
               </div>
             ))}
           </div>
@@ -61,8 +73,16 @@ export function SimpleUseCard({ model, actions, note }: SimpleUseCardProps) {
           {observations || attached ? (
             <>
               <p>{observations ? `${observations} model observation${observations === 1 ? "" : "s"} compared with this version.` : `${attached} runtime observation${attached === 1 ? "" : "s"} attached to this version.`}</p>
-              <p className={differences ? styles.attention : undefined}>{differences ? `${differences} difference${differences === 1 ? "" : "s"} need reviewing.` : "No differences identified in the metadata compared so far."}</p>
-              <small>Observations describe recorded behaviour, not proof of every possible outcome.</small>
+              <p className={differences ? styles.attention : undefined}>{runtimeMessage}</p>
+              {changedFields.slice(0, 3).map((field, index) => (
+                <p className={styles.attention} key={index}>
+                  {field.field === "provider" ? "Provider" : "Model"}: expected {field.declared}; observed {field.observed}
+                </p>
+              ))}
+              {newFields.slice(0, 2).map((field, index) => (
+                <p key={index}>{field.field === "provider" ? "Provider" : "Model"} observed: {field.observed} (not yet declared)</p>
+              ))}
+              <small>Only recorded provider/model metadata is compared here. One run cannot prove how every decision or action works.</small>
             </>
           ) : <p>No runtime evidence is linked to this AI use yet. That doesn't mean the system has never run.</p>}
         </section>
