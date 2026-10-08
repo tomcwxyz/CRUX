@@ -11,6 +11,7 @@ import {
 } from "@crux/formats";
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 import { buildReaderModel } from "../lib/reader-model";
+import { observedBehaviourForVersion } from "../lib/observed";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -76,6 +77,12 @@ export function SimpleAIUseWorkbench() {
   const model = useMemo(() =>
     bundle ? buildReaderModel({ kind: "working", bundle }) : null, [bundle],
   );
+  const runtime = useMemo(() => {
+    if (!bundle) return undefined;
+    const use = bundle.ai_uses[0];
+    const system = bundle.systems.find((item) => use?.system_refs.includes(item.id) || item.ai_use_refs.includes(use?.id ?? ""));
+    return observedBehaviourForVersion(bundle, system?.current_version_ref);
+  }, [bundle]);
   const publicModel = useMemo(() =>
     canonical ? buildReaderModel({ kind: "disclosure", projection: redactBundle(canonical, "public") }) : null,
     [canonical],
@@ -263,7 +270,7 @@ export function SimpleAIUseWorkbench() {
             </div>
             {!imported ? <button className="btn ghost" type="button" onClick={reviseDraft}>Change answers</button> : null}
           </div>
-          <SimpleUseCard model={model} note="This is an unpublished draft in your browser, not a live record."
+          <SimpleUseCard model={model} observed={runtime} note="This is an unpublished draft in your browser, not a live record."
             actions={
               <>
                 {canonical ? <button className="btn primary" type="button" onClick={() => download(canonical, "crux-ai-use.json")}>Download a copy</button> : null}
