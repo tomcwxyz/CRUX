@@ -25,8 +25,8 @@ import styles from "./simple-ai-use-workbench.module.css";
 type Stage = "describe" | "clarify" | "review";
 
 const defaultAnswers: SimpleUseAnswers = {
-  name: "", description: "", organisation: "", role: "assist",
-  control: "person", consequential: false, peopleAffected: "",
+  name: "", description: "", organisation: "", role: "unsure",
+  control: "unsure", consequential: false, peopleAffected: "",
 };
 
 const roleChoices: Array<{ value: SimpleRole; label: string }> = [
@@ -101,6 +101,19 @@ export function SimpleAIUseWorkbench() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not open that record.");
     }
+  };
+
+  const reviseDraft = () => {
+    // Recreating an authored record would discard evidence and observations.
+    // Once either exists, preserve the record and edit it with the full editor.
+    if (bundle && (bundle.evidence.length || bundle.events.length || bundle.observations.length || bundle.runs.length)) {
+      setError("This record has linked information. Download it and use the detailed editor rather than starting again.");
+      return;
+    }
+    setBundle(null);
+    setStage("clarify");
+    setError("");
+    setShowEvidence(false);
   };
 
   const finish = () => {
@@ -248,7 +261,7 @@ export function SimpleAIUseWorkbench() {
               <span className={styles.progress}>Your explanation</span>
               <h2>Does this sound right?</h2>
             </div>
-            {!imported ? <button className="btn ghost" type="button" onClick={() => { setStage("clarify"); setError(""); setShowEvidence(false); }}>Start again with changes</button> : null}
+            {!imported ? <button className="btn ghost" type="button" onClick={reviseDraft}>Change answers</button> : null}
           </div>
           <SimpleUseCard model={model} note="This is an unpublished draft in your browser, not a live record."
             actions={
