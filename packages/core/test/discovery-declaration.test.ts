@@ -65,6 +65,50 @@ describe("createDiscoveryDeclaration", () => {
     ]);
   });
 
+  it("retains confirmed decision authority and a model boundary that runtime can compare", () => {
+    const candidate = suggestAIUseCandidates(report)[0]!;
+    const declaration = createDiscoveryDeclaration({
+      report,
+      candidate,
+      confirmation: {
+        organisation_name: "Example Organisation",
+        purpose: "Help review applications.",
+        people_affected: ["applicants"],
+        consequential: true,
+        power: "recommend",
+        decision_authority: "human",
+      },
+      now: "2026-09-18T20:45:00.000Z",
+    });
+    expect(declaration.system_version.components[0]?.kind).toBe("model");
+    expect(declaration.system_version.components[0]?.model_identifier?.status).toBe("unknown");
+    expect(declaration.system_version.decisions[0]?.authority).toBe("human");
+    expect(declaration.system_version.decisions[0]?.review_before_effect).toBe(true);
+    expect(declaration.system_version.process.nodes.map((node) => node.type)).toEqual([
+      "input", "ai", "human", "decision", "output",
+    ]);
+    expect(declaration.system_version.process.edges).toHaveLength(4);
+  });
+
+  it("keeps unknown authority unknown instead of inventing a human checkpoint", () => {
+    const candidate = suggestAIUseCandidates(report)[0]!;
+    const declaration = createDiscoveryDeclaration({
+      report,
+      candidate,
+      confirmation: {
+        organisation_name: "Example Organisation",
+        purpose: "Help review applications.",
+        people_affected: ["applicants"],
+        consequential: true,
+        power: "recommend",
+        decision_authority: "unknown",
+      },
+    });
+    expect(declaration.system_version.human_roles).toHaveLength(0);
+    expect(declaration.system_version.decisions).toHaveLength(0);
+    expect(declaration.system_version.process.nodes.map((node) => node.type)).toEqual(["input", "ai", "output"]);
+  });
+
   it("requires and represents a human gate when confirmed AI power is act", () => {
     const candidate = suggestAIUseCandidates(report)[0]!;
     const declaration = createDiscoveryDeclaration({
