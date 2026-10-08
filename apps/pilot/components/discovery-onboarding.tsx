@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { buildObservationPatchProposal, buildObservationPlan, createDiscoveryDeclaration, discoveryConnectors, suggestAIUseCandidates } from "@crux/core";
 import { DiscoveryReportSchema, type DiscoveryQuestion } from "@crux/schemas";
 import { portableBundleFromDiscoveryDeclaration } from "@crux/formats";
 import { actionControlLabel, actionControlOptions } from "../lib/labels";
-import { takePendingConnection } from "../lib/connection-handoff";
+import { savePendingReviewRecord, takePendingConnection } from "../lib/connection-handoff";
 import { buildReaderModel } from "../lib/reader-model";
 import { SimpleUseCard } from "./simple-use-card";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
@@ -74,6 +75,7 @@ export function DiscoveryOnboarding({
   githubInstallationId,
   githubUserCanWrite = false,
 }: DiscoveryOnboardingProps = {}) {
+  const router = useRouter();
   const report = useMemo(() => DiscoveryReportSchema.parse(reportData), [reportData]);
   const candidates = useMemo(() => suggestAIUseCandidates(report), [report]);
   const firstCandidate = candidates[0];
@@ -87,6 +89,7 @@ export function DiscoveryOnboarding({
   const [power, setPower] = useState("");
   const [actionControl, setActionControl] = useState("");
   const [handoffName, setHandoffName] = useState<string | null>(null);
+  const [handoffError, setHandoffError] = useState("");
   const [notSure, setNotSure] = useState(false);
   const [showPatch, setShowPatch] = useState(false);
   const [patchReadiness, setPatchReadiness] = useState<PatchReadiness | null>(null);
@@ -257,6 +260,17 @@ export function DiscoveryOnboarding({
       setCreatingPullRequest(false);
     }
   };
+  const reviewConfirmedUse = () => {
+    if (!confirmedBundle) return;
+    try {
+      savePendingReviewRecord(confirmedBundle);
+      setHandoffError("");
+      router.push("/author");
+    } catch (error) {
+      setHandoffError(error instanceof Error ? error.message : "Could not transfer this draft. Download it instead.");
+    }
+  };
+
   const downloadDraft = () => {
     if (!declaration) return;
     const bundle = portableBundleFromDiscoveryDeclaration(declaration);
@@ -396,7 +410,14 @@ export function DiscoveryOnboarding({
             <div className="eyebrow2" style={{color:"rgba(255,255,255,.72)"}}>Confirmed</div>
             <h3>Keep {candidate.name} connected to what actually happens.</h3>
             <p>This is what you confirmed. Runtime checks are the next step — no connection is live until a reviewed observation hook is installed and configured.</p>
-            {confirmedModel && <div style={{ marginTop: 20, marginBottom: 20 }}><SimpleUseCard model={confirmedModel} note="Not connected yet. The proposal below will not start observing anything until it is installed and configured." /></div>}
+            {confirmedModel && <div style={{ marginTop: 20, marginBottom: 20 }}>
+              <SimpleUseCard model={confirmedModel} note="Not connected yet. A proposed code change is not a live connection."
+                actions={<>
+                  <button className="btn primary" type="button" onClick={reviewConfirmedUse}>Review and add evidence →</button>
+                  <button className="btn" type="button" onClick={downloadDraft}>Save record</button>
+                </>} />
+              {handoffError ? <p role="alert" className="error-box">{handoffError}</p> : null}
+            </div>}
 
             {observationPlan && patchProposal?.generation.state === "adapter_available" && (
               <div className="observe-action">
