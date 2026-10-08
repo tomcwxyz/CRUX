@@ -156,8 +156,15 @@ const requiredText = (value: unknown, label: string, max = 4_000) => {
 const optionalText = (value: unknown, max = 4_000) =>
   typeof value === "string" && value.trim() ? value.trim().slice(0, max) : undefined;
 
+/** Preview and local development stay isolated from the production database. */
+export const allowBrowserOnlyDemo = (databaseConfigured: boolean, deploymentEnvironment: string | undefined) =>
+  !databaseConfigured && (deploymentEnvironment === "preview" || deploymentEnvironment === "development");
+
 export async function GET() {
   if (!process.env.DATABASE_URL) {
+    if (allowBrowserOnlyDemo(false, process.env.VERCEL_ENV ?? (process.env.NODE_ENV === "development" ? "development" : undefined))) {
+      return response({ ok: true, browser_demo_only: true });
+    }
     return response({ ok: false, code: "database_not_configured" }, 503);
   }
 
