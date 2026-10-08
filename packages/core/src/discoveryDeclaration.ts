@@ -191,9 +191,10 @@ export const createDiscoveryDeclaration = (input: {
     },
     components: [{
       id: componentId,
-      kind: "application",
-      name: "Discovered AI boundary",
+      kind: "model",
+      name: "AI model (not yet identified)",
       purpose: "Technical AI boundary associated with this confirmed use.",
+      model_identifier: { status: "unknown" },
       externally_provided: false,
       disclosure: "internal",
       external_refs: externalRefs,
