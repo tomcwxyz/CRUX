@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   parsePortableBundle,
   portableBundleSchema,
@@ -14,6 +14,7 @@ import { appendAIUse } from "../lib/authoring";
 import { observedBehaviourForVersion } from "../lib/observed";
 import { buildReaderModel } from "../lib/reader-model";
 import { createStarterBundle } from "../lib/starter";
+import { takePendingAdvancedAnswers } from "../lib/connection-handoff";
 import { AuthorityEditor } from "./authority-editor";
 import { CruxReader } from "./crux-reader";
 import { EvidenceEditor } from "./evidence-editor";
@@ -333,6 +334,30 @@ export function MentalModelWorkbench() {
   const [lens, setLens] = useState<Lens>("working");
   const [error, setError] = useState<string | null>(null);
   const [readFullRecord, setReadFullRecord] = useState(false);
+  const [needsAuthorityReview, setNeedsAuthorityReview] = useState(false);
+
+  useEffect(() => {
+    const pending = takePendingAdvancedAnswers();
+    if (!pending) return;
+    const starter = createStarterBundle();
+    if (starter.organisations[0]) starter.organisations[0].name = pending.organisation.trim() || "Your organisation";
+    if (starter.ai_uses[0]) {
+      starter.ai_uses[0].name = pending.name.trim() || pending.description.slice(0, 64);
+      starter.ai_uses[0].purpose = pending.description;
+      starter.ai_uses[0].public_summary = "";
+      starter.ai_uses[0].consequential = pending.consequential;
+      starter.ai_uses[0].people_affected = pending.peopleAffected.trim() ? [pending.peopleAffected.trim()] : [];
+    }
+    if (starter.systems[0]) {
+      starter.systems[0].description = pending.description;
+      starter.systems[0].influence = pending.role === "assist" ? ["assistive"] : pending.role === "recommend" ? ["advisory"] : pending.role === "decide" ? ["decisional"] : ["conditional"];
+    }
+    setBundle(starter);
+    setSelectedUseId(starter.ai_uses[0]?.id ?? "");
+    setQuestion("edit");
+    setLens("working");
+    setNeedsAuthorityReview(true);
+  }, []);
 
   const structural = useMemo(() => portableBundleSchema.safeParse(bundle), [bundle]);
   const references = useMemo(() => structural.success ? validateBundleReferences(structural.data) : null, [structural]);
@@ -359,7 +384,7 @@ export function MentalModelWorkbench() {
   const refs = new Set([use?.id, system?.id, version?.id].filter((value): value is string => Boolean(value)));
   const claim = bundle.claims.find((item) => relevantClaim(item, refs));
   const observed = useMemo(() => observedBehaviourForVersion(bundle, version?.id), [bundle, version?.id]);
-  const canShare = canonical !== null;
+  const canShare = canonical !== null && !needsAuthorityReview;
   const isFundingExample = Boolean((use?.name ?? "").toLowerCase().includes("funding") || use?.id.includes("funding"));
 
   const mutate = (change: (next: CruxPortableBundle) => void) => {
@@ -381,6 +406,7 @@ export function MentalModelWorkbench() {
 
   const updateSystem = (patch: Partial<CruxPortableBundle["systems"][number]>) => {
     if (!system) return;
+    if (Object.prototype.hasOwnProperty.call(patch, "agency")) setNeedsAuthorityReview(false);
     mutate((next) => {
       const target = next.systems.find((item) => item.id === system.id);
       if (target) Object.assign(target, patch);
@@ -405,6 +431,7 @@ export function MentalModelWorkbench() {
       setLens("working");
       setReadFullRecord(false);
       setError(null);
+      setNeedsAuthorityReview(false);
     } catch (caught) {
       setError(formatError(caught));
     }
@@ -417,6 +444,7 @@ export function MentalModelWorkbench() {
     setQuestion("edit");
     setLens("working");
     setReadFullRecord(false);
+    setNeedsAuthorityReview(false);
     setError(null);
   };
 
@@ -433,6 +461,7 @@ export function MentalModelWorkbench() {
 
   return (
     <section className="workbench mental-workbench" aria-label="CRUX pilot workbench">
+      {needsAuthorityReview ? <div className="notice" role="status" style={{ margin: 16 }}>Your description has been carried across. Confirm whether AI can cause an action in the second step before downloading or sharing this record.</div> : null}
       <div className="toolbar">
         <div className="toolbar-group">
           <label className="btn file-label">Open record<input type="file" accept="application/json,.json" onChange={(event) => void openBundle(event.target.files?.[0])} /></label>
