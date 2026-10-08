@@ -205,7 +205,7 @@ export function LiveRuntimeWorkbench() {
         </div>
       ) : null}
 
-      {view === "inside" ? (
+      {view === "inside" && state ? (
         <>
           <div className={styles.sectionHeading}><span className={styles.number}>1</span><div><h3>What should happen?</h3><p>This is how the organisation says its process works.</p></div></div>
           <div className={styles.flow}>
