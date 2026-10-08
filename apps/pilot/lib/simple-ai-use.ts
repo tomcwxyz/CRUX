@@ -17,7 +17,10 @@ export type SimpleUseAnswers = {
 
 /** Real agency/authority is never inferred from a name or a text description. */
 export function needsDetailedAuthoring(answers: SimpleUseAnswers): boolean {
-  return answers.role === "act" || answers.role === "unsure";
+  return answers.role === "decide"
+    || answers.role === "act"
+    || answers.role === "unsure"
+    || answers.control !== "person";
 }
 
 export function makeSimpleAIUseRecord(
