@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   parsePortableBundle,
   portableBundleSchema,
@@ -12,6 +13,7 @@ import {
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 import { buildReaderModel } from "../lib/reader-model";
 import { observedBehaviourForVersion } from "../lib/observed";
+import { savePendingConnection } from "../lib/connection-handoff";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -55,6 +57,7 @@ const download = (value: unknown, filename: string) => {
 };
 
 export function SimpleAIUseWorkbench() {
+  const router = useRouter();
   const [stage, setStage] = useState<Stage>("describe");
   const [answers, setAnswers] = useState<SimpleUseAnswers>(defaultAnswers);
   const [impactAnswered, setImpactAnswered] = useState(false);
@@ -145,6 +148,25 @@ export function SimpleAIUseWorkbench() {
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not create the record.");
+    }
+  };
+
+  const connectProject = () => {
+    if (!bundle || !canonical) {
+      setError("Download a valid record before connecting a project.");
+      return;
+    }
+    try {
+      // Linking is an explicit transition to discovery, not a claim that this
+      // authored record is already associated with the scanned repository.
+      // Back up all evidence first: only the simple description travels.
+      if (bundle.evidence.length || bundle.events.length || bundle.runs.length || bundle.observations.length) {
+        download(canonical, "crux-ai-use-before-connection.json");
+      }
+      if (!imported) savePendingConnection(answers);
+      router.push("/discover");
+    } catch {
+      setError("Your browser could not prepare the connection. Download a copy of the record first.");
     }
   };
 
@@ -313,9 +335,10 @@ export function SimpleAIUseWorkbench() {
 
           <div className={styles.next}>
             <h3>See what happens when AI runs</h3>
-            <p>CRUX can compare recorded behaviour with this explanation. No live connection is set up by this form.</p>
+            <p>Find the matching AI use in a project and see whether CRUX can observe it. You'll confirm the match first; this draft isn't automatically connected.</p>
+            <p className={styles.small}>We carry your description to the next screen, not your evidence. If you've added evidence, CRUX downloads a backup before you leave.</p>
             <div className={styles.actions}>
-              <Link className="btn" href="/discover">Connect a project →</Link>
+              <button className="btn primary" type="button" onClick={connectProject}>Check a project →</button>
               <Link className="btn ghost" href="/live">Try the separate runtime demo</Link>
             </div>
           </div>
