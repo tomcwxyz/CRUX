@@ -54,11 +54,12 @@ export default function HomePage() {
       <section className="panel">
         <div className="context-line">
           <div>
-            <div className="kicker">Your AI uses</div>
+            <div className="kicker">Worked examples</div>
             <h2 style={{ margin: "6px 0 0" }}>Start with the work, not the technology.</h2>
           </div>
           <Link className="btn primary" href="/author">+ Add an AI use</Link>
         </div>
+        <p className="body-copy muted">These are illustrative examples, not saved records from your organisation. Explore their evidence and disclosures below.</p>
 
         <div className="grid" style={{ marginTop: 20 }}>
           {uses.map((use) => (
@@ -73,6 +74,7 @@ export default function HomePage() {
             </article>
           ))}
         </div>
+        <div style={{ marginTop: 20 }}><Link className="btn" href="/examples">Read the worked examples and compare audiences →</Link></div>
       </section>
 
       <section className="panel" style={{ marginTop: 18 }}>
