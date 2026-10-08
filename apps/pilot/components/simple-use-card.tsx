@@ -10,7 +10,7 @@ type SimpleUseCardProps = {
   model: ReaderModel;
   actions?: ReactNode;
   note?: ReactNode;
-  observed?: PilotObservedBehaviour;
+  observed?: PilotObservedBehaviour | undefined;
 };
 
 /** A short explanation first. Full CRUX reasoning is always available on demand. */
