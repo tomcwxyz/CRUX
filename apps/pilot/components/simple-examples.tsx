@@ -6,6 +6,7 @@ import writingJson from "../../../examples/writing-assistant/crux.json";
 import fundingJson from "../../../examples/funding-review/crux.json";
 import actionJson from "../../../examples/bounded-action/crux.json";
 import { buildReaderModel, type Audience } from "../lib/reader-model";
+import { observedBehaviourForVersion } from "../lib/observed";
 import { SimpleUseCard } from "./simple-use-card";
 
 const examples: Array<{ name: string; bundle: CruxPortableBundle }> = [
@@ -24,6 +25,13 @@ export function SimpleExamples() {
   const [selected, setSelected] = useState(1);
   const [audience, setAudience] = useState<Audience>("public");
   const bundle = examples[selected]!.bundle;
+  const runtime = useMemo(() => {
+    const use = bundle.ai_uses[0];
+    const system = bundle.systems.find((item) => use?.system_refs.includes(item.id) || item.ai_use_refs.includes(use?.id ?? ""));
+    return audience === "internal"
+      ? observedBehaviourForVersion(bundle, system?.current_version_ref)
+      : undefined;
+  }, [bundle, audience]);
   const model = useMemo(() => audience === "internal"
     ? buildReaderModel({ kind: "working", bundle })
     : buildReaderModel({ kind: "disclosure", projection: redactBundle(bundle, audience) }),
@@ -45,7 +53,7 @@ export function SimpleExamples() {
             aria-pressed={item.value === audience} onClick={() => setAudience(item.value)}>{item.label}</button>
         ))}
       </div>
-      <SimpleUseCard model={model} />
+      <SimpleUseCard model={model} observed={runtime} />
     </div>
   );
 }
