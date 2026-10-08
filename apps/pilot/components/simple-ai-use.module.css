@@ -1,4 +1,4 @@
-.record{max-width:900px;margin:0 auto;background:rgba(255,255,255,.66);border:1px solid var(--line);border-radius:24px;padding:clamp(20px,4vw,38px)}
+.record{max-width:900px;margin:0 auto;background:rgba(255,255,255,.94);color:var(--ink);border:1px solid var(--line);border-radius:24px;padding:clamp(20px,4vw,38px)}
 .kicker{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.11em;font-weight:750}
 .record h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(30px,4vw,46px);line-height:1.1;font-weight:400;margin:12px 0}
 .intro{color:var(--ink);font-size:clamp(17px,2vw,20px);line-height:1.5;max-width:66ch;margin:0 0 26px}
