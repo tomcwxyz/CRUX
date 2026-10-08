@@ -15,7 +15,7 @@ describe("simple AI use card", () => {
     expect(html).toContain("What AI does");
     expect(html).toContain("Who decides");
     expect(html).toContain("How do we know?");
-    expect(html).toContain("What's actually happening?");
+    expect(html).toContain("What&#x27;s actually happening?");
     expect(html).toContain("See the full explanation and evidence");
   });
 
@@ -25,8 +25,8 @@ describe("simple AI use card", () => {
     const publicHtml = render(<SimpleUseCard model={buildReaderModel({
       kind: "disclosure", projection: redactBundle(bundle, "public"),
     })} />);
-    expect(internal).toContain("What's actually happening?");
-    expect(publicHtml).not.toContain("What's actually happening?");
+    expect(internal).toContain("What&#x27;s actually happening?");
+    expect(publicHtml).not.toContain("What&#x27;s actually happening?");
     expect(publicHtml).not.toContain("Working record");
     expect(publicHtml).not.toContain(bundle.ai_uses[0]!.purpose);
   });

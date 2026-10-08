@@ -68,6 +68,17 @@ describe("simple AI-use authoring", () => {
     expect(() => makeSimpleAIUseRecord({ ...baseline, role: "act" })).toThrow(/action limits/i);
   });
 
+  it("rejects unsafe source-link schemes in evidence", () => {
+    const bundle = makeSimpleAIUseRecord(baseline);
+    expect(() => appendManualEvidenceWithSource(bundle, evidenceTarget(bundle)!, {
+      summary: "A purported source",
+      sourceUri: "javascript:alert(1)",
+      kind: "policy",
+      relationship: "supports",
+      disclosure: "internal",
+    })).toThrow("Source link must start with https:// or http://.");
+  });
+
   it("links organisation-provided evidence without mislabelling it as runtime observation", () => {
     const bundle = makeSimpleAIUseRecord({ ...baseline, role: "recommend", consequential: true });
     const result = appendManualEvidenceWithSource(bundle, evidenceTarget(bundle)!, {
