@@ -160,3 +160,17 @@ Use this slice to test the *relationship* between declared and observed informat
 - Is the review gate for a consequential case obvious and proportionate?
 - Does the Affected-person explanation feel meaningfully stronger because it is grounded in an observed run?
 - What runtime evidence would genuinely strengthen a public claim, and what would merely add technical noise?
+
+## Runtime demo interface (8 October 2026)
+
+The latest /live experiment presents the same data contract through a simpler learning journey:
+
+1. **What should happen?** An illustrated AI → person → decision process based on the declared version.
+2. **Run the example.** One primary action creates a deterministic metadata-only run through the real ingest and persistence path. The actions and review events themselves are synthetic.
+3. **What did we learn?** Human language replaces raw model IDs/status codes as the headline. Declared vs observed model/provider values are available just beneath, scoped to the latest exact run. A declared-unknown model is **new information**, not a contradiction or a successful control check.
+4. **What still needs a person?** A specific recorded sequence cannot prove what the decision meant. The reviewer must explicitly confirm the invented case description before its affected-person receipt is created.
+5. **Who sees what?** Separate internal, public, and applicant-facing views. Public and applicant views only consume their disclosure projection; the latest applicant outcome is shown only when its receipt matches the exact latest run.
+
+The controls for inspecting run IDs, the shared persistence revision, refresh/reset and the paid live-provider probe live under **How this example works**. The example is shared between visitors, and reset warns before clearing everyone's synthetic observations.
+
+This UX is a formative prototype, not proof of comprehension. The next test is whether a new visitor can explain the difference between what the organisation says, what the log showed, and what someone still has to verify without coaching.
