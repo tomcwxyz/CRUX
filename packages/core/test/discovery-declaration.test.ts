@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createDiscoveryDeclaration } from "../src/discoveryDeclaration.js";
+import { compareDeclaredAndObservedModel } from "../src/observed.js";
+import type { Event } from "@crux/schemas";
 import { suggestAIUseCandidates } from "../src/discovery.js";
 
 const report = {
@@ -82,6 +84,17 @@ describe("createDiscoveryDeclaration", () => {
     });
     expect(declaration.system_version.components[0]?.kind).toBe("model");
     expect(declaration.system_version.components[0]?.model_identifier?.status).toBe("unknown");
+    const compared = compareDeclaredAndObservedModel(declaration.system_version, {
+      id: "event:observed-1",
+      type: "ai_invocation",
+      run_ref: "run:observed-1",
+      component_ref: declaration.system_version.components[0]!.id,
+      occurred_at: "2026-10-08T12:00:00.000Z",
+      attributes: { provider: "example-provider", response_model: "example-model" },
+    } as unknown as Event);
+    expect(compared.comparable).toBe(true);
+    expect(compared.fields.find((field) => field.field === "model_identifier")?.status).toBe("declared_unknown");
+    expect(compared.fields.find((field) => field.field === "model_identifier")?.observed).toBe("example-model");
     expect(declaration.system_version.decisions[0]?.authority).toBe("human");
     expect(declaration.system_version.decisions[0]?.review_before_effect).toBe(true);
     expect(declaration.system_version.process.nodes.map((node) => node.type)).toEqual([
