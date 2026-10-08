@@ -16,6 +16,7 @@ import fundingReviewJson from "../../../../../examples/funding-review/crux.json"
 import { observedBehaviourForVersion } from "../../../lib/observed";
 import { createPilotPostgresStore } from "../../../lib/postgres-store";
 import { replacePilotScopeBundle } from "../../../lib/pilot-scope";
+import { allowBrowserOnlyDemo } from "../../../lib/browser-runtime-mode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -155,10 +156,6 @@ const requiredText = (value: unknown, label: string, max = 4_000) => {
 
 const optionalText = (value: unknown, max = 4_000) =>
   typeof value === "string" && value.trim() ? value.trim().slice(0, max) : undefined;
-
-/** Preview and local development stay isolated from the production database. */
-export const allowBrowserOnlyDemo = (databaseConfigured: boolean, deploymentEnvironment: string | undefined) =>
-  !databaseConfigured && (deploymentEnvironment === "preview" || deploymentEnvironment === "development");
 
 export async function GET() {
   if (!process.env.DATABASE_URL) {
