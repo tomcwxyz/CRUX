@@ -6,6 +6,10 @@ import { authorityOptions } from "../lib/labels";
 import { buildReaderModel } from "../lib/reader-model";
 import { explainModelCheck, latestRunModelCheck, reviewStage, type ModelCheck } from "../lib/runtime-story";
 import { CruxReader } from "./crux-reader";
+import {
+  resetBrowserDemo, restoreBrowserDemo, reviewBrowserDemo,
+  runBrowserDemo, storeBrowserDemo, type BrowserDemoState,
+} from "../lib/browser-runtime-demo";
 import styles from "./live-runtime-workbench.module.css";
 
 type View = "inside" | "public" | "person";
@@ -37,6 +41,7 @@ type LiveState = {
   bundle: CruxPortableBundle;
   runtime: RuntimeInfo;
   run_mode?: "live" | "demo";
+  browser_only?: boolean;
 };
 type ReviewDraft = {
   aiSummary: string;
@@ -69,6 +74,7 @@ async function readResponse(response: Response): Promise<LiveState> {
   if (!response.ok || payload.ok !== true) {
     throw new Error(typeof payload.message === "string" ? payload.message : "The demo is unavailable.");
   }
+  if (payload.browser_demo_only === true) return restoreBrowserDemo();
   return {
     revision: Number(payload.revision),
     bundle: parsePortableBundle(payload.bundle),
@@ -112,11 +118,27 @@ export function LiveRuntimeWorkbench() {
     setBusy(action);
     setError("");
     try {
-      const next = await readResponse(await fetch("/api/live-runtime", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }));
+      let next: LiveState;
+      if (state?.browser_only === true && action !== "real") {
+        const local = state as BrowserDemoState;
+        if (action === "running") {
+          next = runBrowserDemo(local);
+        } else if (action === "review" && body.action === "review") {
+          if (typeof body.runRef !== "string") throw new Error("Missing run for review.");
+          next = reviewBrowserDemo(local, body.runRef, draft);
+        } else if (action === "reset") {
+          next = resetBrowserDemo();
+        } else {
+          throw new Error("Unsupported action for this browser-only example.");
+        }
+        storeBrowserDemo(next as BrowserDemoState);
+      } else {
+        next = await readResponse(await fetch("/api/live-runtime", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }));
+      }
       setState(next);
       return next;
     } catch (cause) {
@@ -148,7 +170,9 @@ export function LiveRuntimeWorkbench() {
   };
 
   const resetExample = async () => {
-    if (!window.confirm("Reset the shared fictional demo? This clears the example runs and reviews for everyone using it.")) return;
+    if (!window.confirm(state?.browser_only
+      ? "Reset this fictional example in your browser? Your other sessions are unaffected."
+      : "Reset the shared fictional demo? This clears the example runs and reviews for everyone using it.")) return;
     const next = await mutate({ action: "reset" }, "reset");
     if (!next) return;
     setReviewOpen(false);
@@ -182,7 +206,7 @@ export function LiveRuntimeWorkbench() {
   return (
     <section className={styles.screen} aria-label="CRUX runtime example">
       <div className={styles.intro}>
-        <div className={styles.flag}><span aria-hidden="true">✳</span> Fictional example · Not a real funding application</div>
+        <div className={styles.flag}><span aria-hidden="true">✳</span> Fictional example · {state?.browser_only ? "Runs only in your browser" : "Not a real funding application"}</div>
         <h1>AI helps review an application. But what really happened?</h1>
         <p>Imagine a charity using AI to find useful passages in funding applications. A funding officer is meant to check the information and make the decision.</p>
       </div>
@@ -237,7 +261,9 @@ export function LiveRuntimeWorkbench() {
               {busy === "running" ? "Recording the example…" : latestRunRef ? "Run another example →" : "Run the example →"}
             </button>
           </div>
-          <p className={styles.precision}>This creates invented AI, review and decision events, sent through CRUX's real data-recording system. No real application or AI output is involved. This is a shared demo, so another visitor's latest run may appear here.</p>
+          <p className={styles.precision}>{state?.browser_only
+            ? "Preview mode: this creates fictional events using CRUX's normal recording and comparison rules, entirely in your browser. No database writes, real AI calls or other visitors' data are involved. Refreshing keeps the example in this tab."
+            : "This creates invented AI, review and decision events, sent through CRUX's real data-recording system. No real application or AI output is involved. This is a shared demo, so another visitor's latest run may appear here."}</p>
 
           {latestRunRef ? (
             <>
@@ -297,7 +323,9 @@ export function LiveRuntimeWorkbench() {
                     </button>
                     <button type="button" className="btn ghost" onClick={() => setReviewOpen(false)}>Close</button>
                   </div>
-                  <p className={styles.precision}>The reviewed case is saved in this shared fictional demo. It does not publish information about a real person or application.</p>
+                  <p className={styles.precision}>{state?.browser_only
+                    ? "This fictional case is saved in your browser tab only. No organisation or applicant can see it."
+                    : "The reviewed case is saved in this shared fictional demo. It does not publish information about a real person or application."}</p>
                 </section>
               ) : null}
             </>
@@ -368,7 +396,9 @@ export function LiveRuntimeWorkbench() {
 
       <details className={styles.technical}>
         <summary>How this example works · technical details</summary>
-        <p>This is a shared synthetic funding-review scope, stored using CRUX's actual ingestion and persistence path. A demo run uses invented model/provider metadata and invented review/decision events. No application content, model prompt, response, or reasoning is stored.</p>
+        <p>{state?.browser_only
+          ? "This is a browser-only preview using the real CRUX schema, instrumentation and comparison functions. Nothing is ingested into Neon, and no events are shared. No application content, prompts, responses or reasoning are stored."
+          : "This is a shared synthetic funding-review scope, stored using CRUX's actual ingestion and persistence path. A demo run uses invented model/provider metadata and invented review/decision events. No application content, model prompt, response, or reasoning is stored."}</p>
         {state ? <dl className={styles.metadata}>
           <div><dt>Recorded demo runs</dt><dd>{state.runtime.run_count}</dd></div>
           <div><dt>Latest run reference</dt><dd>{latestRunRef ?? "No run"}</dd></div>
@@ -381,7 +411,9 @@ export function LiveRuntimeWorkbench() {
           <button className="btn ghost" type="button" disabled={busy !== null} onClick={() => void resetExample()}>Reset shared example</button>
           {state?.runtime.live_provider_enabled ? <button className="btn" type="button" disabled={busy !== null} onClick={() => void runExample("live")}>Run real-provider test</button> : null}
         </div>
-        <p>Paid real-provider testing is disabled in the public demo unless explicitly configured. Even a real model invocation does not prove a human checkpoint took place.</p>
+        <p>{state?.browser_only
+          ? "This preview never calls a real model or a production database. For durable ingestion, test the separately configured production runtime."
+          : "Paid real-provider testing is disabled in the public demo unless explicitly configured. Even a real model invocation does not prove a human checkpoint took place."}</p>
       </details>
     </section>
   );
