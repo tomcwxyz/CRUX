@@ -47,19 +47,13 @@ describe("simple AI-use authoring", () => {
     expect(bundle.evidence_links).toHaveLength(0);
   });
 
-  it("does not invent a reviewer when authority is unknown", () => {
-    const bundle = makeSimpleAIUseRecord({
-      ...baseline,
-      role: "recommend",
-      control: "unsure",
-      consequential: true,
-    });
-    expect(bundle.system_versions[0]?.human_roles).toHaveLength(0);
-    expect(bundle.system_versions[0]?.decisions).toHaveLength(0);
-    expect(bundle.system_versions[0]?.process.nodes.some((node) => node.type === "human")).toBe(false);
-    expect(buildReaderModel({ kind: "working", bundle }).unknowns).toContain(
-      "This use can materially affect people, but no decision authority is recorded.",
-    );
+  it("does not export an inaccurate account when authority is unknown", () => {
+    const unknown = { ...baseline, role: "recommend" as const, control: "unsure" as const, consequential: true };
+    expect(needsDetailedAuthoring(unknown)).toBe(true);
+    expect(() => makeSimpleAIUseRecord(unknown)).toThrow(/confirm the AI's powers/i);
+    expect(needsDetailedAuthoring({ ...baseline, role: "decide" })).toBe(true);
+    expect(needsDetailedAuthoring({ ...baseline, control: "ai" })).toBe(true);
+    expect(needsDetailedAuthoring({ ...baseline, control: "rule" })).toBe(true);
   });
 
   it("does not fabricate automated action bounds from a short answer", () => {
