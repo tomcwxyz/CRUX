@@ -16,10 +16,14 @@ export const appendManualEvidenceWithSource = (
 ) => {
   const sourceUri = input.sourceUri?.trim() || undefined;
   if (sourceUri) {
+    let parsed: URL;
     try {
-      new URL(sourceUri);
+      parsed = new URL(sourceUri);
     } catch {
-      throw new Error("Source link must be a valid URL, including https://.");
+      throw new Error("Source link must be a valid https:// or http:// URL.");
+    }
+    if (!["https:", "http:"].includes(parsed.protocol)) {
+      throw new Error("Source link must start with https:// or http://.");
     }
   }
 
