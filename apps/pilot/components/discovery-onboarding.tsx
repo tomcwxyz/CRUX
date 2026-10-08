@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { buildObservationPatchProposal, buildObservationPlan, createDiscoveryDeclaration, discoveryConnectors, suggestAIUseCandidates } from "@crux/core";
 import { DiscoveryReportSchema, type DiscoveryQuestion } from "@crux/schemas";
 import { portableBundleFromDiscoveryDeclaration } from "@crux/formats";
 import { actionControlLabel, actionControlOptions } from "../lib/labels";
+import { takePendingConnection } from "../lib/connection-handoff";
+import { buildReaderModel } from "../lib/reader-model";
+import { SimpleUseCard } from "./simple-use-card";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
 
 type Stage = "connect" | "discover" | "confirm" | "observe";
@@ -80,15 +83,28 @@ export function DiscoveryOnboarding({
   const [organisationName, setOrganisationName] = useState("");
   const [purpose, setPurpose] = useState("");
   const [affected, setAffected] = useState("");
-  const [consequential, setConsequential] = useState("no");
-  const [power, setPower] = useState("recommend");
-  const [actionControl, setActionControl] = useState("human_approval");
+  const [consequential, setConsequential] = useState("");
+  const [power, setPower] = useState("");
+  const [actionControl, setActionControl] = useState("");
+  const [handoffName, setHandoffName] = useState<string | null>(null);
   const [notSure, setNotSure] = useState(false);
   const [showPatch, setShowPatch] = useState(false);
   const [patchReadiness, setPatchReadiness] = useState<PatchReadiness | null>(null);
   const [checkingPatch, setCheckingPatch] = useState(false);
   const [creatingPullRequest, setCreatingPullRequest] = useState(false);
   const [pullRequestState, setPullRequestState] = useState<PullRequestState | null>(null);
+  useEffect(() => {
+    const pending = takePendingConnection();
+    if (!pending) return;
+    setHandoffName(pending.name || pending.description.slice(0, 80));
+    setOrganisationName(pending.organisation);
+    setPurpose(pending.description);
+    setAffected(pending.peopleAffected);
+    setConsequential(pending.consequential ? "yes" : "no");
+    setPower(pending.role === "assist" ? "suggest" : pending.role === "recommend" ? "recommend" : pending.role === "decide" ? "decide" : pending.role === "act" ? "act" : "");
+    setActionControl("");
+    setStage("discover");
+  }, []);
   const observationPlan = useMemo(
     () => candidate ? buildObservationPlan(report, candidate) : null,
     [report, candidate],
@@ -98,7 +114,7 @@ export function DiscoveryOnboarding({
     [report, candidate],
   );
   const canConfirm =
-    Boolean(organisationName.trim() && purpose.trim() && power) &&
+    Boolean(organisationName.trim() && purpose.trim() && power && consequential) &&
     (power !== "act" || Boolean(actionControl));
   const declaration = useMemo(() => {
     if (!candidate || !canConfirm) return null;
@@ -120,6 +136,15 @@ export function DiscoveryOnboarding({
       },
     });
   }, [report, candidate, canConfirm, organisationName, purpose, affected, consequential, power, actionControl]);
+
+  const confirmedBundle = useMemo(
+    () => declaration ? portableBundleFromDiscoveryDeclaration(declaration) : null,
+    [declaration],
+  );
+  const confirmedModel = useMemo(
+    () => confirmedBundle ? buildReaderModel({ kind: "working", bundle: confirmedBundle }) : null,
+    [confirmedBundle],
+  );
 
   if (!candidate) return null;
 
@@ -248,9 +273,9 @@ export function DiscoveryOnboarding({
     setOrganisationName("");
     setPurpose("");
     setAffected("");
-    setConsequential("no");
-    setPower("recommend");
-    setActionControl("human_approval");
+    setConsequential(handoffName ? consequential : "");
+    setPower(handoffName ? power : "");
+    setActionControl("");
     setNotSure(false);
     setShowPatch(false);
     setPatchReadiness(null);
@@ -351,13 +376,14 @@ export function DiscoveryOnboarding({
               <div className="confirm">
                 <div className="eyebrow2">Add the meaning only you know</div>
                 <h3 style={{fontFamily:"Georgia, 'Times New Roman', serif",fontSize:28,fontWeight:400,margin:"5px 0 6px"}}>Confirm {candidate.name}</h3>
+                {handoffName ? <p className="detail">We brought your description of “{handoffName}”. Check that this discovered workflow is the same use before confirming. Your earlier evidence is not automatically attached.</p> : null}
                 <div className="confirm-grid">
                   <div className="field full"><label>Which organisation is using this?</label><input value={organisationName} onChange={(event)=>setOrganisationName(event.target.value)} placeholder="Organisation name"/><div className="why">A repository owner or account name is not treated as organisational identity.</div></div>
                   <div className="field full"><label>What is this AI use for?</label><textarea value={purpose} onChange={(event)=>setPurpose(event.target.value)} placeholder="For example: help staff extract recommendations from reports so they can review and track them."/><div className="why">CRUX deliberately did not infer purpose from model calls or filenames.</div></div>
                   <div className="field"><label>Who can be affected by it?</label><input value={affected} onChange={(event)=>setAffected(event.target.value)} placeholder="Comma-separated, e.g. staff, report authors"/></div>
-                  <div className="field"><label>Could it materially affect a person, service, opportunity or entitlement?</label><select value={consequential} onChange={(event)=>setConsequential(event.target.value)}><option value="no">No</option><option value="yes">Yes</option></select></div>
-                  <div className="field"><label>What can the AI do here?</label><select value={power} onChange={(event)=>setPower(event.target.value)}><option value="suggest">Suggest</option><option value="recommend">Recommend</option><option value="decide">Decide</option><option value="act">Act</option></select><div className="why">This maps plain language to CRUX influence/agency underneath.</div></div>
-                  {power === "act" && <div className="field"><label>Before the AI action takes effect…</label><select value={actionControl} onChange={(event)=>setActionControl(event.target.value)}>{actionControlOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>}
+                  <div className="field"><label>Could it materially affect a person, service, opportunity or entitlement?</label><select value={consequential} onChange={(event)=>setConsequential(event.target.value)}><option value="">Choose…</option><option value="no">No</option><option value="yes">Yes</option></select></div>
+                  <div className="field"><label>What can the AI do here?</label><select value={power} onChange={(event)=>setPower(event.target.value)}><option value="">Choose…</option><option value="suggest">Suggest</option><option value="recommend">Recommend</option><option value="decide">Decide</option><option value="act">Act</option></select><div className="why">This maps plain language to CRUX influence/agency underneath.</div></div>
+                  {power === "act" && <div className="field"><label>Before the AI action takes effect…</label><select value={actionControl} onChange={(event)=>setActionControl(event.target.value)}><option value="">Choose…</option>{actionControlOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>}
                 </div>
                 <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}><button className="btn primary" type="button" onClick={goObserve} disabled={!canConfirm}>Confirm this AI use</button><button className="btn ghost" type="button" onClick={()=>setStage("discover")}>Back to discovery</button></div>
               </div>
@@ -369,7 +395,8 @@ export function DiscoveryOnboarding({
           <div className="ready">
             <div className="eyebrow2" style={{color:"rgba(255,255,255,.72)"}}>Confirmed</div>
             <h3>Keep {candidate.name} connected to what actually happens.</h3>
-            <p>You have described this AI use in human terms. CRUX can now compare that account with small, bounded runtime observations rather than asking you to keep the record current by hand.</p>
+            <p>This is what you confirmed. Runtime checks are the next step — no connection is live until a reviewed observation hook is installed and configured.</p>
+            {confirmedModel && <div style={{ marginTop: 20, marginBottom: 20 }}><SimpleUseCard model={confirmedModel} note="Not connected yet. The proposal below will not start observing anything until it is installed and configured." /></div>}
 
             {observationPlan && patchProposal?.generation.state === "adapter_available" && (
               <div className="observe-action">
@@ -453,7 +480,7 @@ export function DiscoveryOnboarding({
             )}
 
             <details className="technical-toggle">
-              <summary>Your CRUX record</summary>
+              <summary>Download this record</summary>
               {declaration && (
                 <div className="observe-plan">
                   <h4>{candidate.name}</h4>
