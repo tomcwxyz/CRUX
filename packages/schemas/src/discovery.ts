@@ -110,6 +110,7 @@ export const DiscoveryConfirmationSchema = z
     people_affected: z.array(z.string().min(1).max(240)).default([]),
     consequential: z.boolean(),
     power: DiscoveryPowerSchema,
+    decision_authority: z.enum(["human", "rule", "ai", "unknown"]).optional(),
     action_control: DiscoveryActionControlSchema.optional(),
   })
   .strict()

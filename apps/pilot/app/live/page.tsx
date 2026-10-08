@@ -5,38 +5,14 @@ export default function LiveRuntimePage() {
   return (
     <main className="shell">
       <header className="topbar">
-        <div className="brand">
-          <span className="wordmark">CRUX</span>
-          <span className="beta">live runtime slice</span>
-        </div>
-        <div className="toolbar-group">
-          <Link className="btn ghost" href="/">Audience views</Link>
-          <Link className="btn ghost" href="/author">Authoring</Link>
-          <div className="top-note">Humans declare meaning. Systems report behaviour. CRUX reconciles the two.</div>
-        </div>
+        <div className="brand"><Link className="wordmark" href="/">CRUX</Link><span className="beta">Runtime example</span></div>
+        <Link className="btn ghost" href="/examples">Back to examples</Link>
       </header>
-
-      <section
-        className="hero"
-        style={{ paddingTop: "clamp(32px, 5vw, 58px)", paddingBottom: 28 }}
-      >
-        <div>
-          <div className="eyebrow">Living account</div>
-          <h1 style={{ fontSize: "clamp(44px, 6vw, 78px)", maxWidth: 900 }}>
-            Confront the description with what actually ran.
-          </h1>
-        </div>
-        <p className="hero-copy">
-          This synthetic Funding Review pilot uses the real CRUX runtime path: metadata-only instrumentation, durable Neon ingestion, declared-versus-observed reconciliation, then human review before a case can appear to an affected person.
-        </p>
+      <section className="hero" style={{ paddingTop: 22, paddingBottom: 20 }}>
+        <div><h1 style={{ fontSize: "clamp(35px, 5vw, 58px)" }}>What actually happened?</h1></div>
+        <p className="hero-copy">A separate, synthetic funding-review demo. See observations, compare them with the description and review a case before anything is shared.</p>
       </section>
-
       <LiveRuntimeWorkbench />
-
-      <footer className="footer-note">
-        <span>No real applicant information is used in this pilot. The live provider check uses synthetic text only.</span>
-        <span>Runtime observations remain internal until a person explicitly confirms the meaning of a case.</span>
-      </footer>
     </main>
   );
 }

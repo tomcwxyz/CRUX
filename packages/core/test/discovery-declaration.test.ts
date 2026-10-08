@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createDiscoveryDeclaration } from "../src/discoveryDeclaration.js";
+import { compareDeclaredAndObservedModel } from "../src/observed.js";
+import type { Event } from "@crux/schemas";
 import { suggestAIUseCandidates } from "../src/discovery.js";
 
 const report = {
@@ -63,6 +65,61 @@ describe("createDiscoveryDeclaration", () => {
       "ai",
       "output",
     ]);
+  });
+
+  it("retains confirmed decision authority and a model boundary that runtime can compare", () => {
+    const candidate = suggestAIUseCandidates(report)[0]!;
+    const declaration = createDiscoveryDeclaration({
+      report,
+      candidate,
+      confirmation: {
+        organisation_name: "Example Organisation",
+        purpose: "Help review applications.",
+        people_affected: ["applicants"],
+        consequential: true,
+        power: "recommend",
+        decision_authority: "human",
+      },
+      now: "2026-09-18T20:45:00.000Z",
+    });
+    expect(declaration.system_version.components[0]?.kind).toBe("model");
+    expect(declaration.system_version.components[0]?.model_identifier?.status).toBe("unknown");
+    const compared = compareDeclaredAndObservedModel(declaration.system_version, {
+      id: "event:observed-1",
+      type: "ai_invocation",
+      run_ref: "run:observed-1",
+      component_ref: declaration.system_version.components[0]!.id,
+      occurred_at: "2026-10-08T12:00:00.000Z",
+      attributes: { provider: "example-provider", response_model: "example-model" },
+    } as unknown as Event);
+    expect(compared.comparable).toBe(true);
+    expect(compared.fields.find((field) => field.field === "model_identifier")?.status).toBe("declared_unknown");
+    expect(compared.fields.find((field) => field.field === "model_identifier")?.observed).toBe("example-model");
+    expect(declaration.system_version.decisions[0]?.authority).toBe("human");
+    expect(declaration.system_version.decisions[0]?.review_before_effect).toBe(true);
+    expect(declaration.system_version.process.nodes.map((node) => node.type)).toEqual([
+      "input", "ai", "human", "decision", "output",
+    ]);
+    expect(declaration.system_version.process.edges).toHaveLength(4);
+  });
+
+  it("keeps unknown authority unknown instead of inventing a human checkpoint", () => {
+    const candidate = suggestAIUseCandidates(report)[0]!;
+    const declaration = createDiscoveryDeclaration({
+      report,
+      candidate,
+      confirmation: {
+        organisation_name: "Example Organisation",
+        purpose: "Help review applications.",
+        people_affected: ["applicants"],
+        consequential: true,
+        power: "recommend",
+        decision_authority: "unknown",
+      },
+    });
+    expect(declaration.system_version.human_roles).toHaveLength(0);
+    expect(declaration.system_version.decisions).toHaveLength(0);
+    expect(declaration.system_version.process.nodes.map((node) => node.type)).toEqual(["input", "ai", "output"]);
   });
 
   it("requires and represents a human gate when confirmed AI power is act", () => {

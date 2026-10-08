@@ -1,0 +1,23 @@
+.record{max-width:900px;margin:0 auto;background:rgba(255,255,255,.94);color:var(--ink);border:1px solid var(--line);border-radius:24px;padding:clamp(20px,4vw,38px)}
+.kicker{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.11em;font-weight:750}
+.record h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(30px,4vw,46px);line-height:1.1;font-weight:400;margin:12px 0}
+.intro{color:var(--ink);font-size:clamp(17px,2vw,20px);line-height:1.5;max-width:66ch;margin:0 0 26px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 0 16px}
+.facts section{padding:18px;border:1px solid var(--line);border-radius:17px;background:var(--chalk)}
+.facts h3,.check h3{font-size:14px;font-family:inherit;letter-spacing:0;font-weight:800;margin:0 0 9px}
+.facts p,.check p{margin:0;font-size:15px;line-height:1.5}
+.check{border-top:1px solid var(--line);padding:20px 0}
+.checkHeader{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.checkHeader span{color:var(--muted);font-size:12px;text-align:right}
+.checkItems{display:grid;gap:14px}
+.checkItems div{border-left:3px solid var(--moss);padding-left:12px}
+.checkItems small,.check small{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:6px}
+.source{display:inline-block;color:var(--moss);font-size:12px;font-weight:750;margin-top:5px}
+.attention{color:var(--rust);font-weight:700;margin-top:7px!important}
+.actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0}
+.note{font-size:13px;color:var(--muted)}
+.more{border-top:1px solid var(--line);padding-top:18px;margin-top:18px}
+.more>summary{cursor:pointer;font-weight:750;font-size:14px}
+.more>summary:focus-visible{outline:3px solid var(--moss);outline-offset:5px}
+.more>section{margin-top:20px}
+@media(max-width:650px){.facts{grid-template-columns:1fr}.checkHeader{align-items:flex-start;flex-direction:column;gap:2px}.checkHeader span{text-align:left}.record{border-radius:18px}.actions>*{flex:1 1 auto}}

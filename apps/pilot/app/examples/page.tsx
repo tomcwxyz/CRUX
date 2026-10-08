@@ -1,34 +1,18 @@
 import Link from "next/link";
-import { HomeReader } from "../../components/home-reader";
+import { SimpleExamples } from "../../components/simple-examples";
 
 export default function ExamplesPage() {
   return (
     <main className="shell">
       <header className="topbar">
-        <div className="brand">
-          <Link className="wordmark" href="/">CRUX</Link>
-          <span className="beta">worked examples</span>
-        </div>
-        <div className="toolbar-group">
-          <Link className="btn ghost" href="/">All AI uses</Link>
-          <Link className="btn primary" href="/author">+ Add an AI use</Link>
-        </div>
+        <div className="brand"><Link className="wordmark" href="/">CRUX</Link><span className="beta">Example</span></div>
+        <Link className="btn primary" href="/author">Describe your own AI use →</Link>
       </header>
-      <section className="hero" style={{ paddingTop: "clamp(30px, 5vw, 56px)", paddingBottom: 28 }}>
-        <div>
-          <div className="eyebrow">Explore a CRUX record</div>
-          <h1 style={{ fontSize: "clamp(42px, 6vw, 76px)", maxWidth: 860 }}>See how AI use reads to different people.</h1>
-        </div>
-        <p className="hero-copy">
-          Compare a writing assistant, funding review and bounded action. Switch between internal, public
-          and affected-person explanations, or open a portable CRUX record of your own.
-        </p>
+      <section className="hero" style={{ paddingTop: 24, paddingBottom: 18 }}>
+        <div><h1 style={{ fontSize: "clamp(32px, 5vw, 55px)" }}>What would someone need to know?</h1></div>
+        <p className="hero-copy">Compare a simple AI task with decisions that affect people. Open the full explanation only if you need more detail.</p>
       </section>
-      <HomeReader />
-      <footer className="footer-note">
-        <span>These are learning examples, not records from your organisation. Lower-disclosure views use explicit safe projections.</span>
-        <Link href="/author">Describe an AI use yourself</Link>
-      </footer>
+      <SimpleExamples />
     </main>
   );
 }
