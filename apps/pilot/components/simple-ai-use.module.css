@@ -12,6 +12,7 @@
 .checkItems{display:grid;gap:14px}
 .checkItems div{border-left:3px solid var(--moss);padding-left:12px}
 .checkItems small,.check small{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:6px}
+.source{display:inline-block;color:var(--moss);font-size:12px;font-weight:750;margin-top:5px}
 .attention{color:var(--rust);font-weight:700;margin-top:7px!important}
 .actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0}
 .note{font-size:13px;color:var(--muted)}
