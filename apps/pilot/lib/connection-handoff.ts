@@ -110,3 +110,19 @@ export function takePendingReviewRecord(): CruxPortableBundle | null {
   window.sessionStorage.removeItem(reviewKey);
   return parsePendingReviewRecord(raw);
 }
+
+const advancedKey = "crux:pending-advanced-ai-use:v1";
+
+export function savePendingAdvancedAnswers(answers: SimpleUseAnswers, now = Date.now()): void {
+  if (typeof window === "undefined") return;
+  const raw = JSON.stringify({ createdAt: now, answers } satisfies PendingConnection);
+  if (raw.length > 16_000) throw new Error("This description is too large to transfer automatically.");
+  window.sessionStorage.setItem(advancedKey, raw);
+}
+
+export function takePendingAdvancedAnswers(): SimpleUseAnswers | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.sessionStorage.getItem(advancedKey);
+  window.sessionStorage.removeItem(advancedKey);
+  return parsePendingConnection(raw);
+}
