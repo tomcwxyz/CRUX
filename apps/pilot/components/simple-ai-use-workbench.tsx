@@ -70,6 +70,8 @@ export function SimpleAIUseWorkbench() {
   const [evidenceRelation, setEvidenceRelation] = useState<"supports" | "qualifies" | "contradicts" | "inconclusive">("supports");
   const [publicEvidence, setPublicEvidence] = useState(false);
   const [targetClaim, setTargetClaim] = useState("");
+  const chosenClaim = bundle?.claims.find((item) => item.id === targetClaim);
+  const canDiscloseEvidence = chosenClaim?.disclosure === "public" && bundle?.ai_uses[0]?.disclosure === "public";
 
   useEffect(() => {
     const confirmed = takePendingReviewRecord();
@@ -198,7 +200,7 @@ export function SimpleAIUseWorkbench() {
         sourceUri: sourceUrl,
         kind: sourceUrl.trim() ? "policy" : "human_review",
         relationship: evidenceRelation,
-        disclosure: publicEvidence ? "public" : "internal",
+        disclosure: publicEvidence && canDiscloseEvidence ? "public" : "internal",
       });
       setBundle(next);
       setEvidenceSummary("");
@@ -339,9 +341,11 @@ export function SimpleAIUseWorkbench() {
                 <option value="contradicts">Challenges it</option>
                 <option value="inconclusive">Doesn't settle it</option>
               </select>
-              <label className={styles.checkLine}><input type="checkbox" checked={publicEvidence}
+              <label className={styles.checkLine}><input type="checkbox" checked={publicEvidence && canDiscloseEvidence}
+                disabled={!canDiscloseEvidence}
                 onChange={(event) => setPublicEvidence(event.target.checked)}/>
                 This evidence can appear in a public explanation</label>
+              {!canDiscloseEvidence ? <p className={styles.small}>This statement is internal. You can record evidence now; publishing it needs a separate disclosure review.</p> : null}
               <p className={styles.small}>This is evidence supplied by your organisation. CRUX won't treat it as independently verified.</p>
               {error ? <p role="alert" className={styles.error}>{error}</p> : null}
               <div className={styles.actions}>
@@ -361,10 +365,10 @@ export function SimpleAIUseWorkbench() {
             </div>
           </div>
 
-          {publicModel ? <details className={styles.preview}>
+          {publicModel?.availability === "ready" ? <details className={styles.preview}>
             <summary>Preview what someone outside your organisation could read</summary>
             <SimpleUseCard model={publicModel} />
-          </details> : null}
+          </details> : <p className={styles.small}>This record is internal. No public explanation has been approved yet.</p>}
           <p className={styles.small}>CRUX doesn't yet save these drafts to an account. Download your record before leaving this page.</p>
           <button className="btn ghost" type="button" onClick={() => { setStage("describe"); setBundle(null); setImported(false); setAnswers(defaultAnswers); setImpactAnswered(false); setShowEvidence(false); setError(""); }}>Start another use</button>
         </section>
