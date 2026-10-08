@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,7 +13,7 @@ import {
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 import { buildReaderModel } from "../lib/reader-model";
 import { observedBehaviourForVersion } from "../lib/observed";
-import { savePendingConnection } from "../lib/connection-handoff";
+import { savePendingConnection, takePendingReviewRecord } from "../lib/connection-handoff";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -70,6 +70,16 @@ export function SimpleAIUseWorkbench() {
   const [evidenceRelation, setEvidenceRelation] = useState<"supports" | "qualifies" | "contradicts" | "inconclusive">("supports");
   const [publicEvidence, setPublicEvidence] = useState(false);
   const [targetClaim, setTargetClaim] = useState("");
+
+  useEffect(() => {
+    const confirmed = takePendingReviewRecord();
+    if (!confirmed) return;
+    setBundle(confirmed);
+    setTargetClaim(evidenceTarget(confirmed) ?? "");
+    setStage("review");
+    setImported(true);
+    setError("");
+  }, []);
 
   const canonical = useMemo(() => {
     if (!bundle) return null;
