@@ -183,7 +183,7 @@ export function LiveRuntimeWorkbench() {
     <section className={styles.screen} aria-label="CRUX runtime example">
       <div className={styles.intro}>
         <div className={styles.flag}><span aria-hidden="true">✳</span> Fictional example · Not a real funding application</div>
-        <h2>AI helps review an application. But what really happened?</h2>
+        <h1>AI helps review an application. But what really happened?</h1>
         <p>Imagine a charity using AI to find useful passages in funding applications. A funding officer is meant to check the information and make the decision.</p>
       </div>
 
@@ -207,7 +207,7 @@ export function LiveRuntimeWorkbench() {
 
       {view === "inside" && state ? (
         <>
-          <div className={styles.sectionHeading}><span className={styles.number}>1</span><div><h3>What should happen?</h3><p>This is how the organisation says its process works.</p></div></div>
+          <div className={styles.sectionHeading}><span className={styles.number}>1</span><div><h2>What should happen?</h2><p>This is how the organisation says its process works.</p></div></div>
           <div className={styles.flow}>
             {steps.length ? steps.map((step, index) => {
               const hasEvent = latestEvents.some((event) => event.process_node_ref === step.id);
@@ -217,7 +217,7 @@ export function LiveRuntimeWorkbench() {
                   <article className={`${styles.flowNode} ${step.type === "ai" ? styles.ai : step.type === "human" ? styles.person : styles.decision}`}>
                     <span className={styles.nodeIcon} aria-hidden="true">{step.type === "ai" ? "✳" : step.type === "human" ? "◯" : "✓"}</span>
                     <div><span className={styles.nodeRole}>{step.type === "ai" ? "AI" : step.type === "human" ? "Person" : "Decision"}</span>
-                      <strong>{step.name}</strong></div>
+                      <strong>{step.type === "ai" ? "AI finds relevant information" : step.type === "human" ? "A person checks it" : "A person decides"}</strong></div>
                     {latestRunRef ? <span className={styles.nodeStatus}>{hasEvent ? "Event recorded" : "No event in latest run"}</span> : null}
                   </article>
                 </div>
@@ -226,7 +226,7 @@ export function LiveRuntimeWorkbench() {
           </div>
           <p className={styles.precision}>A recorded event shows that the software reported a step. It doesn't prove a person reviewed something properly.</p>
 
-          <div className={styles.sectionHeading}><span className={styles.number}>2</span><div><h3>See what CRUX notices</h3><p>Run a made-up case, then compare the description with what the software reported.</p></div></div>
+          <div className={styles.sectionHeading}><span className={styles.number}>2</span><div><h2>See what CRUX notices</h2><p>Run a made-up case, then compare the description with what the software reported.</p></div></div>
           <div className={styles.actionPanel}>
             <div className={styles.actionCopy}>
               <strong>{!latestRunRef ? "There hasn't been an example run yet." : "The latest example has been recorded."}</strong>
@@ -241,7 +241,7 @@ export function LiveRuntimeWorkbench() {
 
           {latestRunRef ? (
             <>
-              <div className={styles.sectionHeading}><span className={styles.number}>3</span><div><h3>What did we learn?</h3><p>We only compare information that the software actually supplied.</p></div></div>
+              <div className={styles.sectionHeading}><span className={styles.number}>3</span><div><h2>What did we learn?</h2><p>We only compare information that the software actually supplied.</p></div></div>
               <section className={`${styles.result} ${styles[explanation.kind]}`} aria-live="polite">
                 <div className={styles.resultIcon} aria-hidden="true">{explanation.kind === "attention" ? "!" : explanation.kind === "match" ? "✓" : "?"}</div>
                 <div><h4>{explanation.heading}</h4><p>{explanation.explanation}</p></div>
@@ -258,7 +258,7 @@ export function LiveRuntimeWorkbench() {
                 ))}
               </div> : null}
 
-              <div className={styles.sectionHeading}><span className={styles.number}>4</span><div><h3>What still needs a person?</h3><p>A log cannot tell us the whole story of a decision.</p></div></div>
+              <div className={styles.sectionHeading}><span className={styles.number}>4</span><div><h2>What still needs a person?</h2><p>A log cannot tell us the whole story of a decision.</p></div></div>
               {stage === "reviewed" ? (
                 <section className={styles.reviewIntro}>
                   <span className={styles.reviewSymbol} aria-hidden="true">✓</span>
@@ -309,7 +309,7 @@ export function LiveRuntimeWorkbench() {
         <div className={styles.reading}>
           <div className={styles.readerHeader}>
             <span className={styles.label}>A public explanation</span>
-            <h3>What does this organisation say its AI does?</h3>
+            <h2>What does this organisation say its AI does?</h2>
             <p>A member of the public sees the declared purpose and approved supporting evidence — not internal event logs.</p>
           </div>
           {publicModel.availability === "ready" ? (
@@ -337,7 +337,7 @@ export function LiveRuntimeWorkbench() {
         <div className={styles.reading}>
           <div className={styles.readerHeader}>
             <span className={styles.label}>A person affected</span>
-            <h3>What could an applicant be told?</h3>
+            <h2>What could an applicant be told?</h2>
             <p>General statements aren't enough to explain a particular outcome. A reviewed case must say what happened and who was responsible.</p>
           </div>
           {currentCase ? (
