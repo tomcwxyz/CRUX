@@ -131,6 +131,13 @@ export const createDiscoveryDeclaration = (input: {
 
   const requiresHumanApproval =
     confirmation.power === "act" && confirmation.action_control === "human_approval";
+  const needsHumanReview = requiresHumanApproval
+    || (confirmation.power !== "act" && confirmation.decision_authority === "human");
+  const recordsDecision = confirmation.consequential
+    && confirmation.power !== "act"
+    && confirmation.decision_authority !== undefined
+    && confirmation.decision_authority !== "unknown";
+  const decisionId = `decision:${candidateKey}-outcome`;
 
   const nodes: SystemVersion["process"]["nodes"] = [
     {
@@ -147,15 +154,22 @@ export const createDiscoveryDeclaration = (input: {
       purpose: confirmation.purpose,
       disclosure: "internal",
     },
-    ...(requiresHumanApproval
+    ...(needsHumanReview
       ? [{
           id: approvalNodeId,
           type: "human" as const,
-          name: "Human approval",
+          name: requiresHumanApproval ? "Human approval" : "A person checks the AI contribution",
           human_role_ref: approverRoleId,
           disclosure: "internal" as const,
         }]
       : []),
+    ...(recordsDecision ? [{
+      id: `node:${candidateKey}-decision`,
+      type: "decision" as const,
+      name: "A decision is made",
+      decision_ref: decisionId,
+      disclosure: "internal" as const,
+    }] : []),
     {
       id: outputNodeId,
       type: "output",
@@ -164,16 +178,11 @@ export const createDiscoveryDeclaration = (input: {
     },
   ];
 
-  const edges: SystemVersion["process"]["edges"] = requiresHumanApproval
-    ? [
-        { from: inputNodeId, to: aiNodeId, carries: [] },
-        { from: aiNodeId, to: approvalNodeId, carries: [] },
-        { from: approvalNodeId, to: outputNodeId, carries: [] },
-      ]
-    : [
-        { from: inputNodeId, to: aiNodeId, carries: [] },
-        { from: aiNodeId, to: outputNodeId, carries: [] },
-      ];
+  const edges: SystemVersion["process"]["edges"] = nodes.slice(1).map((node, index) => ({
+    from: nodes[index]!.id,
+    to: node.id,
+    carries: [],
+  }));
 
   const systemVersion = systemVersionSchema.parse({
     schema_version: "0.1",
@@ -200,16 +209,27 @@ export const createDiscoveryDeclaration = (input: {
       external_refs: externalRefs,
     }],
     data_sources: [],
-    human_roles: requiresHumanApproval
+    human_roles: needsHumanReview
       ? [{
           id: approverRoleId,
-          name: "Human approver",
-          responsibilities: ["Approve the AI-initiated action before it takes effect."],
+          name: requiresHumanApproval ? "Human approver" : "Person responsible",
+          responsibilities: [requiresHumanApproval
+            ? "Approve the AI-initiated action before it takes effect."
+            : "Review the AI contribution before the outcome is decided."],
           can_override_ai: true,
           disclosure: "internal",
         }]
       : [],
-    decisions: [],
+    decisions: recordsDecision ? [{
+      id: decisionId,
+      name: "Decision about what happens next",
+      consequence: confirmation.people_affected.join(", ") || "Potential effects need describing.",
+      authority: confirmation.decision_authority,
+      ai_influence: [influenceForPower(confirmation.power)],
+      review_before_effect: confirmation.decision_authority === "human",
+      responsible_role_refs: confirmation.decision_authority === "human" ? [approverRoleId] : [],
+      disclosure: "internal",
+    }] : [],
     actions: [],
     risks: [],
     safeguards: [],
