@@ -6,7 +6,8 @@ import {
   reviewBrowserDemo,
   runBrowserDemo,
 } from "../lib/browser-runtime-demo";
-import { allowBrowserOnlyDemo, GET } from "../app/api/live-runtime/route";
+import { allowBrowserOnlyDemo } from "../lib/browser-runtime-mode";
+import { GET } from "../app/api/live-runtime/route";
 
 const review = {
   aiSummary: "AI found information in a fictional application.",
