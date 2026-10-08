@@ -88,6 +88,7 @@ export function DiscoveryOnboarding({
   const [consequential, setConsequential] = useState("");
   const [power, setPower] = useState("");
   const [actionControl, setActionControl] = useState("");
+  const [decisionAuthority, setDecisionAuthority] = useState("");
   const [handoffName, setHandoffName] = useState<string | null>(null);
   const [handoffError, setHandoffError] = useState("");
   const [notSure, setNotSure] = useState(false);
@@ -106,6 +107,7 @@ export function DiscoveryOnboarding({
     setConsequential(pending.consequential ? "yes" : "no");
     setPower(pending.role === "assist" ? "suggest" : pending.role === "recommend" ? "recommend" : pending.role === "decide" ? "decide" : pending.role === "act" ? "act" : "");
     setActionControl("");
+    setDecisionAuthority(pending.control === "person" ? "human" : pending.control === "unsure" ? "unknown" : pending.control);
     setStage("discover");
   }, []);
   const observationPlan = useMemo(
@@ -118,7 +120,7 @@ export function DiscoveryOnboarding({
   );
   const canConfirm =
     Boolean(organisationName.trim() && purpose.trim() && power && consequential) &&
-    (power !== "act" || Boolean(actionControl));
+    (power === "act" ? Boolean(actionControl) : Boolean(decisionAuthority));
   const declaration = useMemo(() => {
     if (!candidate || !canConfirm) return null;
     return createDiscoveryDeclaration({
@@ -133,12 +135,15 @@ export function DiscoveryOnboarding({
           .filter(Boolean),
         consequential: consequential === "yes",
         power: power as "suggest" | "recommend" | "decide" | "act",
+        ...(power !== "act"
+          ? { decision_authority: decisionAuthority as "human" | "rule" | "ai" | "unknown" }
+          : {}),
         ...(power === "act"
           ? { action_control: actionControl as "human_approval" | "rule_bounded" | "automatic_bounded" }
           : {}),
       },
     });
-  }, [report, candidate, canConfirm, organisationName, purpose, affected, consequential, power, actionControl]);
+  }, [report, candidate, canConfirm, organisationName, purpose, affected, consequential, power, actionControl, decisionAuthority]);
 
   const confirmedBundle = useMemo(
     () => declaration ? portableBundleFromDiscoveryDeclaration(declaration) : null,
@@ -290,6 +295,7 @@ export function DiscoveryOnboarding({
     setConsequential(handoffName ? consequential : "");
     setPower(handoffName ? power : "");
     setActionControl("");
+    setDecisionAuthority(handoffName ? decisionAuthority : "");
     setNotSure(false);
     setShowPatch(false);
     setPatchReadiness(null);
@@ -397,6 +403,7 @@ export function DiscoveryOnboarding({
                   <div className="field"><label>Who can be affected by it?</label><input value={affected} onChange={(event)=>setAffected(event.target.value)} placeholder="Comma-separated, e.g. staff, report authors"/></div>
                   <div className="field"><label>Could it materially affect a person, service, opportunity or entitlement?</label><select value={consequential} onChange={(event)=>setConsequential(event.target.value)}><option value="">Choose…</option><option value="no">No</option><option value="yes">Yes</option></select></div>
                   <div className="field"><label>What can the AI do here?</label><select value={power} onChange={(event)=>setPower(event.target.value)}><option value="">Choose…</option><option value="suggest">Suggest</option><option value="recommend">Recommend</option><option value="decide">Decide</option><option value="act">Act</option></select><div className="why">This maps plain language to CRUX influence/agency underneath.</div></div>
+                  {power !== "act" && <div className="field"><label>Who decides what happens next?</label><select value={decisionAuthority} onChange={(event)=>setDecisionAuthority(event.target.value)}><option value="">Choose…</option><option value="human">A person</option><option value="rule">A set rule</option><option value="ai">AI</option><option value="unknown">Not sure yet</option></select></div>}
                   {power === "act" && <div className="field"><label>Before the AI action takes effect…</label><select value={actionControl} onChange={(event)=>setActionControl(event.target.value)}><option value="">Choose…</option>{actionControlOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>}
                 </div>
                 <div className="choice-row" style={{paddingLeft:0,paddingRight:0,paddingBottom:0,background:"transparent",borderTop:0}}><button className="btn primary" type="button" onClick={goObserve} disabled={!canConfirm}>Confirm this AI use</button><button className="btn ghost" type="button" onClick={()=>setStage("discover")}>Back to discovery</button></div>
