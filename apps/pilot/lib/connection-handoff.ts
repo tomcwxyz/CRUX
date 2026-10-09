@@ -128,6 +128,44 @@ export function takePendingReviewRecord(): CruxPortableBundle | null {
   return parsePendingReviewRecord(raw);
 }
 
+const oauthReturnKey = "crux:oauth-return-draft:v1";
+const oauthReturnMaxLength = 500_000;
+
+/** Session-only draft handoff for GitHub OAuth, not an account or saved CRUX record. */
+export function saveOauthReturnDraft(bundle: CruxPortableBundle, imported: boolean, now = Date.now()): void {
+  if (typeof window === "undefined") return;
+  const valid = parsePortableBundle(bundle);
+  if (!validateBundleReferences(valid).valid) throw new Error("The draft has broken references.");
+  const raw = JSON.stringify({ createdAt: now, imported, bundle: valid });
+  if (raw.length > oauthReturnMaxLength) throw new Error("This draft is too large to carry through GitHub. Download it before continuing.");
+  window.sessionStorage.setItem(oauthReturnKey, raw);
+}
+
+export function parseOauthReturnDraft(
+  raw: string | null,
+  now = Date.now(),
+): { bundle: CruxPortableBundle; imported: boolean } | null {
+  if (!raw || raw.length > oauthReturnMaxLength) return null;
+  try {
+    const value = JSON.parse(raw) as { createdAt?: unknown; imported?: unknown; bundle?: unknown };
+    if (typeof value.createdAt !== "number" || !Number.isFinite(value.createdAt)
+      || value.createdAt > now || now - value.createdAt > windowMs
+      || typeof value.imported !== "boolean") return null;
+    const bundle = parsePortableBundle(value.bundle);
+    if (!validateBundleReferences(bundle).valid) return null;
+    return { bundle, imported: value.imported };
+  } catch {
+    return null;
+  }
+}
+
+export function takeOauthReturnDraft(): { bundle: CruxPortableBundle; imported: boolean } | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.sessionStorage.getItem(oauthReturnKey);
+  window.sessionStorage.removeItem(oauthReturnKey);
+  return parseOauthReturnDraft(raw);
+}
+
 const advancedKey = "crux:pending-advanced-ai-use:v1";
 
 export function savePendingAdvancedAnswers(answers: SimpleUseAnswers, now = Date.now()): void {
