@@ -167,7 +167,7 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse }: { onReviewCo
           showConnectorChoices={false}
           githubInstallationId={activeRepository?.installation_id}
           githubUserCanWrite={Boolean(activeRepository?.user_can_write)}
-          onReviewConfirmedUse={onReviewConfirmedUse}
+          {...(onReviewConfirmedUse ? { onReviewConfirmedUse } : {})}
         />
       </>
     );
