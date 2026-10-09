@@ -73,7 +73,8 @@ describe("opt-in browser saved records", () => {
     const starter = createStarterBundle();
     const signals = reviewSignals(starter);
     expect(signals.actions.some((action) => action.includes("no evidence"))).toBe(true);
-    expect(signals.actions).toContain("No linked runtime observations in this record");
+    expect(signals.observations).toBe(0);
+    expect(signals.actions).not.toContain("No linked runtime observations in this record");
     expect(signals).not.toHaveProperty("trustScore");
     const evidence = appendManualEvidence(starter, starter.claims[0]!.id, {
       kind: "human_review", summary: "Our team reviewed the workflow",
