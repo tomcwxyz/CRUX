@@ -64,6 +64,7 @@ export function SimpleAIUseWorkbench() {
   const [bundle, setBundle] = useState<CruxPortableBundle | null>(null);
   const [imported, setImported] = useState(false);
   const [previousDraft, setPreviousDraft] = useState<CruxPortableBundle | null>(null);
+  const [previousImported, setPreviousImported] = useState(false);
   const [error, setError] = useState("");
   const [showEvidence, setShowEvidence] = useState(false);
   const [evidenceSummary, setEvidenceSummary] = useState("");
@@ -196,6 +197,7 @@ export function SimpleAIUseWorkbench() {
     try {
       const selection = acceptDiscoveredUse(bundle, confirmed);
       setPreviousDraft(selection.previous);
+      setPreviousImported(imported);
       setBundle(selection.active);
       setTargetClaim(evidenceTarget(selection.active) ?? "");
       setStage("review");
@@ -213,7 +215,7 @@ export function SimpleAIUseWorkbench() {
     setBundle(previousDraft);
     setTargetClaim(evidenceTarget(previousDraft) ?? "");
     setPreviousDraft(null);
-    setImported(true);
+    setImported(previousImported);
     setStage("review");
     setShowEvidence(false);
     setError("");
@@ -296,6 +298,7 @@ export function SimpleAIUseWorkbench() {
                   if (!answers.description.trim()) { setError("Start with one sentence about what AI does."); return; }
                   setError(""); setStage("clarify");
                 }}>Continue →</button>
+                <button className="btn ghost" type="button" onClick={connectProject}>Or connect a project</button>
                 <label className="btn file-label">Open an existing record
                   <input type="file" accept=".json,application/json" onChange={(event) => void openRecord(event.target.files?.[0])}/>
                 </label>
@@ -433,7 +436,7 @@ export function SimpleAIUseWorkbench() {
             <SimpleUseCard model={publicModel} />
           </details> : <p className={styles.small}>This record is internal. No public explanation has been approved yet.</p>}
           <p className={styles.small}>CRUX doesn't yet save these drafts to an account. Download your record before leaving this page.</p>
-          <button className="btn ghost" type="button" onClick={() => { setStage("describe"); setBundle(null); setImported(false); setAnswers(defaultAnswers); setImpactAnswered(false); setShowEvidence(false); setPreviousDraft(null); setError(""); }}>Start another use</button>
+          <button className="btn ghost" type="button" onClick={() => { setStage("describe"); setBundle(null); setImported(false); setAnswers(defaultAnswers); setImpactAnswered(false); setShowEvidence(false); setPreviousDraft(null); setPreviousImported(false); setError(""); }}>Start another use</button>
         </section>
       ) : null}
     </div>
