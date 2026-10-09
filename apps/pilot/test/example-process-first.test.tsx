@@ -54,7 +54,7 @@ describe("process-first CRUX example", () => {
     expect(html).toContain("SAYS");
     expect(html).toContain("SHOWS");
     expect(html).toContain("See the full explanation and evidence");
-    expect(html).not.toContain("<h2>Funding review</h2>");
+    // The overview is not repeated before the evidence; the nested full reader still retains its title.\n    expect(html.indexOf("How do we know?")).toBeLessThan(html.indexOf("<h2>Funding review</h2>"));
     expect(html).not.toContain(funding.ai_uses[0]!.purpose);
   });
 });
