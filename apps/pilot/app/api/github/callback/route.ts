@@ -15,8 +15,9 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const redirectToDiscover = (origin: string, state: string) =>
-  NextResponse.redirect(new URL(`/discover?github=${state}`, origin));
+// GitHub connections now return to the same AI-use workbench.
+const redirectToWorkbench = (origin: string, state: string) =>
+  NextResponse.redirect(new URL(`/author?github=${state}#connect`, origin));
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
   cookieStore.delete(GITHUB_OAUTH_STATE_COOKIE);
 
   if (!code || !state || !expectedState || state !== expectedState) {
-    return redirectToDiscover(origin, "invalid-state");
+    return redirectToWorkbench(origin, "invalid-state");
   }
 
   try {
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
     );
 
     if (scopedInstallations.length === 0) {
-      return redirectToDiscover(origin, "no-repositories");
+      return redirectToWorkbench(origin, "no-repositories");
     }
 
     cookieStore.set(
@@ -81,8 +82,8 @@ export async function GET(request: Request) {
       },
     );
 
-    return redirectToDiscover(origin, "connected");
+    return redirectToWorkbench(origin, "connected");
   } catch {
-    return redirectToDiscover(origin, "error");
+    return redirectToWorkbench(origin, "error");
   }
 }
