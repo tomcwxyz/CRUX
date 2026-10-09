@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDiscoveryDeclaration, suggestAIUseCandidates } from "@crux/core";
+import { appendManualEvidence } from "../lib/authoring";
 import { portableBundleFromDiscoveryDeclaration } from "@crux/formats";
 import { DiscoveryReportSchema } from "@crux/schemas";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
@@ -51,17 +52,12 @@ describe("discovery review continuity", () => {
     expect(prepared.evidence).toHaveLength(0);
     // The integrated journey can switch records without pretending the two
     // versions share evidence. Switching back restores the original untouched.
-    const prior = structuredClone(prepared);
-    prior.evidence.push({
-      schema_version: "0.1",
-      id: "evidence:old",
+    const prior = appendManualEvidence(prepared, prepared.claims[0]!.id, {
       kind: "human_review",
       summary: "A review about the original version",
-      limitations: [],
-      external_refs: [],
+      relationship: "supports",
       disclosure: "internal",
-      created_at: "2026-10-08T12:00:00.000Z",
-    });
+    }).bundle;
     const selection = acceptDiscoveredUse(prior, bundle);
     expect(selection.previous).toBe(prior);
     expect(selection.previous?.evidence).toHaveLength(1);
