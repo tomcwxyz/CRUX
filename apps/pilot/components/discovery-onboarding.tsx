@@ -314,7 +314,7 @@ export function DiscoveryOnboarding({
   return (
     <section className="workbench discovery">
       <style>{styles}</style>
-      <div className="steps">
+      {!onReviewConfirmedUse && <div className="steps">
         {[
           ["Connect", "Where AI already lives"],
           ["Discover", "CRUX notices what is there"],
@@ -326,7 +326,7 @@ export function DiscoveryOnboarding({
             <strong>{copy}</strong>
           </div>
         ))}
-      </div>
+      </div>}
 
       <div className="disc-canvas">
         <div className="disc-head">
