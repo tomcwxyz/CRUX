@@ -39,3 +39,12 @@
 .journeyIntro h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(32px,5vw,52px);font-weight:400;line-height:1.1;margin:8px 0}
 .journeyIntro p{color:var(--muted);font-size:15px;line-height:1.55;max-width:62ch}
 @media(max-width:620px){.journey{justify-content:flex-start}.journey span{flex:1;white-space:nowrap;text-align:center;padding:9px 5px;font-size:10px}.journeyIntro{flex-direction:column;align-items:stretch}.journeyIntro button{align-self:flex-start}}
+
+.disclosurePreview{padding:14px 0 4px}
+.disclosurePreview h3{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:clamp(25px,3vw,34px);margin:0 0 8px}
+.disclosurePreview>p{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 18px}
+.previewChoices{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:22px}
+.previewChoices button[aria-pressed="true"]{background:var(--moss);border-color:var(--moss);color:var(--chalk)}
+.notShared{padding:20px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.5);line-height:1.5}
+.notShared p{color:var(--muted)}
+@media(max-width:620px){.previewChoices{display:grid}.previewChoices button{width:100%;white-space:normal}}
