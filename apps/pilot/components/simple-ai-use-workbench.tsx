@@ -12,7 +12,7 @@ import {
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 import { buildReaderModel } from "../lib/reader-model";
 import { observedBehaviourForVersion } from "../lib/observed";
-import { acceptDiscoveredUse, savePendingAdvancedAnswers, savePendingConnection, takePendingReviewRecord } from "../lib/connection-handoff";
+import { acceptDiscoveredUse, clearPendingConnection, savePendingAdvancedAnswers, savePendingConnection, takePendingReviewRecord } from "../lib/connection-handoff";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -185,6 +185,7 @@ export function SimpleAIUseWorkbench() {
         download(canonical, "crux-ai-use-before-connection.json");
       }
       if (bundle && !imported) savePendingConnection(answers);
+      else clearPendingConnection();
       setStage("connect");
       setError("");
       window.history.replaceState(null, "", "/author#connect");
