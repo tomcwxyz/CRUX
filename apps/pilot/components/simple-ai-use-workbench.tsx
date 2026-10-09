@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   parsePortableBundle,
   portableBundleSchema,
@@ -13,7 +12,7 @@ import {
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 import { buildReaderModel } from "../lib/reader-model";
 import { observedBehaviourForVersion } from "../lib/observed";
-import { savePendingAdvancedAnswers, savePendingConnection, takePendingReviewRecord } from "../lib/connection-handoff";
+import { acceptDiscoveredUse, savePendingAdvancedAnswers, savePendingConnection, takePendingReviewRecord } from "../lib/connection-handoff";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -23,9 +22,11 @@ import {
   type SimpleUseAnswers,
 } from "../lib/simple-ai-use";
 import { SimpleUseCard } from "./simple-use-card";
+import { GithubDiscoveryExperience } from "./github-discovery-experience";
+import { MentalModelWorkbench } from "./mental-model-workbench";
 import styles from "./simple-ai-use-workbench.module.css";
 
-type Stage = "describe" | "clarify" | "review";
+type Stage = "describe" | "clarify" | "review" | "connect" | "detailed";
 
 const defaultAnswers: SimpleUseAnswers = {
   name: "", description: "", organisation: "", role: "unsure",
@@ -57,12 +58,12 @@ const download = (value: unknown, filename: string) => {
 };
 
 export function SimpleAIUseWorkbench() {
-  const router = useRouter();
   const [stage, setStage] = useState<Stage>("describe");
   const [answers, setAnswers] = useState<SimpleUseAnswers>(defaultAnswers);
   const [impactAnswered, setImpactAnswered] = useState(false);
   const [bundle, setBundle] = useState<CruxPortableBundle | null>(null);
   const [imported, setImported] = useState(false);
+  const [previousDraft, setPreviousDraft] = useState<CruxPortableBundle | null>(null);
   const [error, setError] = useState("");
   const [showEvidence, setShowEvidence] = useState(false);
   const [evidenceSummary, setEvidenceSummary] = useState("");
@@ -75,7 +76,10 @@ export function SimpleAIUseWorkbench() {
 
   useEffect(() => {
     const confirmed = takePendingReviewRecord();
-    if (!confirmed) return;
+    if (!confirmed) {
+      if (window.location.hash === "#connect") setStage("connect");
+      return;
+    }
     setBundle(confirmed);
     setTargetClaim(evidenceTarget(confirmed) ?? "");
     setStage("review");
@@ -166,29 +170,53 @@ export function SimpleAIUseWorkbench() {
   const continueDetailed = () => {
     try {
       savePendingAdvancedAnswers(answers);
-      router.push("/author/advanced");
+      setStage("detailed");
     } catch {
-      setError("Could not carry your answers to the detailed editor in this browser.");
+      setError("Could not carry your answers into the detailed questions in this browser.");
     }
   };
 
   const connectProject = () => {
-    if (!bundle || !canonical) {
-      setError("Download a valid record before connecting a project.");
-      return;
-    }
     try {
-      // Linking is an explicit transition to discovery, not a claim that this
-      // authored record is already associated with the scanned repository.
-      // Back up all evidence first: only the simple description travels.
-      if (bundle.evidence.length || bundle.events.length || bundle.runs.length || bundle.observations.length) {
+      // Discovery creates a different exact-version record only after confirmation.
+      // Evidence must never silently move to that version.
+      if (canonical && (canonical.evidence.length || canonical.events.length || canonical.runs.length || canonical.observations.length)) {
         download(canonical, "crux-ai-use-before-connection.json");
       }
-      if (!imported) savePendingConnection(answers);
-      router.push("/discover");
+      if (bundle && !imported) savePendingConnection(answers);
+      setStage("connect");
+      setError("");
+      window.history.replaceState(null, "", "/author#connect");
     } catch {
       setError("Your browser could not prepare the connection. Download a copy of the record first.");
     }
+  };
+
+  const reviewDiscoveredUse = (confirmed: CruxPortableBundle) => {
+    try {
+      const selection = acceptDiscoveredUse(bundle, confirmed);
+      setPreviousDraft(selection.previous);
+      setBundle(selection.active);
+      setTargetClaim(evidenceTarget(selection.active) ?? "");
+      setStage("review");
+      setImported(true);
+      setShowEvidence(false);
+      setError("");
+      window.history.replaceState(null, "", "/author");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not review this discovered AI use.");
+    }
+  };
+
+  const returnToPreviousDraft = () => {
+    if (!previousDraft) return;
+    setBundle(previousDraft);
+    setTargetClaim(evidenceTarget(previousDraft) ?? "");
+    setPreviousDraft(null);
+    setImported(true);
+    setStage("review");
+    setShowEvidence(false);
+    setError("");
   };
 
   const addEvidence = (event: FormEvent<HTMLFormElement>) => {
