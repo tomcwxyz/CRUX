@@ -138,7 +138,8 @@ export function reviewSignals(bundle: CruxPortableBundle): {
     observations += (model.activity?.modelComparisons ?? 0) + (model.activity?.attachedObservations ?? 0);
     differences += count;
   }
-  if (!observations) actions.push("No linked runtime observations in this record");
+  // An unconnected use is not necessarily an error or an urgent task.
+  // Show lack of observations separately, without making every record a warning.
   return {
     title: differences ? "Differences to review" : actions.length ? "Questions to check" : "No flagged gaps in this record",
     actions: actions.slice(0, 8),
