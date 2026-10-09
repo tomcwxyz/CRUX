@@ -93,6 +93,10 @@ export function SimpleAIUseWorkbench() {
         setBundle(returning.bundle);
         setImported(returning.imported);
         setTargetClaim(evidenceTarget(returning.bundle) ?? "");
+        if (returning.savedId) {
+          setSavedRecordId(returning.savedId);
+          setSavedFingerprint(JSON.stringify(returning.bundle));
+        }
       }
       if (window.location.hash === "#connect") setStage("connect");
       return;
@@ -230,7 +234,8 @@ export function SimpleAIUseWorkbench() {
   const beforeGithubConnect = () => {
     if (!canonical) return true;
     try {
-      saveOauthReturnDraft(canonical, imported);
+      saveOauthReturnDraft(canonical, imported, Date.now(),
+        savedRecordId && savedFingerprint === JSON.stringify(canonical) ? savedRecordId : undefined);
       return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Download your draft before continuing.");
