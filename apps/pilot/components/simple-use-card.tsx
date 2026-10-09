@@ -12,6 +12,8 @@ type SimpleUseCardProps = {
   actions?: ReactNode;
   note?: ReactNode;
   observed?: PilotObservedBehaviour | undefined;
+  /** Example route already has a process and key facts; avoid repeating them. */
+  showOverview?: boolean;
 };
 
 function CaseSummary({ item }: { item: ReaderCase }) {
@@ -28,7 +30,7 @@ function CaseSummary({ item }: { item: ReaderCase }) {
 }
 
 /** A concise explanation, with the complete, audience-safe reader underneath. */
-export function SimpleUseCard({ model, actions, note, observed }: SimpleUseCardProps) {
+export function SimpleUseCard({ model, actions, note, observed, showOverview = true }: SimpleUseCardProps) {
   const overview = summariseVisibleEvidence(model);
   const cases = model.cases;
   const caseNote = caseVisibilityCopy(model);
@@ -50,13 +52,17 @@ export function SimpleUseCard({ model, actions, note, observed }: SimpleUseCardP
 
   return (
     <article className={styles.record}>
-      <div className={styles.kicker}>{model.audience === "internal" ? "Working record" : model.audience === "public" ? "Public explanation" : "Explanation for someone affected"}</div>
-      <h2>{model.use?.name ?? "AI use not yet described"}</h2>
-      <p className={styles.intro}>{model.use?.summary ?? "No explanation has been added."}</p>
-      <div className={styles.facts}>
-        <section><h3>What AI does</h3><p>{model.aiCan.length ? model.aiCan.join(" · ") : "Not yet recorded"}</p></section>
-        <section><h3>Who decides</h3><p>{authority}</p></section>
-      </div>
+      {showOverview ? (
+        <>
+          <div className={styles.kicker}>{model.audience === "internal" ? "Working record" : model.audience === "public" ? "Public explanation" : "Explanation for someone affected"}</div>
+          <h2>{model.use?.name ?? "AI use not yet described"}</h2>
+          <p className={styles.intro}>{model.use?.summary ?? "No explanation has been added."}</p>
+          <div className={styles.facts}>
+            <section><h3>What AI does</h3><p>{model.aiCan.length ? model.aiCan.join(" · ") : "Not yet recorded"}</p></section>
+            <section><h3>Who decides</h3><p>{authority}</p></section>
+          </div>
+        </>
+      ) : null}
 
       {affected && cases.length > 0 ? <CaseSummary item={cases[0]!} /> : null}
 
