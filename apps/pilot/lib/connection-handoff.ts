@@ -166,6 +166,45 @@ export function takeOauthReturnDraft(): { bundle: CruxPortableBundle; imported: 
   return parseOauthReturnDraft(raw);
 }
 
+const savedReturnKey = "crux:open-browser-record:v1";
+const savedReturnMaxLength = 750_000;
+
+/** One-time local tab handoff; never publishes or re-scopes evidence. */
+export function parsePendingBrowserRecord(
+  raw: string | null,
+  now = Date.now(),
+): { id: string; bundle: CruxPortableBundle } | null {
+  if (!raw || raw.length > savedReturnMaxLength) return null;
+  try {
+    const item = JSON.parse(raw) as { createdAt?: unknown; id?: unknown; bundle?: unknown };
+    if (typeof item.createdAt !== "number" || !Number.isFinite(item.createdAt)
+      || item.createdAt > now || now - item.createdAt > windowMs
+      || typeof item.id !== "string" || item.id.length === 0 || item.id.length > 100) return null;
+    const bundle = parsePortableBundle(item.bundle);
+    if (!validateBundleReferences(bundle).valid) return null;
+    return { id: item.id, bundle };
+  } catch {
+    return null;
+  }
+}
+
+export function savePendingBrowserRecord(id: string, bundle: CruxPortableBundle, now = Date.now()): void {
+  if (typeof window === "undefined") return;
+  if (!id || id.length > 100) throw new Error("Invalid local record ID.");
+  const valid = parsePortableBundle(bundle);
+  if (!validateBundleReferences(valid).valid) throw new Error("Cannot reopen a record with broken references.");
+  const raw = JSON.stringify({ createdAt: now, id, bundle: valid });
+  if (raw.length > savedReturnMaxLength) throw new Error("This record is too large to reopen in the same tab. Download a copy.");
+  window.sessionStorage.setItem(savedReturnKey, raw);
+}
+
+export function takePendingBrowserRecord(): { id: string; bundle: CruxPortableBundle } | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.sessionStorage.getItem(savedReturnKey);
+  window.sessionStorage.removeItem(savedReturnKey);
+  return parsePendingBrowserRecord(raw);
+}
+
 const advancedKey = "crux:pending-advanced-ai-use:v1";
 
 export function savePendingAdvancedAnswers(answers: SimpleUseAnswers, now = Date.now()): void {
