@@ -3,7 +3,7 @@ import { createDiscoveryDeclaration, suggestAIUseCandidates } from "@crux/core";
 import { portableBundleFromDiscoveryDeclaration } from "@crux/formats";
 import { DiscoveryReportSchema } from "@crux/schemas";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
-import { parsePendingConnection, prepareDiscoveryForReview, parsePendingReviewRecord } from "../lib/connection-handoff";
+import { acceptDiscoveredUse, parsePendingConnection, prepareDiscoveryForReview, parsePendingReviewRecord } from "../lib/connection-handoff";
 
 const answers = {
   name: "Funding review", description: "AI helps check grant applications",
@@ -49,6 +49,26 @@ describe("discovery review continuity", () => {
     expect(prepared.claims[0]?.disclosure).toBe("internal");
     expect(prepared.events).toHaveLength(0);
     expect(prepared.evidence).toHaveLength(0);
+    // The integrated journey can switch records without pretending the two
+    // versions share evidence. Switching back restores the original untouched.
+    const prior = structuredClone(prepared);
+    prior.evidence.push({
+      schema_version: "0.1",
+      id: "evidence:old",
+      kind: "human_review",
+      summary: "A review about the original version",
+      limitations: [],
+      external_refs: [],
+      disclosure: "internal",
+      created_at: "2026-10-08T12:00:00.000Z",
+    });
+    const selection = acceptDiscoveredUse(prior, bundle);
+    expect(selection.previous).toBe(prior);
+    expect(selection.previous?.evidence).toHaveLength(1);
+    expect(selection.active.evidence).toHaveLength(0);
+    expect(selection.active.system_versions[0]?.id).toBe(confirmed.system_version_ref);
+    expect(bundle.claims).toHaveLength(0);
+
     const raw = JSON.stringify({ createdAt: 1_000, bundle: prepared });
     expect(parsePendingReviewRecord(raw, 2_000)?.system_versions[0]?.id).toBe(confirmed.system_version_ref);
     expect(parsePendingReviewRecord(raw, 2_000_000)).toBeNull();
