@@ -65,7 +65,7 @@ describe("opt-in browser saved records", () => {
     expect(store.getItem("crux:browser-records:v1")).toBe("{broken");
     expect(() => parseBrowserRecords("x".repeat(2_000_100))).toThrow("limit");
     const invalid = createStarterBundle();
-    invalid.claims[0]!.applies_to = [{ kind: "system_version", ref: "system-version:missing" }];
+    invalid.systems[0]!.current_version_ref = "system-version:missing";
     expect(() => putBrowserRecord(storage(), invalid)).toThrow("broken references");
   });
 
