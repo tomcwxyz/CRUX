@@ -41,6 +41,12 @@ export function savePendingConnection(answers: SimpleUseAnswers, now = Date.now(
   window.sessionStorage.setItem(key, JSON.stringify({ createdAt: now, answers } satisfies PendingConnection));
 }
 
+/** Starting a fresh connection must not reuse an abandoned description. */
+export function clearPendingConnection(): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(key);
+}
+
 export function takePendingConnection(): SimpleUseAnswers | null {
   if (typeof window === "undefined") return null;
   const raw = window.sessionStorage.getItem(key);
