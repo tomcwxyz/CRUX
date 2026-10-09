@@ -132,11 +132,12 @@ const oauthReturnKey = "crux:oauth-return-draft:v1";
 const oauthReturnMaxLength = 500_000;
 
 /** Session-only draft handoff for GitHub OAuth, not an account or saved CRUX record. */
-export function saveOauthReturnDraft(bundle: CruxPortableBundle, imported: boolean, now = Date.now()): void {
+export function saveOauthReturnDraft(bundle: CruxPortableBundle, imported: boolean, now = Date.now(), savedId?: string): void {
   if (typeof window === "undefined") return;
   const valid = parsePortableBundle(bundle);
   if (!validateBundleReferences(valid).valid) throw new Error("The draft has broken references.");
-  const raw = JSON.stringify({ createdAt: now, imported, bundle: valid });
+  if (savedId && savedId.length > 100) throw new Error("Invalid saved record identifier.");
+  const raw = JSON.stringify({ createdAt: now, imported, bundle: valid, ...(savedId ? { savedId } : {}) });
   if (raw.length > oauthReturnMaxLength) throw new Error("This draft is too large to carry through GitHub. Download it before continuing.");
   window.sessionStorage.setItem(oauthReturnKey, raw);
 }
@@ -144,22 +145,23 @@ export function saveOauthReturnDraft(bundle: CruxPortableBundle, imported: boole
 export function parseOauthReturnDraft(
   raw: string | null,
   now = Date.now(),
-): { bundle: CruxPortableBundle; imported: boolean } | null {
+): { bundle: CruxPortableBundle; imported: boolean; savedId?: string } | null {
   if (!raw || raw.length > oauthReturnMaxLength) return null;
   try {
-    const value = JSON.parse(raw) as { createdAt?: unknown; imported?: unknown; bundle?: unknown };
+    const value = JSON.parse(raw) as { createdAt?: unknown; imported?: unknown; bundle?: unknown; savedId?: unknown };
     if (typeof value.createdAt !== "number" || !Number.isFinite(value.createdAt)
       || value.createdAt > now || now - value.createdAt > windowMs
-      || typeof value.imported !== "boolean") return null;
+      || typeof value.imported !== "boolean"
+      || (value.savedId !== undefined && (typeof value.savedId !== "string" || !value.savedId || value.savedId.length > 100))) return null;
     const bundle = parsePortableBundle(value.bundle);
     if (!validateBundleReferences(bundle).valid) return null;
-    return { bundle, imported: value.imported };
+    return { bundle, imported: value.imported, ...(value.savedId ? { savedId: value.savedId as string } : {}) };
   } catch {
     return null;
   }
 }
 
-export function takeOauthReturnDraft(): { bundle: CruxPortableBundle; imported: boolean } | null {
+export function takeOauthReturnDraft(): { bundle: CruxPortableBundle; imported: boolean; savedId?: string } | null {
   if (typeof window === "undefined") return null;
   const raw = window.sessionStorage.getItem(oauthReturnKey);
   window.sessionStorage.removeItem(oauthReturnKey);
