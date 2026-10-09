@@ -1,0 +1,27 @@
+/* A flow that stays readable at its own available width, including inside
+ * the narrow full-reader accordion. Never squeeze five cards until they overlap. */
+.container{container-type:inline-size;width:100%;min-width:0}
+.flow{display:grid;grid-template-columns:repeat(var(--step-count),minmax(0,1fr));gap:clamp(24px,3cqw,40px);list-style:none;padding:6px 0 16px;margin:0;align-items:stretch}
+.item{position:relative;min-width:0;display:flex}
+.step{position:relative;min-width:0;width:100%;min-height:146px;background:var(--chalk);border:1px solid var(--line);border-radius:19px;padding:clamp(12px,1.5cqw,20px);display:flex;flex-direction:column;gap:8px;overflow-wrap:anywhere}
+.role{display:block;text-transform:uppercase;font-size:11px;letter-spacing:.1em;font-weight:800;color:var(--muted);line-height:1.25}
+.name{display:block;font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:clamp(16px,2cqw,22px);line-height:1.25;letter-spacing:-.015em}
+.description{font-size:12px;line-height:1.45;color:var(--muted);margin:0}
+.ai{border:2px solid rgba(168,76,50,.63);background:rgba(168,76,50,.045)}
+.person,.decision{border:2px solid rgba(64,88,74,.48);background:rgba(64,88,74,.05)}
+.action{border-style:dashed}
+.handoff{display:inline-block;align-self:flex-start;margin-top:auto;padding:6px 8px;background:rgba(168,76,50,.1);border-radius:6px;color:var(--rust);font-size:10px;line-height:1.2;font-weight:850;letter-spacing:.045em;text-transform:uppercase}
+.connector{position:absolute;left:calc(-1 * (clamp(24px,3cqw,40px) + 1px));top:50%;width:clamp(24px,3cqw,40px);transform:translateY(-50%);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;pointer-events:none}
+.humanHandoff{color:var(--rust)}
+.prominent .step{min-height:172px;padding:clamp(14px,1.8cqw,24px)}
+.prominent .name{font-size:clamp(17px,2.25cqw,25px)}
+@container (max-width: 940px){
+  .flow{grid-template-columns:1fr;gap:20px;max-width:640px;margin-inline:auto}
+  .item{min-width:0}
+  .step,.prominent .step{min-height:0;padding:16px 18px;gap:6px}
+  .role{font-size:10px}
+  .name,.prominent .name{font-size:clamp(18px,4.4cqw,23px)}
+  .description{font-size:13px}
+  .handoff{margin-top:4px}
+  .connector{top:-21px;left:20px;width:22px;transform:rotate(90deg);font-size:18px}
+}
