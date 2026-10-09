@@ -9,8 +9,9 @@ import {
   type CruxPortableBundle,
 } from "@crux/formats";
 import { buildReaderModel } from "../lib/reader-model";
+import { putBrowserRecord } from "../lib/browser-records";
 import { observedBehaviourForVersion } from "../lib/observed";
-import { acceptDiscoveredUse, clearPendingConnection, saveOauthReturnDraft, savePendingAdvancedAnswers, savePendingConnection, takeOauthReturnDraft, takePendingReviewRecord } from "../lib/connection-handoff";
+import { acceptDiscoveredUse, clearPendingConnection, saveOauthReturnDraft, savePendingAdvancedAnswers, savePendingConnection, takeOauthReturnDraft, takePendingReviewRecord, takePendingBrowserRecord } from "../lib/connection-handoff";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -65,11 +66,26 @@ export function SimpleAIUseWorkbench() {
   const [imported, setImported] = useState(false);
   const [previousDraft, setPreviousDraft] = useState<CruxPortableBundle | null>(null);
   const [previousImported, setPreviousImported] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
+  const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null);
+  const [previousSavedRecordId, setPreviousSavedRecordId] = useState<string | null>(null);
+  const [previousSavedFingerprint, setPreviousSavedFingerprint] = useState<string | null>(null);
+  const [savedMessage, setSavedMessage] = useState("");
   const [error, setError] = useState("");
   const [showEvidence, setShowEvidence] = useState(false);
   const [targetClaim, setTargetClaim] = useState("");
 
   useEffect(() => {
+    const saved = takePendingBrowserRecord();
+    if (saved) {
+      setBundle(saved.bundle);
+      setImported(true);
+      setTargetClaim(evidenceTarget(saved.bundle) ?? "");
+      setSavedRecordId(saved.id);
+      setSavedFingerprint(JSON.stringify(saved.bundle));
+      setStage("review");
+      return;
+    }
     const confirmed = takePendingReviewRecord();
     if (!confirmed) {
       const returning = takeOauthReturnDraft();
@@ -120,6 +136,9 @@ export function SimpleAIUseWorkbench() {
       setImported(true);
       setError("");
       setShowEvidence(false);
+      setSavedRecordId(null);
+      setSavedFingerprint(null);
+      setSavedMessage("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not open that record.");
     }
@@ -155,11 +174,30 @@ export function SimpleAIUseWorkbench() {
       }
       setBundle(draft);
       setImported(false);
+      setSavedRecordId(null);
+      setSavedFingerprint(null);
+      setSavedMessage("");
       setTargetClaim(evidenceTarget(draft) ?? "");
       setStage("review");
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not create the record.");
+    }
+  };
+
+  const saveInBrowser = () => {
+    if (!canonical) {
+      setError("This record is not valid yet. Check the details before saving.");
+      return;
+    }
+    try {
+      const stored = putBrowserRecord(window.localStorage, canonical, savedRecordId ?? undefined);
+      setSavedRecordId(stored.id);
+      setSavedFingerprint(JSON.stringify(canonical));
+      setSavedMessage("Saved on this device. It is not synced to an account.");
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save in this browser. Download a JSON backup instead.");
     }
   };
 
@@ -205,6 +243,11 @@ export function SimpleAIUseWorkbench() {
       const selection = acceptDiscoveredUse(bundle, confirmed);
       setPreviousDraft(selection.previous);
       setPreviousImported(imported);
+      setPreviousSavedRecordId(savedRecordId);
+      setPreviousSavedFingerprint(savedFingerprint);
+      setSavedRecordId(null);
+      setSavedFingerprint(null);
+      setSavedMessage("");
       setBundle(selection.active);
       setTargetClaim(evidenceTarget(selection.active) ?? "");
       setStage("review");
@@ -223,6 +266,11 @@ export function SimpleAIUseWorkbench() {
     setTargetClaim(evidenceTarget(previousDraft) ?? "");
     setPreviousDraft(null);
     setImported(previousImported);
+    setSavedRecordId(previousSavedRecordId);
+    setSavedFingerprint(previousSavedFingerprint);
+    setPreviousSavedRecordId(null);
+    setPreviousSavedFingerprint(null);
+    setSavedMessage("");
     setStage("review");
     setShowEvidence(false);
     setError("");
@@ -363,12 +411,19 @@ export function SimpleAIUseWorkbench() {
               {!imported ? <button className="btn ghost" type="button" onClick={reviseDraft}>Change answers</button> : null}
             </div>
           </div>
-          <SimpleUseCard model={model} observed={runtime} note="This is an unpublished draft in your browser, not a live record."
+          <SimpleUseCard model={model} observed={runtime} note={
+            savedRecordId
+              ? (savedFingerprint === JSON.stringify(canonical)
+                ? savedMessage || "Saved locally. No account or cloud sync."
+                : "You have unsaved changes in this browser. Save again to keep them.")
+              : "Not saved to an account. Save in this browser or download a JSON copy to return later."
+          }
             actions={
               <>
                 <button className="btn primary" type="button" onClick={connectProject}>Check a project →</button>
                 <button className="btn" type="button" onClick={() => setShowEvidence((old) => !old)}>+ Add evidence</button>
-                {canonical ? <button className="btn ghost" type="button" onClick={() => download(canonical, "crux-ai-use.json")}>Save record</button> : null}
+                <button className="btn" type="button" onClick={saveInBrowser} disabled={!canonical}>Save in this browser</button>
+                {canonical ? <button className="btn ghost" type="button" onClick={() => download(canonical, "crux-ai-use.json")}>Download JSON backup</button> : null}
               </>
             } />
 
@@ -403,8 +458,8 @@ export function SimpleAIUseWorkbench() {
             <summary>Preview public and affected-person explanations</summary>
             <DisclosurePreview bundle={canonical} />
           </details> : <p className={styles.small}>This draft is not ready for an external explanation.</p>}
-          <p className={styles.small}>CRUX doesn't yet save these drafts to an account. Download your record before leaving this page.</p>
-          <button className="btn ghost" type="button" onClick={() => { setStage("describe"); setBundle(null); setImported(false); setAnswers(defaultAnswers); setImpactAnswered(false); setShowEvidence(false); setPreviousDraft(null); setPreviousImported(false); setError(""); }}>Start another use</button>
+          <p className={styles.small}>Browser saves are optional and stay on this device. CRUX does not automatically refresh observations. <Link href="/records">See your saved records →</Link></p>
+          <button className="btn ghost" type="button" onClick={() => { setStage("describe"); setBundle(null); setImported(false); setAnswers(defaultAnswers); setImpactAnswered(false); setShowEvidence(false); setPreviousDraft(null); setPreviousImported(false); setSavedRecordId(null); setSavedFingerprint(null); setPreviousSavedRecordId(null); setPreviousSavedFingerprint(null); setSavedMessage(""); setError(""); }}>Start another use</button>
         </section>
       ) : null}
     </div>
