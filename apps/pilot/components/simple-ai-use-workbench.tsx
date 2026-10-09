@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   parsePortableBundle,
   portableBundleSchema,
-  redactBundle,
   validateBundleReferences,
   type CruxPortableBundle,
 } from "@crux/formats";
-import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 import { buildReaderModel } from "../lib/reader-model";
 import { observedBehaviourForVersion } from "../lib/observed";
 import { acceptDiscoveredUse, clearPendingConnection, saveOauthReturnDraft, savePendingAdvancedAnswers, savePendingConnection, takeOauthReturnDraft, takePendingReviewRecord } from "../lib/connection-handoff";
@@ -22,6 +20,8 @@ import {
   type SimpleUseAnswers,
 } from "../lib/simple-ai-use";
 import { SimpleUseCard } from "./simple-use-card";
+import { EvidenceEditor } from "./evidence-editor";
+import { DisclosurePreview } from "./disclosure-preview";
 import { GithubDiscoveryExperience } from "./github-discovery-experience";
 import { MentalModelWorkbench } from "./mental-model-workbench";
 import styles from "./simple-ai-use-workbench.module.css";
@@ -67,13 +67,7 @@ export function SimpleAIUseWorkbench() {
   const [previousImported, setPreviousImported] = useState(false);
   const [error, setError] = useState("");
   const [showEvidence, setShowEvidence] = useState(false);
-  const [evidenceSummary, setEvidenceSummary] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [evidenceRelation, setEvidenceRelation] = useState<"supports" | "qualifies" | "contradicts" | "inconclusive">("supports");
-  const [publicEvidence, setPublicEvidence] = useState(false);
   const [targetClaim, setTargetClaim] = useState("");
-  const chosenClaim = bundle?.claims.find((item) => item.id === targetClaim);
-  const canDiscloseEvidence = chosenClaim?.disclosure === "public" && bundle?.ai_uses[0]?.disclosure === "public";
 
   useEffect(() => {
     const confirmed = takePendingReviewRecord();
@@ -109,11 +103,6 @@ export function SimpleAIUseWorkbench() {
     const system = bundle.systems.find((item) => use?.system_refs.includes(item.id) || item.ai_use_refs.includes(use?.id ?? ""));
     return observedBehaviourForVersion(bundle, system?.current_version_ref);
   }, [bundle]);
-  const publicModel = useMemo(() =>
-    canonical ? buildReaderModel({ kind: "disclosure", projection: redactBundle(canonical, "public") }) : null,
-    [canonical],
-  );
-
   const change = (patch: Partial<SimpleUseAnswers>) => {
     setAnswers((old) => ({ ...old, ...patch }));
     setError("");
@@ -237,29 +226,6 @@ export function SimpleAIUseWorkbench() {
     setStage("review");
     setShowEvidence(false);
     setError("");
-  };
-
-  const addEvidence = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!bundle || !targetClaim) return;
-    try {
-      const { bundle: next } = appendManualEvidenceWithSource(bundle, targetClaim, {
-        summary: evidenceSummary,
-        sourceUri: sourceUrl,
-        kind: sourceUrl.trim() ? "policy" : "human_review",
-        relationship: evidenceRelation,
-        disclosure: publicEvidence && canDiscloseEvidence ? "public" : "internal",
-      });
-      setBundle(next);
-      setEvidenceSummary("");
-      setSourceUrl("");
-      setEvidenceRelation("supports");
-      setPublicEvidence(false);
-      setShowEvidence(false);
-      setError("");
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not add evidence.");
-    }
   };
 
   if (stage === "detailed") {
@@ -407,38 +373,22 @@ export function SimpleAIUseWorkbench() {
             } />
 
           {showEvidence ? (
-            <form className={styles.evidence} onSubmit={addEvidence}>
-              <h3>Add something that helps check this explanation</h3>
-              <label className={styles.label} htmlFor="evidence-target">Which statement?</label>
-              <select id="evidence-target" className="select" value={targetClaim} onChange={(event) => setTargetClaim(event.target.value)}>
-                {bundle.claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.statement}</option>)}
-              </select>
-              <label className={styles.label} htmlFor="evidence-summary">What does the evidence show?</label>
-              <textarea id="evidence-summary" className="textarea" value={evidenceSummary} onChange={(event) => setEvidenceSummary(event.target.value)}
-                placeholder="For example: We checked the workflow and saw that a funding officer has to approve the decision."/>
-              <label className={styles.label} htmlFor="evidence-link">Link to supporting material (optional)</label>
-              <input id="evidence-link" className="input" type="url" placeholder="https://…"
-                value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} />
-              <label className={styles.label} htmlFor="evidence-meaning">Does it support the statement?</label>
-              <select id="evidence-meaning" className="select" value={evidenceRelation}
-                onChange={(event) => setEvidenceRelation(event.target.value as typeof evidenceRelation)}>
-                <option value="supports">Supports it</option>
-                <option value="qualifies">Only partly / with a caveat</option>
-                <option value="contradicts">Challenges it</option>
-                <option value="inconclusive">Doesn't settle it</option>
-              </select>
-              <label className={styles.checkLine}><input type="checkbox" checked={publicEvidence && canDiscloseEvidence}
-                disabled={!canDiscloseEvidence}
-                onChange={(event) => setPublicEvidence(event.target.checked)}/>
-                This evidence can appear in a public explanation</label>
-              {!canDiscloseEvidence ? <p className={styles.small}>This statement is internal. You can record evidence now; publishing it needs a separate disclosure review.</p> : null}
-              <p className={styles.small}>This is evidence supplied by your organisation. CRUX won't treat it as independently verified.</p>
-              {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-              <div className={styles.actions}>
-                <button className="btn primary" type="submit" disabled={!targetClaim || !evidenceSummary.trim()}>Add evidence</button>
-                <button className="btn ghost" type="button" onClick={() => setShowEvidence(false)}>Cancel</button>
-              </div>
-            </form>
+            <section className={styles.evidence} aria-label="Add evidence">
+              <h3>What backs up your explanation?</h3>
+              {bundle.claims.length > 1 ? (
+                <>
+                  <label className={styles.label} htmlFor="evidence-target">Which statement are you checking?</label>
+                  <select id="evidence-target" className="select" value={targetClaim}
+                    onChange={(event) => setTargetClaim(event.target.value)}>
+                    {bundle.claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.statement}</option>)}
+                  </select>
+                </>
+              ) : null}
+              {targetClaim ? <EvidenceEditor key={targetClaim} bundle={bundle} claimId={targetClaim}
+                onBundleChange={(next) => { setBundle(next); setShowEvidence(false); setError(""); }} />
+                : <p>No statement has been recorded for this use yet. Add one using the detailed editor.</p>}
+              <button className="btn ghost" type="button" onClick={() => setShowEvidence(false)}>Close</button>
+            </section>
           ) : error ? <p role="alert" className={styles.error}>{error}</p> : null}
 
           <div className={styles.next}>
@@ -449,10 +399,10 @@ export function SimpleAIUseWorkbench() {
             </div>
           </div>
 
-          {publicModel?.availability === "ready" ? <details className={styles.preview}>
-            <summary>Preview what someone outside your organisation could read</summary>
-            <SimpleUseCard model={publicModel} />
-          </details> : <p className={styles.small}>This record is internal. No public explanation has been approved yet.</p>}
+          {canonical ? <details className={styles.preview}>
+            <summary>Preview public and affected-person explanations</summary>
+            <DisclosurePreview bundle={canonical} />
+          </details> : <p className={styles.small}>This draft is not ready for an external explanation.</p>}
           <p className={styles.small}>CRUX doesn't yet save these drafts to an account. Download your record before leaving this page.</p>
           <button className="btn ghost" type="button" onClick={() => { setStage("describe"); setBundle(null); setImported(false); setAnswers(defaultAnswers); setImpactAnswered(false); setShowEvidence(false); setPreviousDraft(null); setPreviousImported(false); setError(""); }}>Start another use</button>
         </section>
