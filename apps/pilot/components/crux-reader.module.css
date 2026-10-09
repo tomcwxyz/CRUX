@@ -59,19 +59,6 @@
 .processIntro h4, .card h4 { font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 400; margin: 0 0 6px; }
 .processIntro p { color: var(--muted); line-height: 1.55; margin: 0; max-width: 760px; }
 
-.flow { list-style: none; margin: 0; padding: 6px 0 12px; display: flex; align-items: stretch; gap: 8px; overflow-x: auto; }
-.flowItem { display: flex; align-items: stretch; gap: 8px; flex: 1 1 0; min-width: 0; }
-.arrow { display: grid; place-items: center; color: var(--muted); font-size: 18px; }
-.boundary { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; flex: 0 0 72px; color: var(--rust); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; text-align: center; }
-.boundary::before, .boundary::after { content: ''; width: 2px; flex: 1; min-height: 16px; background: var(--rust); }
-.step { flex: 1 1 auto; min-width: 128px; border: 1px solid var(--line); border-radius: 18px; padding: 15px; background: var(--chalk); min-height: 116px; }
-.step > span { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 16px; }
-.step strong { display: block; font-family: Georgia, 'Times New Roman', serif; font-size: 18px; font-weight: 400; line-height: 1.25; }
-.step small { display: block; color: var(--muted); font-size: 13px; line-height: 1.4; margin-top: 7px; }
-.step_ai { border: 2px solid rgba(168, 76, 50, .55); background: rgba(168, 76, 50, .05); }
-.step_person, .step_decision { border: 2px solid rgba(64, 88, 74, .45); background: rgba(64, 88, 74, .05); }
-.step_action { border-style: dashed; }
-
 .twoColumn { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .card { border: 1px solid var(--line); border-radius: 20px; padding: 20px; background: rgba(255, 255, 255, .42); min-width: 0; }
 .card p { margin: 6px 0; }
@@ -144,9 +131,5 @@
   .teaching { grid-template-columns: 1fr; gap: 6px; }
   .action { flex-direction: column; }
   .action .flags { justify-content: flex-start; }
-  .flow { flex-direction: column; overflow-x: visible; }
-  .flowItem { flex-direction: column; }
-  .arrow { transform: rotate(90deg); min-height: 20px; }
-  .boundary { flex-direction: row; min-width: 0; }
-  .boundary::before, .boundary::after { width: auto; height: 2px; min-height: 0; }
+
 }
