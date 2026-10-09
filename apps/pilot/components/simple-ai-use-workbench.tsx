@@ -12,7 +12,7 @@ import {
 import { appendManualEvidenceWithSource } from "../lib/manual-evidence";
 import { buildReaderModel } from "../lib/reader-model";
 import { observedBehaviourForVersion } from "../lib/observed";
-import { acceptDiscoveredUse, clearPendingConnection, savePendingAdvancedAnswers, savePendingConnection, takePendingReviewRecord } from "../lib/connection-handoff";
+import { acceptDiscoveredUse, clearPendingConnection, saveOauthReturnDraft, savePendingAdvancedAnswers, savePendingConnection, takeOauthReturnDraft, takePendingReviewRecord } from "../lib/connection-handoff";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -78,6 +78,12 @@ export function SimpleAIUseWorkbench() {
   useEffect(() => {
     const confirmed = takePendingReviewRecord();
     if (!confirmed) {
+      const returning = takeOauthReturnDraft();
+      if (returning) {
+        setBundle(returning.bundle);
+        setImported(returning.imported);
+        setTargetClaim(evidenceTarget(returning.bundle) ?? "");
+      }
       if (window.location.hash === "#connect") setStage("connect");
       return;
     }
@@ -194,6 +200,17 @@ export function SimpleAIUseWorkbench() {
     }
   };
 
+  const beforeGithubConnect = () => {
+    if (!canonical) return true;
+    try {
+      saveOauthReturnDraft(canonical, imported);
+      return true;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Download your draft before continuing.");
+      return false;
+    }
+  };
+
   const reviewDiscoveredUse = (confirmed: CruxPortableBundle) => {
     try {
       const selection = acceptDiscoveredUse(bundle, confirmed);
@@ -278,7 +295,7 @@ export function SimpleAIUseWorkbench() {
             </button>
           </div>
           {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-          <GithubDiscoveryExperience onReviewConfirmedUse={reviewDiscoveredUse} />
+          <GithubDiscoveryExperience onReviewConfirmedUse={reviewDiscoveredUse} onBeforeGithubConnect={beforeGithubConnect} />
         </>
       ) : stage !== "review" ? (
         <section className={styles.form}>
