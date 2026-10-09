@@ -119,6 +119,11 @@ export function BrowserRecordsWorkbench() {
                       {summary.actions.length > 3 ? <span>More questions inside the record</span> : null}
                     </div>
                   ) : <p className={styles.quiet}>No gaps flagged in the saved record. This does not mean the live system has been checked.</p>}
+                  <p className={styles.runtimeNote}>
+                    {summary.observations === 0
+                      ? "No runtime observations are linked in this saved record. That is not evidence the system has never run."
+                      : "This saved record includes runtime observations. They are not refreshed automatically."}
+                  </p>
                   {record.changesSinceLastSave.length > 0 ? (
                     <details className={styles.changes}>
                       <summary>What changed in this record at the last save?</summary>
