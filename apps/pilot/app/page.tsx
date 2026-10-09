@@ -8,7 +8,7 @@ export default function HomePage() {
           <Link className="wordmark" href="/">CRUX</Link>
           <span className="beta">beta</span>
         </div>
-        <Link className="btn ghost" href="/examples">See an example</Link>
+        <div className="toolbar-group"><Link className="btn ghost" href="/records">Your saved records</Link><Link className="btn ghost" href="/examples">See an example</Link></div>
       </header>
       <section className="hero" style={{ paddingTop: "clamp(44px, 8vw, 100px)", paddingBottom: 34 }}>
         <div>

@@ -132,11 +132,12 @@ const oauthReturnKey = "crux:oauth-return-draft:v1";
 const oauthReturnMaxLength = 500_000;
 
 /** Session-only draft handoff for GitHub OAuth, not an account or saved CRUX record. */
-export function saveOauthReturnDraft(bundle: CruxPortableBundle, imported: boolean, now = Date.now()): void {
+export function saveOauthReturnDraft(bundle: CruxPortableBundle, imported: boolean, now = Date.now(), savedId?: string): void {
   if (typeof window === "undefined") return;
   const valid = parsePortableBundle(bundle);
   if (!validateBundleReferences(valid).valid) throw new Error("The draft has broken references.");
-  const raw = JSON.stringify({ createdAt: now, imported, bundle: valid });
+  if (savedId && savedId.length > 100) throw new Error("Invalid saved record identifier.");
+  const raw = JSON.stringify({ createdAt: now, imported, bundle: valid, ...(savedId ? { savedId } : {}) });
   if (raw.length > oauthReturnMaxLength) throw new Error("This draft is too large to carry through GitHub. Download it before continuing.");
   window.sessionStorage.setItem(oauthReturnKey, raw);
 }
@@ -144,26 +145,66 @@ export function saveOauthReturnDraft(bundle: CruxPortableBundle, imported: boole
 export function parseOauthReturnDraft(
   raw: string | null,
   now = Date.now(),
-): { bundle: CruxPortableBundle; imported: boolean } | null {
+): { bundle: CruxPortableBundle; imported: boolean; savedId?: string } | null {
   if (!raw || raw.length > oauthReturnMaxLength) return null;
   try {
-    const value = JSON.parse(raw) as { createdAt?: unknown; imported?: unknown; bundle?: unknown };
+    const value = JSON.parse(raw) as { createdAt?: unknown; imported?: unknown; bundle?: unknown; savedId?: unknown };
     if (typeof value.createdAt !== "number" || !Number.isFinite(value.createdAt)
       || value.createdAt > now || now - value.createdAt > windowMs
-      || typeof value.imported !== "boolean") return null;
+      || typeof value.imported !== "boolean"
+      || (value.savedId !== undefined && (typeof value.savedId !== "string" || !value.savedId || value.savedId.length > 100))) return null;
     const bundle = parsePortableBundle(value.bundle);
     if (!validateBundleReferences(bundle).valid) return null;
-    return { bundle, imported: value.imported };
+    return { bundle, imported: value.imported, ...(value.savedId ? { savedId: value.savedId as string } : {}) };
   } catch {
     return null;
   }
 }
 
-export function takeOauthReturnDraft(): { bundle: CruxPortableBundle; imported: boolean } | null {
+export function takeOauthReturnDraft(): { bundle: CruxPortableBundle; imported: boolean; savedId?: string } | null {
   if (typeof window === "undefined") return null;
   const raw = window.sessionStorage.getItem(oauthReturnKey);
   window.sessionStorage.removeItem(oauthReturnKey);
   return parseOauthReturnDraft(raw);
+}
+
+const savedReturnKey = "crux:open-browser-record:v1";
+const savedReturnMaxLength = 750_000;
+
+/** One-time local tab handoff; never publishes or re-scopes evidence. */
+export function parsePendingBrowserRecord(
+  raw: string | null,
+  now = Date.now(),
+): { id: string; bundle: CruxPortableBundle } | null {
+  if (!raw || raw.length > savedReturnMaxLength) return null;
+  try {
+    const item = JSON.parse(raw) as { createdAt?: unknown; id?: unknown; bundle?: unknown };
+    if (typeof item.createdAt !== "number" || !Number.isFinite(item.createdAt)
+      || item.createdAt > now || now - item.createdAt > windowMs
+      || typeof item.id !== "string" || item.id.length === 0 || item.id.length > 100) return null;
+    const bundle = parsePortableBundle(item.bundle);
+    if (!validateBundleReferences(bundle).valid) return null;
+    return { id: item.id, bundle };
+  } catch {
+    return null;
+  }
+}
+
+export function savePendingBrowserRecord(id: string, bundle: CruxPortableBundle, now = Date.now()): void {
+  if (typeof window === "undefined") return;
+  if (!id || id.length > 100) throw new Error("Invalid local record ID.");
+  const valid = parsePortableBundle(bundle);
+  if (!validateBundleReferences(valid).valid) throw new Error("Cannot reopen a record with broken references.");
+  const raw = JSON.stringify({ createdAt: now, id, bundle: valid });
+  if (raw.length > savedReturnMaxLength) throw new Error("This record is too large to reopen in the same tab. Download a copy.");
+  window.sessionStorage.setItem(savedReturnKey, raw);
+}
+
+export function takePendingBrowserRecord(): { id: string; bundle: CruxPortableBundle } | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.sessionStorage.getItem(savedReturnKey);
+  window.sessionStorage.removeItem(savedReturnKey);
+  return parsePendingBrowserRecord(raw);
 }
 
 const advancedKey = "crux:pending-advanced-ai-use:v1";
