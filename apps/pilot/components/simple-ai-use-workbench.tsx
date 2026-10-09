@@ -242,9 +242,42 @@ export function SimpleAIUseWorkbench() {
     }
   };
 
+  if (stage === "detailed") {
+    return (
+      <div className={styles.workbench}>
+        <div className={styles.journeyIntro}>
+          <span className={styles.progress}>Describe · a few more questions</span>
+          <h2>Who decides, and what can AI do?</h2>
+          <p>Your description has been carried into the extra questions needed for this AI use.</p>
+        </div>
+        <MentalModelWorkbench />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.workbench}>
-      {stage !== "review" ? (
+      <nav className={styles.journey} aria-label="AI use journey">
+        <span className={stage === "describe" || stage === "clarify" ? styles.current : ""}>1 · Describe</span>
+        <span className={stage === "connect" ? styles.current : ""}>2 · Check (optional)</span>
+        <span className={stage === "review" ? styles.current : ""}>3 · Explain</span>
+      </nav>
+      {stage === "connect" ? (
+        <>
+          <div className={styles.journeyIntro}>
+            <div>
+              <span className={styles.progress}>Check your AI use</span>
+              <h2>Find where AI is running.</h2>
+              <p>Confirm the right workflow before connecting it to your description. Earlier evidence is never automatically attached to a different system version.</p>
+            </div>
+            <button className="btn ghost" type="button" onClick={() => { setStage(bundle ? "review" : "describe"); window.history.replaceState(null, "", "/author"); }}>
+              ← {bundle ? "Back to your explanation" : "Describe it instead"}
+            </button>
+          </div>
+          {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+          <GithubDiscoveryExperience onReviewConfirmedUse={reviewDiscoveredUse} />
+        </>
+      ) : stage !== "review" ? (
         <section className={styles.form}>
           <div className={styles.progress}>Step {stage === "describe" ? "1" : "2"} of 2</div>
           {stage === "describe" ? (
@@ -338,13 +371,17 @@ export function SimpleAIUseWorkbench() {
               <span className={styles.progress}>Your explanation</span>
               <h2>Does this sound right?</h2>
             </div>
-            {!imported ? <button className="btn ghost" type="button" onClick={reviseDraft}>Change answers</button> : null}
+            <div className={styles.actions}>
+              {previousDraft ? <button className="btn ghost" type="button" onClick={returnToPreviousDraft}>Return to earlier draft</button> : null}
+              {!imported ? <button className="btn ghost" type="button" onClick={reviseDraft}>Change answers</button> : null}
+            </div>
           </div>
           <SimpleUseCard model={model} observed={runtime} note="This is an unpublished draft in your browser, not a live record."
             actions={
               <>
-                {canonical ? <button className="btn primary" type="button" onClick={() => download(canonical, "crux-ai-use.json")}>Download a copy</button> : null}
+                <button className="btn primary" type="button" onClick={connectProject}>Check a project →</button>
                 <button className="btn" type="button" onClick={() => setShowEvidence((old) => !old)}>+ Add evidence</button>
+                {canonical ? <button className="btn ghost" type="button" onClick={() => download(canonical, "crux-ai-use.json")}>Save record</button> : null}
               </>
             } />
 
@@ -384,12 +421,10 @@ export function SimpleAIUseWorkbench() {
           ) : error ? <p role="alert" className={styles.error}>{error}</p> : null}
 
           <div className={styles.next}>
-            <h3>See what happens when AI runs</h3>
-            <p>Find the matching AI use in a project and see whether CRUX can observe it. You'll confirm the match first; this draft isn't automatically connected.</p>
-            <p className={styles.small}>We carry your description to the next screen, not your evidence. If you've added evidence, CRUX downloads a backup before you leave.</p>
+            <h3>What happens next?</h3>
+            <p>Check a project for real AI activity, or add evidence to support your description. What you say remains separate from what CRUX observes.</p>
             <div className={styles.actions}>
-              <button className="btn primary" type="button" onClick={connectProject}>Check a project →</button>
-              <Link className="btn ghost" href="/live">Try the separate runtime demo</Link>
+              <Link className="btn ghost" href="/live">See an interactive observation example</Link>
             </div>
           </div>
 
@@ -398,7 +433,7 @@ export function SimpleAIUseWorkbench() {
             <SimpleUseCard model={publicModel} />
           </details> : <p className={styles.small}>This record is internal. No public explanation has been approved yet.</p>}
           <p className={styles.small}>CRUX doesn't yet save these drafts to an account. Download your record before leaving this page.</p>
-          <button className="btn ghost" type="button" onClick={() => { setStage("describe"); setBundle(null); setImported(false); setAnswers(defaultAnswers); setImpactAnswered(false); setShowEvidence(false); setError(""); }}>Start another use</button>
+          <button className="btn ghost" type="button" onClick={() => { setStage("describe"); setBundle(null); setImported(false); setAnswers(defaultAnswers); setImpactAnswered(false); setShowEvidence(false); setPreviousDraft(null); setError(""); }}>Start another use</button>
         </section>
       ) : null}
     </div>
