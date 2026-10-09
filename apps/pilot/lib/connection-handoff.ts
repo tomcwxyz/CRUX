@@ -78,6 +78,17 @@ export function prepareDiscoveryForReview(original: CruxPortableBundle): CruxPor
   return valid;
 }
 
+/**
+ * Accept a human-confirmed discovery record without re-scoping evidence from
+ * the previous authoring draft. The earlier record stays available to restore.
+ */
+export function acceptDiscoveredUse(
+  previous: CruxPortableBundle | null,
+  confirmed: CruxPortableBundle,
+): { active: CruxPortableBundle; previous: CruxPortableBundle | null } {
+  return { active: prepareDiscoveryForReview(confirmed), previous };
+}
+
 export function parsePendingReviewRecord(raw: string | null, now = Date.now()): CruxPortableBundle | null {
   if (!raw || raw.length > reviewMaxLength) return null;
   try {
