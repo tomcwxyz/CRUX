@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { buildObservationPatchProposal, buildObservationPlan, createDiscoveryDeclaration, discoveryConnectors, suggestAIUseCandidates } from "@crux/core";
 import { DiscoveryReportSchema, type DiscoveryQuestion } from "@crux/schemas";
-import { portableBundleFromDiscoveryDeclaration } from "@crux/formats";
+import { portableBundleFromDiscoveryDeclaration, type CruxPortableBundle } from "@crux/formats";
 import { actionControlLabel, actionControlOptions } from "../lib/labels";
 import { savePendingReviewRecord, takePendingConnection } from "../lib/connection-handoff";
 import { buildReaderModel } from "../lib/reader-model";
@@ -64,6 +64,7 @@ type DiscoveryOnboardingProps = {
   showConnectorChoices?: boolean;
   githubInstallationId?: number | undefined;
   githubUserCanWrite?: boolean | undefined;
+  onReviewConfirmedUse?: (bundle: CruxPortableBundle) => void;
 };
 
 export function DiscoveryOnboarding({
@@ -74,6 +75,7 @@ export function DiscoveryOnboarding({
   showConnectorChoices = true,
   githubInstallationId,
   githubUserCanWrite = false,
+  onReviewConfirmedUse,
 }: DiscoveryOnboardingProps = {}) {
   const router = useRouter();
   const report = useMemo(() => DiscoveryReportSchema.parse(reportData), [reportData]);
@@ -268,9 +270,15 @@ export function DiscoveryOnboarding({
   const reviewConfirmedUse = () => {
     if (!confirmedBundle) return;
     try {
-      savePendingReviewRecord(confirmedBundle);
+      if (onReviewConfirmedUse) {
+        // The parent reviews an exact-version record. Nothing discovered
+        // silently inherits the earlier draft's evidence or observations.
+        onReviewConfirmedUse(confirmedBundle);
+      } else {
+        savePendingReviewRecord(confirmedBundle);
+        router.push("/author");
+      }
       setHandoffError("");
-      router.push("/author");
     } catch (error) {
       setHandoffError(error instanceof Error ? error.message : "Could not transfer this draft. Download it instead.");
     }
@@ -420,7 +428,7 @@ export function DiscoveryOnboarding({
             {confirmedModel && <div style={{ marginTop: 20, marginBottom: 20 }}>
               <SimpleUseCard model={confirmedModel} note="Not connected yet. A proposed code change is not a live connection."
                 actions={<>
-                  <button className="btn primary" type="button" onClick={reviewConfirmedUse}>Review and add evidence →</button>
+                  <button className="btn primary" type="button" onClick={reviewConfirmedUse}>Review your explanation →</button>
                   <button className="btn" type="button" onClick={downloadDraft}>Save record</button>
                 </>} />
               {handoffError ? <p role="alert" className="error-box">{handoffError}</p> : null}
