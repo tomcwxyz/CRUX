@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createDiscoveryDeclaration, suggestAIUseCandidates } from "@crux/core";
+import { appendManualEvidence } from "../lib/authoring";
 import { portableBundleFromDiscoveryDeclaration } from "@crux/formats";
 import { DiscoveryReportSchema } from "@crux/schemas";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
-import { parsePendingConnection, prepareDiscoveryForReview, parsePendingReviewRecord } from "../lib/connection-handoff";
+import { acceptDiscoveredUse, parseOauthReturnDraft, parsePendingConnection, prepareDiscoveryForReview, parsePendingReviewRecord } from "../lib/connection-handoff";
 
 const answers = {
   name: "Funding review", description: "AI helps check grant applications",
@@ -49,6 +50,27 @@ describe("discovery review continuity", () => {
     expect(prepared.claims[0]?.disclosure).toBe("internal");
     expect(prepared.events).toHaveLength(0);
     expect(prepared.evidence).toHaveLength(0);
+    // The integrated journey can switch records without pretending the two
+    // versions share evidence. Switching back restores the original untouched.
+    const prior = appendManualEvidence(prepared, prepared.claims[0]!.id, {
+      kind: "human_review",
+      summary: "A review about the original version",
+      relationship: "supports",
+      disclosure: "internal",
+    }).bundle;
+    const selection = acceptDiscoveredUse(prior, bundle);
+    expect(selection.previous).toBe(prior);
+    expect(selection.previous?.evidence).toHaveLength(1);
+    expect(selection.active.evidence).toHaveLength(0);
+    expect(selection.active.system_versions[0]?.id).toBe(confirmed.system_version_ref);
+    expect(bundle.claims).toHaveLength(0);
+
+    const oauthRaw = JSON.stringify({ createdAt: 1_000, imported: false, bundle: prior });
+    expect(parseOauthReturnDraft(oauthRaw, 2_000)?.bundle.evidence).toHaveLength(1);
+    expect(parseOauthReturnDraft(oauthRaw, 2_000_000)).toBeNull();
+    expect(parseOauthReturnDraft("{bad")).toBeNull();
+    expect(parseOauthReturnDraft(JSON.stringify({ createdAt: 1_000, imported: false, bundle: { nonsense: true } }), 2_000)).toBeNull();
+
     const raw = JSON.stringify({ createdAt: 1_000, bundle: prepared });
     expect(parsePendingReviewRecord(raw, 2_000)?.system_versions[0]?.id).toBe(confirmed.system_version_ref);
     expect(parsePendingReviewRecord(raw, 2_000_000)).toBeNull();

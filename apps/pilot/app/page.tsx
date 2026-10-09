@@ -19,11 +19,11 @@ export default function HomePage() {
         </div>
         <div style={{ display: "grid", gap: 18, alignContent: "center" }}>
           <p className="hero-copy">
-            Explain where you use AI, back it up with evidence and compare it with what the system actually does.
+            Start with your own description or a project you already use. Then explain what AI does, add evidence and check what actually happens.
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link className="btn primary" href="/author">Describe an AI use →</Link>
-            <Link className="btn" href="/discover">Connect a project</Link>
+            <Link className="btn" href="/author#connect">Connect a project</Link>
           </div>
         </div>
       </section>
