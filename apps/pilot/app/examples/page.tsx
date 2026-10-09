@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SimpleExamples } from "../../components/simple-examples";
+import styles from "./page.module.css";
 
 export default function ExamplesPage() {
   return (
@@ -8,9 +9,10 @@ export default function ExamplesPage() {
         <div className="brand"><Link className="wordmark" href="/">CRUX</Link><span className="beta">Example</span></div>
         <Link className="btn primary" href="/author">Describe your own AI use →</Link>
       </header>
-      <section className="hero" style={{ paddingTop: 24, paddingBottom: 18 }}>
-        <div><h1 style={{ fontSize: "clamp(32px, 5vw, 55px)" }}>What would someone need to know?</h1></div>
-        <p className="hero-copy">Compare a simple AI task with decisions that affect people. Open the full explanation only if you need more detail.</p>
+      <section className={styles.intro}>
+        <span className={styles.eyebrow}>See how CRUX works</span>
+        <h1>Where does AI fit in?</h1>
+        <p>Start with the process. Open the evidence when you want to look more closely.</p>
       </section>
       <SimpleExamples />
     </main>

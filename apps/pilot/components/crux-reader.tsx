@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, type ReactNode } from "react";
-import type { Audience, ReaderCase, ReaderClaim, ReaderModel, ReaderStep } from "../lib/reader-model";
+import type { Audience, ReaderCase, ReaderClaim, ReaderModel } from "../lib/reader-model";
+import { ProcessFlow } from "./process-flow";
 import styles from "./crux-reader.module.css";
 
 type Question = "where" | "power" | "believe" | "happened";
@@ -171,29 +172,8 @@ function WhereSection({ model }: { model: ReaderModel }) {
         <h4>{model.process.name}</h4>
         {model.process.description ? <p>{model.process.description}</p> : null}
       </div>
-      {model.process.steps.length ? <Flow steps={model.process.steps} /> : <Unknown title="No process steps are visible in this view." />}
+      {model.process.steps.length ? <ProcessFlow steps={model.process.steps} /> : <Unknown title="No process steps are visible in this view." />}
     </>
-  );
-}
-
-function Flow({ steps }: { steps: ReaderStep[] }) {
-  return (
-    <ol className={styles.flow}>
-      {steps.map((step, index) => (
-        <li key={step.id} className={styles.flowItem}>
-          {index > 0 ? (
-            step.aiStopsBefore
-              ? <span className={styles.boundary}>AI stops here</span>
-              : <span className={styles.arrow} aria-hidden="true">→</span>
-          ) : null}
-          <article className={`${styles.step} ${styles[`step_${step.role}`] ?? ""}`}>
-            <span>{step.roleLabel}</span>
-            <strong>{step.name}</strong>
-            {step.description ? <small>{step.description}</small> : null}
-          </article>
-        </li>
-      ))}
-    </ol>
   );
 }
 
