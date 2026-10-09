@@ -4,7 +4,7 @@ import { appendManualEvidence } from "../lib/authoring";
 import { portableBundleFromDiscoveryDeclaration } from "@crux/formats";
 import { DiscoveryReportSchema } from "@crux/schemas";
 import openRecsJson from "../../../examples/discovery/open-recs.json";
-import { acceptDiscoveredUse, parsePendingConnection, prepareDiscoveryForReview, parsePendingReviewRecord } from "../lib/connection-handoff";
+import { acceptDiscoveredUse, parseOauthReturnDraft, parsePendingConnection, prepareDiscoveryForReview, parsePendingReviewRecord } from "../lib/connection-handoff";
 
 const answers = {
   name: "Funding review", description: "AI helps check grant applications",
@@ -64,6 +64,12 @@ describe("discovery review continuity", () => {
     expect(selection.active.evidence).toHaveLength(0);
     expect(selection.active.system_versions[0]?.id).toBe(confirmed.system_version_ref);
     expect(bundle.claims).toHaveLength(0);
+
+    const oauthRaw = JSON.stringify({ createdAt: 1_000, imported: false, bundle: prior });
+    expect(parseOauthReturnDraft(oauthRaw, 2_000)?.bundle.evidence).toHaveLength(1);
+    expect(parseOauthReturnDraft(oauthRaw, 2_000_000)).toBeNull();
+    expect(parseOauthReturnDraft("{bad")).toBeNull();
+    expect(parseOauthReturnDraft(JSON.stringify({ createdAt: 1_000, imported: false, bundle: { nonsense: true } }), 2_000)).toBeNull();
 
     const raw = JSON.stringify({ createdAt: 1_000, bundle: prepared });
     expect(parsePendingReviewRecord(raw, 2_000)?.system_versions[0]?.id).toBe(confirmed.system_version_ref);
