@@ -45,6 +45,44 @@ It must not infer organisational purpose, affected people or decision authority 
 
 After human confirmation, this connector may offer to generate a small instrumentation patch.
 
+### Public Git forges — feature branch
+
+Public-repository discovery now has a separate, bounded, read-only API and uses
+the same source evidence scanner as the GitHub pilot. A user pastes an HTTPS
+repository URL; no source change or GitHub authorisation is required.
+
+Supported public hosts:
+
+| Host | API implementation | Notes |
+| --- | --- | --- |
+| github.com | Existing GitHub public route | The GitHub App remains the private-repo connection |
+| gitlab.com | GitLab REST API v4 | Groups and nested subgroups |
+| framagit.org | GitLab REST API v4 | Framasoft-hosted GitLab; no GitHub identity required |
+| codeberg.org | Forgejo/Gitea v1 API | Read-only tree and contents |
+| gitea.com | Forgejo/Gitea v1 API | Read-only tree and contents |
+| bitbucket.org | Bitbucket Cloud v2 API | Bounded recursive source listing |
+
+Administrators may opt in **additional** self-hosted GitLab or Forgejo hosts
+using the environment variable CRUX_PUBLIC_GIT_INSTANCES, with a value such
+as gitlab:git.example.org,forgejo:code.example.org. This is an explicit
+server allow-list, not an arbitrary network URL fetch. HTTPS only, no
+userinfo/ports, bounded response sizes and file counts, no redirects.
+Private self-hosted repositories are **not** automatically accessible;
+tokens must not be placed into browser-submitted URLs.
+
+The hosted probe reads no more than 80 selected source/config files or two
+million characters and excludes docs, tests, fixtures and dependency
+directories. Truncation remains visible. These limits mean a negative
+result is **not** evidence that a project does not use AI. The source
+code is processed for technical signals; discovery responses do not publish
+prompt or application-record content.
+
+The GitHub-specific draft observation PR path remains GitHub-only. For GitLab,
+Framagit, Bitbucket and Forgejo, discovery and confirmation work but automatic
+merge-request/pull-request creation and live runtime instrumentation are not
+yet connected. Local Git and authenticated private-federated connections
+remain follow-up work.
+
 ### Project ZIP — planned
 
 Same source-discovery semantics as GitHub, but acquisition can remain local/transient for exported projects such as hosted builders.
