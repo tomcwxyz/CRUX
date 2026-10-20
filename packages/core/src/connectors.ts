@@ -18,7 +18,7 @@ export const discoveryConnectors: DiscoveryConnector[] = [
     name: "Public Git repository",
     description: "Read a bounded source snapshot from GitLab, Framagit, Forgejo/Codeberg, Gitea or Bitbucket without requiring a GitHub account.",
     source_kinds: ["source_code"],
-    connection_modes: ["local"],
+    connection_modes: ["public_url"],
     capabilities: ["discover_source"],
     content_boundary: "source_readonly",
     maturity: "prototype",
