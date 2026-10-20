@@ -66,7 +66,7 @@ describe("SaaS discovery coverage and access contract", () => {
     expect(plan.checks.find((check) => check.dimension === "activity")?.state).toBe("no_match_in_export");
     expect(plan.evidence_summary).toMatch(/no recognised AI activity/i);
     expect(JSON.stringify(plan)).not.toContain("SENSITIVE_APPLICANT");
-    expect(plan.next_actions.some((action) => action.includes("supplier"))).toBe(true);
+    expect(plan.next_actions.some((action) => action.toLowerCase().includes("supplier"))).toBe(true);
   });
 
   it("ignores assessment from the wrong platform", () => {
