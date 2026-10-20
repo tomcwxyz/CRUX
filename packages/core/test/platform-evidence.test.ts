@@ -65,6 +65,20 @@ describe("SaaS evidence discovery: never infer AI from ordinary records", () => 
     expect(JSON.stringify(result)).not.toContain("CASE_NOTES_SECRET");
   });
 
+  it("recognises only explicit Enterprise Airtable AI credit audit events", () => {
+    const data = { events: [
+      { eventType: "AI_CREDIT_CONSUMED", payload: { recordName: "PRIVATE_SERVICE_USER" } },
+      { eventType: "RECORD_UPDATED", record: { name: "SECRET_DATA" } },
+      { eventType: "AI_CREDIT_CONSUMED", payload: { estimatedAiCreditsConsumed: 5 } },
+    ] };
+    const result = assess("airtable", data);
+    expect(result.ai_events).toBe(2);
+    expect(result.events_inspected).toBe(3);
+    expect(suggestAIUseCandidates(result.report)).toHaveLength(1);
+    expect(JSON.stringify(result)).not.toContain("PRIVATE_SERVICE_USER");
+    expect(JSON.stringify(result)).not.toContain("SECRET_DATA");
+  });
+
   it.each([
     ["power-automate", { value: [{ name: "run-1", status: "Succeeded", workflow: "send_email" }] }],
     ["airtable", [{ eventType: "record.updated", record: { name: "sensitive person" } }]],
