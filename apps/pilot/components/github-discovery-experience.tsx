@@ -101,7 +101,9 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
     setReport(null);
     setScan(null);
     try {
-      const response = await fetch("/api/discover/github", {
+      const endpoint = installationId || !/^https:\/\//i.test(repository.trim()) || /^https:\/\/github\.com\//i.test(repository.trim())
+        ? "/api/discover/github" : "/api/discover/git";
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -150,8 +152,8 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
             <small>
               {scan
                 ? `${scan.branch} · ${scan.files_read} bounded source/config files read · ${scan.private ? "private" : "public"} repository`
-                : "GitHub discovery"}
-              {scan?.tree_truncated ? " · GitHub reported a truncated repository tree" : ""}
+                : "Git repository discovery"}
+              {scan?.tree_truncated ? " · Provider reported a truncated repository tree" : ""}
             </small>
           </div>
           <button className="btn ghost" type="button" onClick={() => { setReport(null); setScan(null); }}>Scan another repository</button>
@@ -162,7 +164,7 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
           connectionName={scan?.repository ?? report.source.label}
           connectionMeta={scan?.mode === "github-app"
             ? "GitHub App · bounded server-side repository read · deeper scanning available through Ship Check"
-            : "Public GitHub · bounded hosted probe · deeper scanning available through Ship Check"}
+            : "Public Git repository · bounded hosted probe · deeper scanning available through Ship Check"}
           initialStage="discover"
           showConnectorChoices={false}
           githubInstallationId={activeRepository?.installation_id}
@@ -180,7 +182,7 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
         <div>
           <div className="eyebrow">01 · Connect</div>
           <h2>Start with a project you already have.</h2>
-          <p>Connect GitHub to choose a repository you already use, including private repositories the CRUX App is allowed to read. Or paste any public GitHub repository without connecting an account.</p>
+          <p>Use the GitHub App for authorised private repositories, or paste a public repository URL from GitHub, Framagit, GitLab, Codeberg, Gitea or Bitbucket.</p>
 
           <div className="connection-box">
             <div className="connection-head">
@@ -226,7 +228,7 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
             )}
           </div>
 
-          <div className="or-divider">or use a public repository</div>
+          <div className="or-divider">or scan a public repository on another forge</div>
 
           <div className="gh-form">
             <div className="repo-row">
@@ -235,8 +237,8 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
                 value={repo}
                 onChange={(event) => setRepo(event.target.value)}
                 onKeyDown={(event) => { if (event.key === "Enter" && !loading) void scanRepo(); }}
-                placeholder="owner/repository or https://github.com/owner/repository"
-                aria-label="Public GitHub repository"
+                placeholder="https://framagit.org/group/project or https://codeberg.org/owner/repo"
+                aria-label="Public Git repository URL"
               />
               <button className="btn" type="button" onClick={() => void scanRepo()} disabled={loading || !repo.trim()}>
                 {loading ? "Looking for AI…" : "Scan public repo"}
@@ -259,13 +261,14 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
           </div>
           <div className="connector-mini">
             <div className="connector-line"><span>{github?.name ?? "GitHub project"}</span><small>working pilot</small></div>
-            <div className="connector-line"><span>Private repository access</span><small>{status?.configured ? "GitHub App" : "needs app config"}</small></div>
+            <div className="connector-line"><span>Public GitLab / Framagit / Codeberg / Gitea / Bitbucket</span><small>read-only</small></div>
+            <div className="connector-line"><span>Private GitHub access</span><small>{status?.configured ? "GitHub App" : "needs app config"}</small></div>
             <div className="connector-line"><span>Ship Check deeper/local scan</span><small>helper</small></div>
           </div>
         </div>
       </div>
       <div className="scan-note">
-        <span>{loading ? "Reading the repository map and a bounded set of likely source/config files…" : "CRUX reads only the selected repository. Docs, tests and fixtures are excluded from primary evidence."}</span>
+        <span>{loading ? "Reading the repository map and a bounded set of likely source/config files…" : "CRUX reads only a bounded public snapshot or an authorised GitHub repository. Docs, tests and fixtures are excluded from primary evidence."}</span>
         <span>No prompts or model outputs are requested.</span>
       </div>
     </section>

@@ -97,6 +97,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@crux/core':
+        specifier: workspace:*
+        version: link:../core
       '@crux/formats':
         specifier: workspace:*
         version: link:../formats
