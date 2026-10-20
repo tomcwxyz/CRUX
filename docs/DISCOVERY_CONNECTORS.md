@@ -99,6 +99,65 @@ For n8n, Make, Zapier, Power Automate and similar systems, the connector can use
 
 A workflow graph may make human gates and actions easier to suggest, but suggestions remain candidates until confirmed.
 
+### SaaS and organisational tools — import-first prototype (October 2026)
+
+CRUX now offers a **client-side JSON evidence review** alongside Git discovery
+on the Connect / Discover screens. Files are parsed in the browser. Raw exports
+are **not sent to a CRUX backend**. The first cut accepts up to 2 MB per file,
+emits only fixed provider categories plus counts into the existing
+`crux-discovery/0.1` contract, and does not establish whether a user-provided
+file is authentic or complete.
+
+| Platform | Evidence route | What a positive result actually means |
+| --- | --- | --- |
+| Microsoft 365 Copilot | Microsoft Purview `CopilotInteraction` records in JSON | Recorded Copilot interaction in a known host app |
+| Google Workspace Gemini | Admin Reports `gemini_in_workspace_apps` feature-utilisation events | Recorded Gemini feature use |
+| Salesforce Agentforce | OTLP `resourceSpans` with `gen_ai.*` attributes | Recorded model activity in a supplied trace |
+| Power Automate | Dataverse `FlowRun` export | Workflow execution only; requires AI-step evidence |
+| Airtable | Enterprise audit / automation export | General changes are context only, not AI execution |
+| Plinth | Organisation's own case, booking or survey export | Workflow context only; no inference about AI use |
+
+**Never equate record modifications, file access, enabled product licences,
+successful flow runs or ordinary automation activity with AI influence.**
+Without a documented AI activity marker the adapter emits **zero candidate
+signals**. The UI offers human description and declares the uncertainty.
+
+The path from an imported audit event is:
+`Local file → exact provider event parser → metadata-only candidate → human confirmation → CRUX record`.
+Only human confirmation can establish purpose, affected people, authority,
+challenge route and consequences.
+
+#### Next live connections, in order
+
+1. **Microsoft** — tenant-authorised read-only Purview Copilot audit ingestion,
+   then separately evaluate Copilot Studio and Power Automate `FlowRun`/App Insights.
+   Capture licensing, retention and scope limitations.
+2. **Google Workspace** — read-only Admin Reports API with narrow Gemini activity
+   scopes; record customer and event coverage without collecting prompts.
+3. **Salesforce Agentforce** — use the beta single-session OTLP endpoint with
+   Data 360 access; reuse the existing CRUX OTLP adapter and redact payloads
+   at source. Beta tracing can contain prompts and response text; never ingest
+   a raw trace by default.
+4. **Airtable** — identify AI-field provenance and automation execution
+   evidence before claiming AI, including the difference between Enterprise
+   audit access and standard plan access.
+5. **Plinth** — use the documented, organisation-scoped
+   `https://app.plinth.org.uk/api/v1` API for workflow inventory;
+   obtain explicit supplier evidence or opt-in bounded workflow instrumentation
+   for AI steps. Never bulk-import member or case notes for detection.
+
+Supplier docs (verified October 2026):
+- Microsoft: https://learn.microsoft.com/en-us/purview/audit-copilot
+- FlowRun: https://learn.microsoft.com/power-automate/dataverse/cloud-flow-run-metadata
+- Google: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/gemini-in-workspace-apps
+- Salesforce: https://developer.salesforce.com/docs/ai/agentforce/guide/otel-api.html
+- Airtable: https://support.airtable.com/articles/1665450173-accessing-enterprise-audit-logs-in-airtable
+- Plinth: https://docs.plinth.org.uk/
+
+**Not delivered by this slice:** provider OAuth, background polling, SaaS
+credentials, permanent ingestion storage, or real-time outcome monitoring.
+"Evidence from an export" must never be labelled "live observation".
+
 ## Collector
 
 Longer term, adapters should be able to feed a small CRUX Collector:
