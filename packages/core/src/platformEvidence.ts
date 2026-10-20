@@ -10,8 +10,80 @@ export const platformSources: Array<{ id: PlatformSource; label: string; import_
   { id: "google-gemini", label: "Google Workspace Gemini", import_label: "Admin Reports JSON", coverage: "Gemini feature utilisation, not model reasoning" },
   { id: "salesforce-agentforce", label: "Salesforce Agentforce", import_label: "Session Trace OTLP JSON", coverage: "Agent model spans; review decisions and actions separately" },
   { id: "airtable", label: "Airtable", import_label: "Audit / configuration JSON", coverage: "Enterprise AI credit events provide AI activity evidence; ordinary updates do not" },
-  { id: "plinth", label: "Plinth", import_label: "Platform API / export JSON", coverage: "Case and service records do not establish AI use" },
+  { id: "plinth", label: "Plinth", import_label: "Platform API / export JSON", coverage: "Charity and grantmaker AI features exist; ordinary application and case records do not prove they ran" },
 ];
+
+/**
+ * Plinth's public feature descriptions are evidence of supplier capabilities
+ * (SAYS), never proof a particular customer enabled or ran the feature.
+ * Keep applicant-side and funder-side systems separate: power and impact differ.
+ */
+export const plinthAIPatterns = [
+  {
+    id: "grant-writer",
+    audience: "charity",
+    name: "Grant writing and application drafting",
+    vendor_claim: "AI can identify evidence and draft applicant answers.",
+    check: "Was a draft generated for this application? Who edited and approved the final submission?",
+    request: "A provenance marker for generated drafts and subsequent human edits; no application text is needed in CRUX.",
+  },
+  {
+    id: "grant-eligibility",
+    audience: "funder",
+    name: "Eligibility screening and application routing",
+    vendor_claim: "Criteria and AI-assisted screening may route or filter applications.",
+    check: "Which stages used deterministic rules versus AI? Could an AI flag stop an application reaching an assessor?",
+    request: "Configured screening rules/AI flags, routing decisions and override counts, with outcomes reviewed in aggregate.",
+  },
+  {
+    id: "grant-due-diligence",
+    audience: "funder",
+    name: "Grant due diligence and risk checks",
+    vendor_claim: "AI may check submitted documents, registers and risk indicators.",
+    check: "Which checks ran, what sources supported flags, and which human reviewed any risks?",
+    request: "AI-check run times, category/severity summaries, source citations and documented reviewer overrides.",
+  },
+  {
+    id: "grant-assessment",
+    audience: "funder",
+    name: "Assessment and draft scoring",
+    vendor_claim: "AI may draft scorecard answers and justifications for assessors.",
+    check: "Did assessors see AI drafts, change scores or rely on AI recommendations?",
+    request: "AI-draft creation markers, assessor visibility settings and human edits/decisions without applicant content.",
+  },
+  {
+    id: "grant-feedback",
+    audience: "funder",
+    name: "Applicant feedback and letters",
+    vendor_claim: "AI can draft acceptance, rejection and feedback letters.",
+    check: "Who reviewed the letter, and could generated text affect a rejection explanation?",
+    request: "AI drafting and approval events, template version and documented human edits.",
+  },
+  {
+    id: "grant-monitoring",
+    audience: "funder",
+    name: "Grant monitoring and risk flags",
+    vendor_claim: "AI can assess monitoring returns and mark pass, concern or fail.",
+    check: "Were risk flags escalated or overridden, and did they affect continued funding?",
+    request: "Run-level classifications, source references, reviewer overrides and linked action types in aggregate.",
+  },
+  {
+    id: "grant-finance",
+    audience: "funder",
+    name: "Bank verification and payment reconciliation",
+    vendor_claim: "AI can review bank statements against supplied details and help reconcile grants.",
+    check: "Can AI-generated discrepancies block a payment, and who resolves them?",
+    request: "Checks run, discrepancy categories and approval gates without account numbers or bank statements.",
+  },
+  {
+    id: "grant-reporting",
+    audience: "charity",
+    name: "Grant and impact report drafting",
+    vendor_claim: "AI can draft funder reports using organisational records.",
+    check: "Which evidence fed the draft and who checked its accuracy before submission?",
+    request: "Draft creation, referenced source types and editing/approval markers, not underlying case records.",
+  },
+] as const;
 
 export type PlatformAssessment = {
   report: DiscoveryReport;
@@ -28,7 +100,7 @@ const explanations: Record<PlatformSource, string> = {
   "google-gemini": "Gemini feature utilisation establishes recorded AI use, but not its organisational purpose.",
   "salesforce-agentforce": "Agentforce GenAI spans record model activity but not necessarily actions or outcomes.",
   airtable: "Airtable Enterprise AI_CREDIT_CONSUMED audit events evidence an AI feature consuming credits; ordinary table changes do not.",
-  plinth: "Plinth member, case and activity records are not AI execution logs.",
+  plinth: "Plinth describes separate AI features for grant applicants and grantmakers. Its ordinary application, case and fund API records are not AI execution logs.",
 };
 const obj = (v: unknown): Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v) ? v as Record<string, unknown> : {};
