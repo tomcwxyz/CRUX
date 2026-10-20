@@ -68,14 +68,14 @@ describe("SaaS evidence discovery: never infer AI from ordinary records", () => 
   it.each([
     ["power-automate", { value: [{ name: "run-1", status: "Succeeded", workflow: "send_email" }] }],
     ["airtable", [{ eventType: "record.updated", record: { name: "sensitive person" } }]],
-    ["plinth", { members: [{ name: "sensitive person", note: "case note" }] }],
+    ["plinth", { members: [{ name: "sensitive person", note: "SENSITIVE_CASE_BODY_39420" }] }],
   ] as const)("does not promote %s operational data to AI evidence", (platform, data) => {
     const result = assess(platform, data);
     expect(result.ai_events).toBe(0);
     expect(result.report.signals).toHaveLength(0);
     expect(suggestAIUseCandidates(result.report)).toHaveLength(0);
     expect(JSON.stringify(result)).not.toContain("sensitive person");
-    expect(JSON.stringify(result)).not.toContain("case note");
+    expect(JSON.stringify(result)).not.toContain("SENSITIVE_CASE_BODY_39420");
   });
 
   it("retains supported providers and explicit limitations", () => {
