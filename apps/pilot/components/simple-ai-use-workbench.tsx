@@ -24,6 +24,7 @@ import { SimpleUseCard } from "./simple-use-card";
 import { EvidenceEditor } from "./evidence-editor";
 import { DisclosurePreview } from "./disclosure-preview";
 import { GithubDiscoveryExperience } from "./github-discovery-experience";
+import { PlatformDiscoveryExperience } from "./platform-discovery-experience";
 import { MentalModelWorkbench } from "./mental-model-workbench";
 import styles from "./simple-ai-use-workbench.module.css";
 
