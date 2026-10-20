@@ -159,6 +159,16 @@ pnpm install
 pnpm build
 ```
 
+Discover possible AI uses from any local Git checkout, including a private Framagit
+or self-hosted repository (no token, GitHub connection or upload required):
+
+```bash
+pnpm crux -- discover-source ../my-local-checkout -o discovery.json
+```
+
+This is bounded static source discovery only. Review the generated report before
+sharing it; CRUX does not claim to have observed runtime behaviour from source alone.
+
 Validate a canonical bundle:
 
 ```bash
