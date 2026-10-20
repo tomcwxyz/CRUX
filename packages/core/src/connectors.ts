@@ -14,6 +14,16 @@ export const discoveryConnectors: DiscoveryConnector[] = [
     maturity: "prototype",
   }),
   define({
+    id: "public-git-repository",
+    name: "Public Git repository",
+    description: "Read a bounded source snapshot from GitLab, Framagit, Forgejo/Codeberg, Gitea or Bitbucket without requiring a GitHub account.",
+    source_kinds: ["source_code"],
+    connection_modes: ["local"],
+    capabilities: ["discover_source"],
+    content_boundary: "source_readonly",
+    maturity: "prototype",
+  }),
+  define({
     id: "project-zip",
     name: "Project ZIP",
     description: "Inspect an exported project locally or transiently when there is no GitHub connection.",
