@@ -269,3 +269,5 @@ export const resolveClaimEvidence = ({
     reasons,
   };
 };
+
+export * from "./saasDiscovery.js";
