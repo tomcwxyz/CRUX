@@ -314,7 +314,7 @@ export function SimpleAIUseWorkbench() {
             </button>
           </div>
           {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-          <GithubDiscoveryExperience onReviewConfirmedUse={reviewDiscoveredUse} onBeforeGithubConnect={beforeGithubConnect} />
+          <DiscoverySourceChoice onReviewConfirmedUse={reviewDiscoveredUse} onBeforeGithubConnect={beforeGithubConnect} />
         </>
       ) : stage !== "review" ? (
         <section className={styles.form}>
