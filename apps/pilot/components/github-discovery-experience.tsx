@@ -49,6 +49,8 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
   const [loading, setLoading] = useState(false);
   const [connectionLoading, setConnectionLoading] = useState(true);
   const [error, setError] = useState("");
+  const [connectionError, setConnectionError] = useState("");
+  const [connectionNotice, setConnectionNotice] = useState("");
   const [status, setStatus] = useState<GithubStatus | null>(null);
   const [repositories, setRepositories] = useState<ConnectedRepository[]>([]);
   const [selectedRepository, setSelectedRepository] = useState("");
@@ -56,9 +58,11 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
 
   const loadConnection = async () => {
     setConnectionLoading(true);
+    setConnectionError("");
     try {
       const statusResponse = await fetch("/api/github/status", { cache: "no-store" });
       const statusResult = (await statusResponse.json()) as GithubStatus;
+      if (!statusResponse.ok || !statusResult.ok) throw new Error("CRUX could not check the GitHub connection.");
       setStatus(statusResult);
 
       if (statusResult.configured && statusResult.connected) {
@@ -67,7 +71,8 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
           ok: boolean;
           repositories?: ConnectedRepository[];
         };
-        const nextRepositories = repoResult.ok ? repoResult.repositories ?? [] : [];
+        if (!repoResponse.ok || !repoResult.ok) throw new Error("CRUX could not load accessible GitHub repositories. Reconnect your account and try again.");
+        const nextRepositories = repoResult.repositories ?? [];
         setRepositories(nextRepositories);
         setSelectedRepository((current) =>
           nextRepositories.some((item) => item.full_name === current)
@@ -78,14 +83,30 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
         setRepositories([]);
         setSelectedRepository("");
       }
-    } catch {
-      setStatus(null);
+    } catch (cause) {
+      setConnectionError(cause instanceof Error ? cause.message : "CRUX could not check the GitHub connection.");
+      setRepositories([]);
+      setSelectedRepository("");
     } finally {
       setConnectionLoading(false);
     }
   };
 
   useEffect(() => {
+    const result = new URLSearchParams(window.location.search).get("github");
+    const notices: Record<string, string> = {
+      connected: "GitHub authorised. You can now choose an accessible repository.",
+      "no-repositories": "CRUX is authorised, but no repositories are available to this GitHub account and App installation. Check the App's selected repositories and reconnect.",
+      "invalid-state": "GitHub authorisation did not complete securely. Please try connecting again.",
+      error: "GitHub authorisation failed. Check that the App is installed and its callback URL is configured correctly.",
+      denied: "GitHub authorisation was cancelled. No repositories were connected.",
+    };
+    if (result && notices[result]) {
+      setConnectionNotice(notices[result]);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("github");
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    }
     void loadConnection();
   }, []);
 
@@ -195,7 +216,7 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
                       ? `${repositories.length} accessible repositor${repositories.length === 1 ? "y" : "ies"} · browser-scoped connection`
                       : status?.configured
                         ? "Authorise CRUX, then choose which repositories the GitHub App may access."
-                        : "GitHub App connection is not configured on this deployment yet."}
+                        : "Private GitHub access requires one-time administrator setup."}
                 </small>
               </div>
               <div className="connection-actions">
@@ -207,7 +228,19 @@ export function GithubDiscoveryExperience({ onReviewConfirmedUse, onBeforeGithub
               </div>
             </div>
 
-            {status?.connected && (
+            {connectionNotice && <p role="status" className="scan-note">{connectionNotice}</p>}
+            {connectionError && <p role="alert" className="scan-error">{connectionError}</p>}
+            {!connectionLoading && status && !status.configured && (
+              <p role="status" className="scan-error">
+                Private GitHub access is not enabled on this deployment. A CRUX administrator needs to register a GitHub App and add its credentials in Vercel. See the{" "}
+                <a href="https://github.com/tomcwxyz/CRUX/blob/main/docs/GITHUB_APP_CONNECTION.md" target="_blank" rel="noreferrer">GitHub App setup guide</a>.
+                Public repository scanning still works.
+              </p>
+            )}
+            {status?.connected && repositories.length === 0 && !connectionLoading && (
+              <p className="scan-error" role="status">No accessible repositories were returned. Check which repositories the CRUX App is installed on, then reconnect.</p>
+            )}
+            {status?.connected && repositories.length > 0 && (
               <div className="repo-row">
                 <select
                   className="repo-select"
