@@ -8,6 +8,9 @@ import {
 export const GITHUB_API_VERSION = "2026-03-10";
 export const GITHUB_CONNECTION_COOKIE = "crux_github_installations";
 export const GITHUB_OAUTH_STATE_COOKIE = "crux_github_oauth_state";
+export const GITHUB_RETURN_TO_COOKIE = "crux_github_return_to";
+export const githubReturnPath = (value: string | null | undefined) =>
+  value === "/discover" ? "/discover" : "/author";
 
 export type GithubVerifiedInstallation = {
   id: number;
