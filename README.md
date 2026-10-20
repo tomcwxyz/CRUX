@@ -101,7 +101,7 @@ The current journey is:
 CONNECT → DISCOVER → CONFIRM → CREATE DRAFT → OBSERVE → RECONCILE
 ```
 
-For the hosted pilot, a public GitHub repository can be scanned through a bounded source/config probe. The deeper Ship Check scanner uses the same `crux-discovery/0.1` envelope.
+For the hosted pilot, a public repository on GitHub, GitLab.com, Framagit, Codeberg, Gitea.com or Bitbucket Cloud can be inspected through a bounded, read-only source/config probe. Framagit is supported through the GitLab-compatible API. Additional self-hosted GitLab/Forgejo hosts can be explicitly allow-listed by the operator. The deeper Ship Check scanner uses the same `crux-discovery/0.1` envelope.
 
 Discovery deliberately stops at technical evidence. A person still supplies the organisational meaning CRUX cannot infer: organisation, purpose, affected people, consequence and what power the AI has — **Suggest / Recommend / Decide / Act**. If AI can act, the author also confirms what constrains that action.
 
