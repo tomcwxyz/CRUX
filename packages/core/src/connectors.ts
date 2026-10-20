@@ -44,6 +44,16 @@ export const discoveryConnectors: DiscoveryConnector[] = [
     maturity: "planned",
   }),
   define({
+    id: "saas-export",
+    name: "SaaS evidence export",
+    description: "Inspect selected Copilot, Gemini and Agentforce AI audit exports locally. Airtable, Plinth and ordinary workflow records remain context only, not AI observations.",
+    source_kinds: ["platform", "runtime"],
+    connection_modes: ["upload"],
+    capabilities: ["discover_runtime"],
+    content_boundary: "local_processing",
+    maturity: "prototype",
+  }),
+  define({
     id: "workflow-platform",
     name: "Workflow platform",
     description: "Inspect workflow structure and, where supported, observe executions from tools such as n8n, Make or Zapier.",

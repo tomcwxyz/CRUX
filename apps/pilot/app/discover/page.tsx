@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GithubDiscoveryExperience } from "../../components/github-discovery-experience";
+import { DiscoverySourceChoice } from "../../components/discovery-source-choice";
 
 export default function DiscoverPage() {
   return (
@@ -9,10 +9,10 @@ export default function DiscoverPage() {
         <Link className="btn ghost" href="/author">Describe it yourself</Link>
       </header>
       <section className="hero" style={{ paddingTop: 20, paddingBottom: 14 }}>
-        <div><h1 style={{ fontSize: "clamp(34px, 5vw, 56px)" }}>Find the AI in your project.</h1></div>
-        <p className="hero-copy">We'll look for technical signals. You confirm what the AI is for, who it affects and who decides.</p>
+        <div><h1 style={{ fontSize: "clamp(34px, 5vw, 56px)" }}>Find AI in your tools and projects.</h1></div>
+        <p className="hero-copy">Start with a SaaS platform or a Git repository. CRUX distinguishes supplier claims, technical evidence and what still needs human confirmation.</p>
       </section>
-      <GithubDiscoveryExperience />
+      <DiscoverySourceChoice />
     </main>
   );
 }

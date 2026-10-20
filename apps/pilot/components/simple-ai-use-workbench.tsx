@@ -23,7 +23,7 @@ import {
 import { SimpleUseCard } from "./simple-use-card";
 import { EvidenceEditor } from "./evidence-editor";
 import { DisclosurePreview } from "./disclosure-preview";
-import { GithubDiscoveryExperience } from "./github-discovery-experience";
+import { DiscoverySourceChoice } from "./discovery-source-choice";
 import { MentalModelWorkbench } from "./mental-model-workbench";
 import styles from "./simple-ai-use-workbench.module.css";
 
@@ -314,7 +314,7 @@ export function SimpleAIUseWorkbench() {
             </button>
           </div>
           {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-          <GithubDiscoveryExperience onReviewConfirmedUse={reviewDiscoveredUse} onBeforeGithubConnect={beforeGithubConnect} />
+          <DiscoverySourceChoice onReviewConfirmedUse={reviewDiscoveredUse} onBeforeGithubConnect={beforeGithubConnect} />
         </>
       ) : stage !== "review" ? (
         <section className={styles.form}>
