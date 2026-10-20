@@ -165,7 +165,7 @@ const summarizeAirtable = (input: unknown) => {
 };
 const contextCount = (input: unknown) => {
   if (Array.isArray(input)) return Math.min(input.length, 1000);
-  for (const key of ["value", "records", "runs", "events", "items", "members", "cases"]) {
+  for (const key of ["value", "records", "runs", "events", "items", "members", "cases", "applications", "funds", "disbursements"]) {
     if (Array.isArray(obj(input)[key])) return Math.min((obj(input)[key] as unknown[]).length, 1000);
   }
   return 0;
