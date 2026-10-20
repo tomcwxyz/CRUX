@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { GithubDiscoveryExperience } from "../../components/github-discovery-experience";
+import { PlatformDiscoveryExperience } from "../../components/platform-discovery-experience";
 
 export default function DiscoverPage() {
   return (
@@ -13,6 +14,7 @@ export default function DiscoverPage() {
         <p className="hero-copy">We'll look for technical signals. You confirm what the AI is for, who it affects and who decides.</p>
       </section>
       <GithubDiscoveryExperience />
+      <PlatformDiscoveryExperience />
     </main>
   );
 }
