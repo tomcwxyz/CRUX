@@ -1,4 +1,4 @@
-import { parsePublicGitRef, scanPublicGit } from "../../../lib/public-git-discovery";
+import { parsePublicGitRef, scanPublicGit } from "../../../../lib/public-git-discovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
