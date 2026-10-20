@@ -9,7 +9,7 @@ export const platformSources: Array<{ id: PlatformSource; label: string; import_
   { id: "power-automate", label: "Power Automate / Copilot Studio", import_label: "FlowRun export JSON", coverage: "Flow executions alone do not prove AI activity" },
   { id: "google-gemini", label: "Google Workspace Gemini", import_label: "Admin Reports JSON", coverage: "Gemini feature utilisation, not model reasoning" },
   { id: "salesforce-agentforce", label: "Salesforce Agentforce", import_label: "Session Trace OTLP JSON", coverage: "Agent model spans; review decisions and actions separately" },
-  { id: "airtable", label: "Airtable", import_label: "Audit / configuration JSON", coverage: "Ordinary audit events do not establish AI use" },
+  { id: "airtable", label: "Airtable", import_label: "Audit / configuration JSON", coverage: "Enterprise AI credit events provide AI activity evidence; ordinary updates do not" },
   { id: "plinth", label: "Plinth", import_label: "Platform API / export JSON", coverage: "Case and service records do not establish AI use" },
 ];
 
@@ -27,7 +27,7 @@ const explanations: Record<PlatformSource, string> = {
   "power-automate": "A FlowRun record confirms a workflow execution, not an AI invocation or human decision.",
   "google-gemini": "Gemini feature utilisation establishes recorded AI use, but not its organisational purpose.",
   "salesforce-agentforce": "Agentforce GenAI spans record model activity but not necessarily actions or outcomes.",
-  airtable: "Airtable table and audit exports are not AI execution logs.",
+  airtable: "Airtable Enterprise AI_CREDIT_CONSUMED audit events evidence an AI feature consuming credits; ordinary table changes do not.",
   plinth: "Plinth member, case and activity records are not AI execution logs.",
 };
 const obj = (v: unknown): Record<string, unknown> =>
@@ -81,6 +81,16 @@ const summarizeSalesforce = (input: unknown) => {
       }
   return { inspected, count, groups: new Map([["Agentforce model activity", count]]) };
 };
+const summarizeAirtable = (input: unknown) => {
+  const rows = Array.isArray(input) ? records(input)
+    : arrayAt(input, "events").length ? arrayAt(input, "events")
+    : arrayAt(input, "value").length ? arrayAt(input, "value")
+    : arrayAt(input, "records");
+  const count = rows.filter((row) =>
+    row.eventType === "AI_CREDIT_CONSUMED").length;
+  return { inspected: rows.length, count,
+    groups: new Map([["Airtable AI credit event", count]]) };
+};
 const contextCount = (input: unknown) => {
   if (Array.isArray(input)) return Math.min(input.length, 1000);
   for (const key of ["value", "records", "runs", "events", "items", "members", "cases"]) {
@@ -103,6 +113,7 @@ export const assessPlatformExport = ({
   const result = platform === "microsoft-copilot" ? summarizeMicrosoft(data)
     : platform === "google-gemini" ? summarizeGoogle(data)
     : platform === "salesforce-agentforce" ? summarizeSalesforce(data)
+    : platform === "airtable" ? summarizeAirtable(data)
     : { inspected: contextCount(data), count: 0, groups: new Map<string, number>() };
   const signals: DiscoverySignal[] = [];
   for (const [host, count] of result.groups) {
@@ -112,12 +123,14 @@ export const assessPlatformExport = ({
       id: "signal:platform:" + hint,
       kind: "runtime_observation",
       label: platform === "microsoft-copilot" ? "Copilot interaction (" + host + ")"
-        : platform === "google-gemini" ? "Gemini feature utilisation" : "Agentforce model activity",
+        : platform === "google-gemini" ? "Gemini feature utilisation"
+          : platform === "airtable" ? "Airtable AI credit consumed" : "Agentforce model activity",
       confidence: "high",
       technology: platform,
       workflow_hint: hint,
       candidate_label: platform === "microsoft-copilot" ? "Copilot in " + host
-        : platform === "google-gemini" ? "Gemini in Workspace" : "Agentforce session",
+        : platform === "google-gemini" ? "Gemini in Workspace"
+          : platform === "airtable" ? "Airtable AI feature" : "Agentforce session",
       scope_hint: "use",
       evidence: [{ detail: count + " matching AI audit record(s) in a user-supplied export. Authenticity and completeness are unverified." }],
     });
