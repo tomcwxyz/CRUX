@@ -11,6 +11,7 @@ import {
   validateBundleReferences,
 } from "@crux/formats";
 import type { DisclosureLevel } from "@crux/schemas";
+import { discoverLocalSource } from "./discover-source.js";
 
 const usage = `CRUX — open evidence and provenance for organisational AI
 
@@ -20,6 +21,7 @@ Usage:
   crux redact <bundle.json> --level <public|affected_party|trusted|internal> [-o <file>]
   crux ingest-evidence <bundle.json> <envelope.json> [-o <file>]
   crux schema [-o <file>]
+  crux discover-source <checkout-directory> [--provider <label>] [-o <discovery.json>]
 `;
 
 const option = (args: string[], names: string[]): string | undefined => {
@@ -77,6 +79,14 @@ const main = async () => {
 
   if (command === "schema") {
     await writeOrPrint(portableBundleJsonSchema, option(args, ["-o", "--output"]));
+    return;
+  }
+
+  if (command === "discover-source") {
+    if (!file || file.startsWith("-")) throw new Error("discover-source requires a local checkout directory.");
+    const result = await discoverLocalSource(file, option(args, ["--provider"]) ?? "local-checkout");
+    await writeOrPrint(result.report, option(args, ["-o", "--output"]));
+    process.stderr.write("Scanned " + result.scan.files_read + " local source files (read-only).\\n".replace("\\\\n", "\\n"));
     return;
   }
 
