@@ -3,6 +3,7 @@ import { DiscoverySourceKindSchema } from "./discovery.js";
 
 export const ConnectorConnectionModeSchema = z.enum([
   "github_app",
+  "public_url",
   "oauth",
   "api_key",
   "upload",
