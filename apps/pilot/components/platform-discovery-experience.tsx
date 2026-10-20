@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  assessPlatformExport, platformSources, suggestAIUseCandidates,
+  assessPlatformExport, platformSources, plinthAIPatterns, suggestAIUseCandidates,
   type PlatformAssessment, type PlatformSource,
 } from "@crux/core";
 import type { CruxPortableBundle } from "@crux/formats";
@@ -16,11 +16,13 @@ export function PlatformDiscoveryExperience({
   onReviewConfirmedUse,
 }: { onReviewConfirmedUse?: (bundle: CruxPortableBundle) => void } = {}) {
   const [platform, setPlatform] = useState<PlatformSource>("microsoft-copilot");
+  const [plinthPatternId, setPlinthPatternId] = useState<string>("grant-assessment");
   const [assessment, setAssessment] = useState<PlatformAssessment | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const current = platformSources.find((item) => item.id === platform)!;
   const candidates = assessment ? suggestAIUseCandidates(assessment.report) : [];
+  const selectedPlinthPattern = plinthAIPatterns.find((item) => item.id === plinthPatternId) ?? plinthAIPatterns[0];
 
   const load = async (file?: File) => {
     if (!file) return;
@@ -78,6 +80,44 @@ export function PlatformDiscoveryExperience({
             disabled={loading} onChange={(event) => void load(event.target.files?.[0])}/>
         </label>
       </div>
+      {platform === "plinth" && (
+        <div style={{
+          background: "rgba(64,88,74,.05)", border: "1px solid var(--line)",
+          borderRadius: 14, padding: 16, marginTop: 18,
+        }}>
+          <strong>Plinth serves both grant applicants and funders</strong>
+          <p style={{ fontSize: 13, marginTop: 7, marginBottom: 12, color: "var(--muted)" }}>
+            These are supplier-described AI features, not evidence that your organisation
+            has enabled or used them. Choose a workflow to see what CRUX would need to establish.
+          </p>
+          <label style={{ display: "grid", gap: 6, fontSize: 12 }}>
+            <strong>Which AI workflow are you interested in?</strong>
+            <select className="input" value={plinthPatternId} onChange={(event) => setPlinthPatternId(event.target.value)}>
+              <optgroup label="Funder-side uses">
+                {plinthAIPatterns.filter((item) => item.audience === "funder")
+                  .map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </optgroup>
+              <optgroup label="Charity/applicant-side uses">
+                {plinthAIPatterns.filter((item) => item.audience === "charity")
+                  .map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </optgroup>
+            </select>
+          </label>
+          {selectedPlinthPattern && (
+            <div style={{ fontSize: 13, marginTop: 14, lineHeight: 1.6 }}>
+              <p><strong>What Plinth describes:</strong> {selectedPlinthPattern.vendor_claim}</p>
+              <p><strong>What CRUX should ask:</strong> {selectedPlinthPattern.check}</p>
+              <p><strong>Evidence to request:</strong> {selectedPlinthPattern.request}</p>
+            </div>
+          )}
+          <p style={{ fontSize: 12, marginTop: 12, color: "var(--muted)" }}>
+            <a href="https://docs.plinth.org.uk/docs/grant-applications" target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>
+              Plinth's grant application API
+            </a> includes statuses and funding outcomes, not documented AI execution markers.
+            Do not import identifiable applicant data to discover AI usage.
+          </p>
+        </div>
+      )}
       <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 12 }}>
         <strong>{current.import_label}.</strong> {current.coverage}. The selected file is
         parsed in your browser. CRUX does not upload or retain its raw contents.
