@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assessPlatformExport, platformSources } from "../src/platformEvidence.js";
+import { assessPlatformExport, platformSources, plinthAIPatterns } from "../src/platformEvidence.js";
 import { suggestAIUseCandidates } from "../src/discovery.js";
 
 const generatedAt = "2026-10-20T11:00:00.000Z";
@@ -90,6 +90,37 @@ describe("SaaS evidence discovery: never infer AI from ordinary records", () => 
     expect(suggestAIUseCandidates(result.report)).toHaveLength(0);
     expect(JSON.stringify(result)).not.toContain("sensitive person");
     expect(JSON.stringify(result)).not.toContain("SENSITIVE_CASE_BODY_39420");
+  });
+
+  it("distinguishes Plinth funder assessments from charity grant writing without declaring use", () => {
+    const grantAssessment = plinthAIPatterns.find((item) => item.id === "grant-assessment");
+    const grantWriter = plinthAIPatterns.find((item) => item.id === "grant-writer");
+    const eligibility = plinthAIPatterns.find((item) => item.id === "grant-eligibility");
+    expect(grantAssessment?.audience).toBe("funder");
+    expect(grantWriter?.audience).toBe("charity");
+    expect(grantAssessment?.request).toMatch(/human edits|assessor/i);
+    expect(grantWriter?.check).toMatch(/final submission/i);
+    expect(eligibility?.check).toMatch(/stop an application/i);
+    expect(new Set(plinthAIPatterns.map((item) => item.id)).size).toBe(plinthAIPatterns.length);
+    expect(plinthAIPatterns.some((item) => item.id === "grant-due-diligence")).toBe(true);
+  });
+
+  it("treats grant applications and funding outcomes as context, never proof of AI", () => {
+    const exportData = {
+      applications: [
+        { applicationId: "APP_PRIVATE", status: "rejected", summary: "PERSONAL_GRANT_NARRATIVE" },
+        { applicationId: "APP_PRIVATE2", status: "recommended", feedback: "PRIVATE_REVIEWER_FEEDBACK" },
+      ],
+    };
+    const result = assess("plinth", exportData);
+    expect(result.events_inspected).toBe(2);
+    expect(result.evidence_level).toBe("context_only");
+    expect(result.ai_events).toBe(0);
+    expect(result.report.signals).toHaveLength(0);
+    expect(suggestAIUseCandidates(result.report)).toHaveLength(0);
+    expect(JSON.stringify(result)).not.toContain("APP_PRIVATE");
+    expect(JSON.stringify(result)).not.toContain("PERSONAL_GRANT_NARRATIVE");
+    expect(JSON.stringify(result)).not.toContain("PRIVATE_REVIEWER_FEEDBACK");
   });
 
   it("retains supported providers and explicit limitations", () => {
