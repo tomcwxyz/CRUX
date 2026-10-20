@@ -86,7 +86,7 @@ const main = async () => {
     if (!file || file.startsWith("-")) throw new Error("discover-source requires a local checkout directory.");
     const result = await discoverLocalSource(file, option(args, ["--provider"]) ?? "local-checkout");
     await writeOrPrint(result.report, option(args, ["-o", "--output"]));
-    process.stderr.write("Scanned " + result.scan.files_read + " local source files (read-only).\\n".replace("\\\\n", "\\n"));
+    process.stderr.write(`Scanned ${result.scan.files_read} local source files (read-only).\n`);
     return;
   }
 
