@@ -114,7 +114,7 @@ file is authentic or complete.
 | Google Workspace Gemini | Admin Reports `gemini_in_workspace_apps` feature-utilisation events | Recorded Gemini feature use |
 | Salesforce Agentforce | OTLP `resourceSpans` with `gen_ai.*` attributes | Recorded model activity in a supplied trace |
 | Power Automate | Dataverse `FlowRun` export | Workflow execution only; requires AI-step evidence |
-| Airtable | Enterprise audit / automation export | General changes are context only, not AI execution |
+| Airtable | Enterprise audit API JSON with AI_CREDIT_CONSUMED | AI credit-consuming activity; ordinary record changes remain context only |
 | Plinth | Organisation's own case, booking or survey export | Workflow context only; no inference about AI use |
 
 **Never equate record modifications, file access, enabled product licences,
@@ -138,9 +138,11 @@ challenge route and consequences.
    Data 360 access; reuse the existing CRUX OTLP adapter and redact payloads
    at source. Beta tracing can contain prompts and response text; never ingest
    a raw trace by default.
-4. **Airtable** — identify AI-field provenance and automation execution
-   evidence before claiming AI, including the difference between Enterprise
-   audit access and standard plan access.
+4. **Airtable** — inspect Enterprise audit API JSON for the documented
+   `AI_CREDIT_CONSUMED` event. The AI credit record indicates feature use, not
+   why the AI ran or what its output changed. Confirm agent attribution and
+   automation context separately. Enterprise audit access is not universal;
+   other plans need a declared use and supplier/automation evidence.
 5. **Plinth** — use the documented, organisation-scoped
    `https://app.plinth.org.uk/api/v1` API for workflow inventory;
    obtain explicit supplier evidence or opt-in bounded workflow instrumentation
@@ -151,7 +153,8 @@ Supplier docs (verified October 2026):
 - FlowRun: https://learn.microsoft.com/power-automate/dataverse/cloud-flow-run-metadata
 - Google: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/gemini-in-workspace-apps
 - Salesforce: https://developer.salesforce.com/docs/ai/agentforce/guide/otel-api.html
-- Airtable: https://support.airtable.com/articles/1665450173-accessing-enterprise-audit-logs-in-airtable
+- Airtable AI credit audit: https://support.airtable.com/articles/5959979753-tracking-ai-credit-consumption-in-airtable-audit-logs
+- Airtable agent audit: https://www.airtable.com/articles/agent-audit-log
 - Plinth: https://docs.plinth.org.uk/
 
 **Not delivered by this slice:** provider OAuth, background polling, SaaS
