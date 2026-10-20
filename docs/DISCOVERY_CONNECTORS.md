@@ -99,6 +99,49 @@ For n8n, Make, Zapier, Power Automate and similar systems, the connector can use
 
 A workflow graph may make human gates and actions easier to suggest, but suggestions remain candidates until confirmed.
 
+### Phase 1: platform-first organisational SaaS investigation (October 2026)
+
+**Status: functional pilot on the SaaS discovery branch, NOT a live SaaS account connection.**
+
+CRUX discovery and authoring now offer a source choice: SaaS platforms
+(default) or Git repositories. Git source scanning and its existing
+authorised GitHub flow remain available; an OAuth callback restores the
+Git source chooser.
+
+The SaaS investigation:
+1. Select a platform and state whether your organisation uses it,
+   is evaluating it, or is unsure (a user report, never verified inventory).
+2. Review six evidence dimensions: inventory, supplier capability, customer
+   configuration, activity, human review and decision influence.
+3. Inspect the status and provenance of each dimension, with no invented
+   scores or false assertions of absence.
+4. See read-only inventory, configuration and AI-audit routes, including
+   required access. These routes are labelled *not connected* until live
+   integrations actually exist.
+5. Inspect a redacted local JSON export only as a fallback, with existing
+   bounded provider classifiers and human confirmation of genuine signals.
+6. Copy a privacy-preserving supplier evidence request, or review it before
+   sharing. Plinth has distinct funder and applicant AI-workflow questions.
+
+The common core contract (packages/core/src/saasDiscovery.ts) includes
+typed per-dimension status, provenance and optional check time, along
+with read-only access descriptions, implementation readiness and
+recommended next actions. States include not checked, supplier described,
+organisation reported, matching AI activity in an *unverified local export*,
+no matching event in an incomplete export, and access required.
+
+Changing platforms while parsing a file cannot attach a previous import
+to a new provider. The core also rejects an assessment from another
+provider. No SaaS credentials or identifiable case records are saved.
+
+**A supplier-documented AI feature is only SAYS.** It never proves
+customer configuration (SHOWS) or activity (HAPPENED). No-match
+samples do not prove non-use; coverage is not a safety score.
+
+Next: authenticated read-only inventory and configuration integrations,
+time-scoped AI audit APIs, provenance verification, freshness and retention
+limits, scheduled observation and reviewed downstream outcome links.
+
 ### SaaS and organisational tools — import-first prototype (October 2026)
 
 CRUX now offers a **client-side JSON evidence review** alongside Git discovery
