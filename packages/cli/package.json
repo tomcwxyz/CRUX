@@ -14,6 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@crux/core": "workspace:*",
     "@crux/formats": "workspace:*",
     "@crux/schemas": "workspace:*",
     "zod": "^4.4.3"
