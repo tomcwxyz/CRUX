@@ -115,7 +115,7 @@ file is authentic or complete.
 | Salesforce Agentforce | OTLP `resourceSpans` with `gen_ai.*` attributes | Recorded model activity in a supplied trace |
 | Power Automate | Dataverse `FlowRun` export | Workflow execution only; requires AI-step evidence |
 | Airtable | Enterprise audit API JSON with AI_CREDIT_CONSUMED | AI credit-consuming activity; ordinary record changes remain context only |
-| Plinth | Organisation's own case, booking or survey export | Workflow context only; no inference about AI use |
+| Plinth | Organisation-scoped grant, fund and service API JSON | Workflow context only; AI assessment and writing exist as distinct supplier-described features, not inferred execution |
 
 **Never equate record modifications, file access, enabled product licences,
 successful flow runs or ordinary automation activity with AI influence.**
@@ -144,9 +144,46 @@ challenge route and consequences.
    automation context separately. Enterprise audit access is not universal;
    other plans need a declared use and supplier/automation evidence.
 5. **Plinth** — use the documented, organisation-scoped
-   `https://app.plinth.org.uk/api/v1` API for workflow inventory;
-   obtain explicit supplier evidence or opt-in bounded workflow instrumentation
-   for AI steps. Never bulk-import member or case notes for detection.
+   `https://app.plinth.org.uk/api/v1` platform API for a fund or workflow
+   inventory; distinguish funder grantmaking from charity-side grant writing.
+   Its published grant applications endpoint includes status and amounts but
+   does **not** document AI execution markers, so it cannot prove model activity.
+   Obtain specific supplier evidence or opt-in bounded AI-step instrumentation.
+   Never bulk-import full applications, member details or case notes to detect AI.
+
+#### Plinth: separate products and AI uses
+
+Plinth's public product descriptions include several AI capabilities; the
+availability of a feature is supplier **SAYS**, not proof a particular
+organisation has configured it (**SHOWS**) or used it (**HAPPENED**).
+
+- **For grantmakers:** AI-assisted eligibility screening and routing;
+  document/register due diligence with cited risk flags; draft assessment
+  scorecards and justifications; AI-assisted feedback letters; monitoring
+  classifications; payment/bank reconciliation. A rule-only eligibility gate
+  must be distinguished from an AI decision aid.
+- **For applicants / charities:** AI grant-writing drafts informed by
+  organisational material, and AI-assisted funder/impact reporting. These
+  involve different people, controls and potential consequences from a
+  funder's assessment system.
+- **Higher-consequence review:** Was an application screened out or its
+  assessor's judgement influenced by AI? Was a suggested score visible to
+  reviewers? What source evidence supported a red flag? Did a person override
+  the suggested result? Who was accountable for an award or rejection?
+- **Evidence boundary:** The platform API documents funds, grant
+  applications, status and disbursements; this is useful **workflow context**
+  only. Assessment provenance, AI invocation logs, score/flag visibility,
+  human reviewer edits and override history would require additional API
+  access or vendor collaboration. Do not call application statuses
+  AI activity observations.
+- **Sensitive data:** Applications, due diligence, bank statements and
+  feedback may be sensitive. Prefer event categories, reviewer-control
+  configuration, source citations, counts and status transitions over
+  identifiable grant application content.
+
+The browser UI now offers a Plinth workflow selector and questions to
+investigate for these separate use cases. Selection itself emits **no**
+AI activity signal or claim.
 
 Supplier docs (verified October 2026):
 - Microsoft: https://learn.microsoft.com/en-us/purview/audit-copilot
@@ -155,7 +192,9 @@ Supplier docs (verified October 2026):
 - Salesforce: https://developer.salesforce.com/docs/ai/agentforce/guide/otel-api.html
 - Airtable AI credit audit: https://support.airtable.com/articles/5959979753-tracking-ai-credit-consumption-in-airtable-audit-logs
 - Airtable agent audit: https://www.airtable.com/articles/agent-audit-log
-- Plinth: https://docs.plinth.org.uk/
+- Plinth platform API: https://docs.plinth.org.uk/docs/grant-applications
+- Plinth grantmakers: https://www.plinth.org.uk/grantmakers
+- Plinth AI grant writing: https://blog.plinth.org.uk/how-our-ai-grant-writer-tool-works/
 
 **Not delivered by this slice:** provider OAuth, background polling, SaaS
 credentials, permanent ingestion storage, or real-time outcome monitoring.
