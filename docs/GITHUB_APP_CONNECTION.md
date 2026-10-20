@@ -44,6 +44,40 @@ GitHub warns that the `installation_id` supplied to an App setup URL can be spoo
 
 The connection cookie contains verified installation IDs, the repository IDs this user-and-App combination could read at authorisation time, the narrower repository IDs where the user also had write access, and an expiry. It is HMAC-signed, HttpOnly, SameSite=Lax and Secure in production. It expires after one hour.
 
+## Production wiring checklist (20 October 2026)
+
+The GitHub App routes and private scan path are implemented, but **the production
+CRUX Vercel project currently has none of the six required GITHUB_* environment
+variables**. It therefore correctly reports `configured: false` and cannot
+start GitHub authorisation. A connected ChatGPT GitHub account does **not**
+authorise the independently deployed CRUX website to read private repositories.
+
+1. In GitHub, register a new GitHub App from
+   https://github.com/settings/apps/new (or reuse an existing dedicated CRUX
+   App). Use the URLs and least-privilege permissions below. Prefer installing
+   only on selected repositories. No repository webhooks are necessary.
+2. Copy the **App ID**, **Client ID** and **App slug** into the matching CRUX
+   Vercel environment settings. Create a **Client secret** and **Private key**
+   in the App's settings and add those directly to the Vercel secrets screen.
+   Do not paste either value into issues, PRs, chats or the browser console.
+3. Create a strong **independent random connection signing secret**, add it as
+   `GITHUB_CONNECTION_SECRET` and keep it stable across deployments.
+4. Configure all six variables on the **crux** Vercel project for **Production**,
+   redeploy the production branch so that server functions receive them, and
+   open https://crux-ashy.vercel.app/author#connect.
+5. Click **Connect GitHub**, authorise the CRUX App, select/install on the
+   appropriate repositories, return to CRUX, choose a private repository
+   and select **Discover AI uses**.
+6. Validate that `/api/github/status` reports configured/connected in the
+   authorised browser and that an unauthorised browser cannot read the same
+   private repository. The response must never include tokens or private
+   source content. Review and approve the stronger write permissions **only**
+   if draft observation PRs are needed.
+
+The UI now visibly distinguishes missing production setup, cancelled
+authorisation, missing selected repositories and temporary GitHub connection
+errors. A real private repository test remains an acceptance gate.
+
 ## Registering the GitHub App
 
 For the current pilot, use:
@@ -99,7 +133,7 @@ After a person selects a repository, CRUX:
 7. reads selected private files through GitHub's blob API with bounded concurrency;
 8. passes the bounded snapshot into the same `crux-discovery/0.1` producer-neutral discovery logic used by public GitHub.
 
-The installation token remains server-side. The current pilot records at most the first 100 user-accessible repositories per installation in the signed connection; pagination is a later hardening step if real use requires larger installations.
+The installation token remains server-side. The current pilot records at most the first 100 user-accessible repositories per installation in the signed connection; pagination and large-installation UX still need further work. Repository selections above that limit should not be assumed to appear.
 
 ## Draft observation PR safety
 

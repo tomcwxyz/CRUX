@@ -28,12 +28,22 @@ export async function GET(request: Request) {
   const expectedState = cookieStore.get(GITHUB_OAUTH_STATE_COOKIE)?.value;
   cookieStore.delete(GITHUB_OAUTH_STATE_COOKIE);
 
-  if (!code || !state || !expectedState || state !== expectedState) {
+  // A cancelled authorisation is different from an expired or mismatched state.
+  // Never process an OAuth code unless its browser-bound state is verified.
+  if (!state || !expectedState || state !== expectedState) {
     return redirectToWorkbench(origin, "invalid-state");
+  }
+  if (url.searchParams.get("error") === "access_denied") {
+    return redirectToWorkbench(origin, "denied");
+  }
+  if (!code) {
+    return redirectToWorkbench(origin, "error");
   }
 
   try {
     const config = getGithubAppConfig();
+    // Re-authorisation must not keep stale repository access if it fails.
+    cookieStore.delete(GITHUB_CONNECTION_COOKIE);
     const userToken = await exchangeGithubOauthCode({
       code,
       redirectUri: `${origin}/api/github/callback`,
