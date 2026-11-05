@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   assessPlatformExport, buildSaasDiscoveryPlan, platformSources,
   suggestAIUseCandidates, supplierEvidenceRequest,
@@ -38,7 +38,33 @@ export function PlatformDiscoveryExperience({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [liveResult, setLiveResult] = useState<{provider: string; checked: boolean; events?: number; baseCount?: number; uses: Array<{name: string; count: number; status: string}>; limitation: string; truncated?: boolean} | null>(null);
+  const [liveError, setLiveError] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState("");
   const generation = useRef(0);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("saas_status");
+    if (status) setConnectionStatus(status === "connected" ? "Connection authorised. You can now check available evidence." : status === "cancelled" ? "Connection was cancelled." : "Connection was not completed. Please try again.");
+  }, []);
+  const scan = async () => {
+    const provider = platform === "airtable" ? "airtable" : "google";
+    setLiveError(""); setScanning(true); setLiveResult(null);
+    try {
+      const response = await fetch(`/api/saas/${provider}/scan`, {cache: "no-store"});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Connection check failed.");
+      setLiveResult(result);
+    } catch (cause) { setLiveError(cause instanceof Error ? cause.message : "Could not check this connection."); }
+    finally { setScanning(false); }
+  };
+  const disconnect = async () => {
+    const provider = platform === "airtable" ? "airtable" : "google";
+    const result = await fetch(`/api/saas/${provider}/disconnect`, {method: "POST"});
+    if (result.ok) { setLiveResult(null); setConnectionStatus("Temporary connection cleared in CRUX."); }
+    else setLiveError("Could not clear the connection.");
+  };
   const current = platformSources.find((source) => source.id === platform)!;
   const plan = useMemo(
     () => buildSaasDiscoveryPlan({ platform, usage, assessment }),
@@ -61,6 +87,8 @@ export function PlatformDiscoveryExperience({
     setSelectedUses([]);
     setUsage("unknown");
     setAssessment(null);
+    setLiveResult(null);
+    setLiveError("");
     setError("");
     setNotice("");
     setLoading(false);
@@ -133,6 +161,32 @@ export function PlatformDiscoveryExperience({
           </div>
         </details>
       </div>
+
+      {(platform === "airtable" || platform === "google-gemini") && (
+        <div className="saas-step">
+          <h3>Check your account (optional)</h3>
+          <p className="saas-muted">
+            {platform === "airtable"
+              ? "Connect with read-only base metadata access. This confirms which bases are visible, not whether AI is active. AI activity audit logs require Enterprise Scale administrator access."
+              : "A Google Workspace administrator can authorise a read-only Gemini activity check. CRUX returns grouped event counts, not people's identities or content."}
+          </p>
+          <div className="saas-start-actions">
+            <a className="btn primary" href={`/api/saas/${platform === "airtable" ? "airtable" : "google"}/start`}>Connect {platform === "airtable" ? "Airtable" : "Google Workspace"}</a>
+            <button className="saas-btn" type="button" disabled={scanning} onClick={() => void scan()}>{scanning ? "Checking…" : "Check connected account"}</button>
+            <button className="saas-btn" type="button" onClick={() => void disconnect()}>Disconnect</button>
+          </div>
+          {connectionStatus && <p className="saas-muted" role="status">{connectionStatus}</p>}
+          {liveError && <p role="alert" className="saas-status">{liveError}</p>}
+          {liveResult && (
+            <div className="saas-file" role="status">
+              <strong>{platform === "airtable" ? `${liveResult.baseCount ?? 0} visible bases` : `${liveResult.events ?? 0} sampled Gemini activity events`}</strong>
+              {liveResult.uses.length > 0 && <ul>{liveResult.uses.map((item) => <li key={item.name}>{item.name}: {item.count} observed event(s)</li>)}</ul>}
+              <p className="saas-muted">{liveResult.limitation}</p>
+              {liveResult.truncated && <p className="saas-muted">More results exist than this limited check reviewed.</p>}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="saas-step">
         <h3>2. Which of these might be happening?</h3>
