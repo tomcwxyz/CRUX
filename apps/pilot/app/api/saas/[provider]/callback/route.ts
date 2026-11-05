@@ -28,12 +28,16 @@ export async function GET(request: NextRequest, context: {params: Promise<{provi
     const tokenUrl = provider === "airtable"
       ? "https://airtable.com/oauth2/v1/token" : "https://oauth2.googleapis.com/token";
     const body = new URLSearchParams({
-      grant_type: "authorization_code", code, client_id: config.clientId,
-      client_secret: config.clientSecret, redirect_uri: config.redirectUri,
+      grant_type: "authorization_code", code, redirect_uri: config.redirectUri,
     });
+    if (provider === "google") {
+      body.set("client_id", config.clientId);
+      body.set("client_secret", config.clientSecret);
+    }
     if (provider === "airtable") body.set("code_verifier", expected.verifier);
     const result = await fetch(tokenUrl, {
-      method: "POST", headers: {"content-type": "application/x-www-form-urlencoded"},
+      method: "POST", headers: {"content-type": "application/x-www-form-urlencoded",
+        ...(provider === "airtable" ? {Authorization: "Basic " + Buffer.from(config.clientId + ":" + config.clientSecret).toString("base64")} : {})},
       body: body.toString(), cache: "no-store", signal: AbortSignal.timeout(12000),
     });
     const json = await result.json() as {access_token?: string; expires_in?: number};
