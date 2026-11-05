@@ -3,79 +3,86 @@
 import { useMemo, useRef, useState } from "react";
 import {
   assessPlatformExport, buildSaasDiscoveryPlan, platformSources,
-  plinthAIPatterns, suggestAIUseCandidates, supplierEvidenceRequest,
-  type PlatformAssessment, type PlatformSource, type SaasCoverageState,
+  suggestAIUseCandidates, supplierEvidenceRequest,
+  type PlatformAssessment, type PlatformSource,
 } from "@crux/core";
 import type { CruxPortableBundle } from "@crux/formats";
 import { DiscoveryOnboarding } from "./discovery-onboarding";
 import "./platform-discovery-experience.css";
 
-const labels: Record<SaasCoverageState, { label: string; className?: string }> = {
-  not_checked: { label: "Not checked" },
-  supplier_described: { label: "Supplier says", className: "saas-says" },
-  organisation_reported: { label: "You reported" },
-  observed_in_export: { label: "Found in export", className: "saas-evidence" },
-  no_match_in_export: { label: "No match in sample" },
-  access_required: { label: "Access needed" },
+// These are starting questions, NOT findings about the selected organisation.
+// Users must confirm which features are actually used.
+const possibilities: Partial<Record<PlatformSource, string[]>> = {
+  airtable: [
+    "AI-generated or summarised field content",
+    "AI steps in an automation",
+    "AI-assisted categorisation or extraction",
+    "An AI agent acting on records",
+  ],
+  "google-gemini": [
+    "Drafting or summarising in Docs or Gmail",
+    "Summarising meetings or conversations",
+    "Analysing information in Sheets",
+    "Gemini-assisted research or content creation",
+  ],
 };
 
-/** Browser-only discovery: the raw export never leaves this tab. */
 export function PlatformDiscoveryExperience({
   onReviewConfirmedUse,
 }: { onReviewConfirmedUse?: (bundle: CruxPortableBundle) => void } = {}) {
-  const [platform, setPlatform] = useState<PlatformSource>("microsoft-copilot");
+  const [platform, setPlatform] = useState<PlatformSource>("airtable");
   const [usage, setUsage] = useState<"unknown" | "reported_used" | "evaluating">("unknown");
-  const [plinthPatternId, setPlinthPatternId] = useState<string>("grant-assessment");
+  const [selectedUses, setSelectedUses] = useState<string[]>([]);
   const [assessment, setAssessment] = useState<PlatformAssessment | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showImport, setShowImport] = useState(false);
   const generation = useRef(0);
-  const current = platformSources.find((item) => item.id === platform)!;
-  const selectedPlinthPattern = plinthAIPatterns.find((item) => item.id === plinthPatternId) ?? plinthAIPatterns[0];
-  const plan = useMemo(() => buildSaasDiscoveryPlan({ platform, usage, assessment }), [platform, usage, assessment]);
+  const current = platformSources.find((source) => source.id === platform)!;
+  const plan = useMemo(
+    () => buildSaasDiscoveryPlan({ platform, usage, assessment }),
+    [platform, usage, assessment],
+  );
   const candidates = useMemo(
     () => assessment ? suggestAIUseCandidates(assessment.report) : [],
     [assessment],
   );
-  const evidenceRequest = useMemo(
-    () => supplierEvidenceRequest(plan, platform === "plinth" ? selectedPlinthPattern : undefined),
-    [plan, platform, selectedPlinthPattern],
-  );
+  const examples = possibilities[platform] ?? [
+    "Drafting or summarising information",
+    "Classifying or analysing records",
+    "Recommending a next step",
+    "Taking an action through an AI agent",
+  ];
 
   const selectPlatform = (next: PlatformSource) => {
     generation.current++;
     setPlatform(next);
+    setSelectedUses([]);
     setUsage("unknown");
     setAssessment(null);
     setError("");
     setNotice("");
     setLoading(false);
-    setShowImport(false);
   };
 
   const readExport = async (file?: File) => {
     if (!file) return;
-    const selectedPlatform = platform;
     const task = ++generation.current;
+    const selectedPlatform = platform;
     setError("");
-    setNotice("");
     setAssessment(null);
     setLoading(true);
     try {
-      if (file.size > 2_000_000) throw new Error("Choose a JSON export under 2 MB; filter or redact sensitive data first.");
-      if (!file.name.toLowerCase().endsWith(".json")) {
-        throw new Error("Only JSON exports are supported in this browser-side prototype.");
-      }
-      const data: unknown = JSON.parse(await file.text());
+      if (file.size > 2_000_000) throw new Error("Choose a redacted JSON export under 2 MB.");
+      if (!file.name.toLowerCase().endsWith(".json")) throw new Error("Only JSON exports are supported.");
       const result = assessPlatformExport({
-        platform: selectedPlatform, data, generatedAt: new Date().toISOString(),
+        platform: selectedPlatform,
+        data: JSON.parse(await file.text()) as unknown,
+        generatedAt: new Date().toISOString(),
       });
-      if (task !== generation.current) return;
-      setAssessment(result);
+      if (task === generation.current) setAssessment(result);
     } catch (cause) {
-      if (task === generation.current) setError(cause instanceof Error ? cause.message : "Could not read the file.");
+      if (task === generation.current) setError(cause instanceof Error ? cause.message : "Could not read the export.");
     } finally {
       if (task === generation.current) setLoading(false);
     }
@@ -83,230 +90,135 @@ export function PlatformDiscoveryExperience({
 
   const copyRequest = async () => {
     try {
-      await navigator.clipboard.writeText(evidenceRequest);
-      setNotice("Evidence request copied. Review it before sending to the supplier.");
+      await navigator.clipboard.writeText(supplierEvidenceRequest(plan));
+      setNotice("Request copied. Review it before sharing with the supplier.");
     } catch {
-      setNotice("Copy unavailable. Open the text below to select and copy it.");
+      setNotice("Copy unavailable in this browser.");
     }
   };
 
-  const documented = plan.checks.filter((check) => check.state === "supplier_described").length;
-  const observed = plan.checks.filter((check) => check.state === "observed_in_export").length;
-  const unresolved = plan.checks.filter((check) =>
-    ["not_checked", "access_required", "no_match_in_export"].includes(check.state)).length;
-
   return (
-    <section className="workbench saas" aria-label="SaaS AI discovery">
-      <div className="eyebrow">Another route · Discover AI in your tools</div>
-      <h2>Where does your organisation use AI?</h2>
-      <p className="saas-muted" style={{ maxWidth: 790 }}>
-        Start with the platform, not a JSON file. CRUX can help identify what a
-        supplier offers, what evidence can establish use and what still needs
-        checking. Live SaaS connections are not enabled yet; the steps below
-        are an evidence-gathering plan, not a claim that we have scanned your account.
+    <section className="workbench saas" aria-label="Discover possible AI use in software">
+      <div className="eyebrow">Explore AI use in everyday software</div>
+      <h2>Find where AI might be used.</h2>
+      <p className="saas-muted">
+        Choose a tool, review some possible AI uses and describe the ones that matter.
+        These are suggestions, not findings about your organisation. No account is connected or scanned.
       </p>
 
       <div className="saas-step">
-        <div className="saas-step-title">
-          <h3>1. Choose a platform</h3>
-          <small>Where to investigate</small>
-        </div>
+        <h3>1. Choose your software</h3>
         <div className="saas-providers">
-          {platformSources.map((source) => (
-            <button type="button"
-              className={source.id === platform ? "saas-provider selected" : "saas-provider"}
-              key={source.id} onClick={() => selectPlatform(source.id)}
-              aria-pressed={source.id === platform}>
-              <strong>{source.label}</strong>
-              <span>{source.id === "plinth" ? "Funders & charities" :
-                source.id === "power-automate" ? "Workflows & agents" :
-                source.id === "airtable" ? "Bases, automations & AI" : "AI features & audit events"}</span>
-            </button>
-          ))}
+          {platformSources
+            .filter((item) => item.id === "airtable" || item.id === "google-gemini")
+            .map((item) => (
+              <button key={item.id} type="button" aria-pressed={platform === item.id}
+                className={platform === item.id ? "saas-provider selected" : "saas-provider"}
+                onClick={() => selectPlatform(item.id)}>
+                <strong>{item.id === "google-gemini" ? "Google Workspace" : "Airtable"}</strong>
+                <span>{item.id === "google-gemini" ? "Gemini across Workspace" : "AI fields, automations and agents"}</span>
+              </button>
+            ))}
         </div>
+        <details className="saas-secondary">
+          <summary>Explore other platforms (early research)</summary>
+          <div className="saas-providers">
+            {platformSources.filter((item) => item.id !== "airtable" && item.id !== "google-gemini")
+              .map((item) => (
+                <button key={item.id} type="button" aria-pressed={platform === item.id}
+                  className={platform === item.id ? "saas-provider selected" : "saas-provider"}
+                  onClick={() => selectPlatform(item.id)}>{item.label}</button>
+              ))}
+          </div>
+        </details>
       </div>
 
       <div className="saas-step">
-        <div className="saas-step-title">
-          <h3>2. Does your organisation use {plan.name}?</h3>
-          <small>Your answer, not an automatic finding</small>
+        <h3>2. Which of these might be happening?</h3>
+        <p className="saas-muted">Select any that you recognise. You can also describe something different.</p>
+        <div className="saas-possibilities">
+          {examples.map((item) => (
+            <label key={item} className="saas-possibility">
+              <input type="checkbox" checked={selectedUses.includes(item)}
+                onChange={(event) => setSelectedUses((previous) => event.target.checked
+                  ? [...previous, item] : previous.filter((value) => value !== item))}/>
+              <span>{item}</span>
+            </label>
+          ))}
         </div>
-        <div className="saas-usage">
+        <div className="saas-usage" style={{ marginTop: 16 }}>
+          <span className="saas-muted">Does your organisation use this software?</span>
           {([
-            ["reported_used", "Yes, we use it"],
-            ["evaluating", "We're considering it"],
+            ["reported_used", "Yes"],
+            ["evaluating", "Considering it"],
             ["unknown", "Not sure"],
           ] as const).map(([value, label]) => (
-            <button key={value} aria-pressed={usage === value} type="button"
+            <button type="button" key={value} aria-pressed={usage === value}
               onClick={() => setUsage(value)}>{label}</button>
           ))}
         </div>
       </div>
 
-      {platform === "plinth" && selectedPlinthPattern && (
-        <div className="saas-plinth">
-          <strong>Separate applicant-side and funder-side AI workflows</strong>
-          <p className="saas-muted">Selecting a workflow explores supplier-described AI features. It does not establish that your organisation has enabled or used them.</p>
-          <label htmlFor="saas-plinth-workflow" style={{ fontSize: 12, fontWeight: 700 }}>Workflow to investigate</label>
-          <select id="saas-plinth-workflow" value={plinthPatternId} onChange={(event) => setPlinthPatternId(event.target.value)}>
-            <optgroup label="Funders">
-              {plinthAIPatterns.filter((item) => item.audience === "funder")
-                .map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </optgroup>
-            <optgroup label="Charities and applicants">
-              {plinthAIPatterns.filter((item) => item.audience === "charity")
-                .map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </optgroup>
-          </select>
-          <p className="saas-muted"><strong>Supplier describes:</strong> {selectedPlinthPattern.vendor_claim}</p>
-          <p className="saas-muted"><strong>What CRUX needs to ask:</strong> {selectedPlinthPattern.check}</p>
-          <p className="saas-muted"><strong>Evidence to request:</strong> {selectedPlinthPattern.request}</p>
-        </div>
-      )}
-
       <div className="saas-step">
-        <div className="saas-step-title">
-          <h3>3. What do we actually know?</h3>
-          <small>SAYS · SHOWS · HAPPENED · UNKNOWN</small>
-        </div>
-        <div className="saas-ribbon" role="status">
-          {plan.evidence_summary}
-          {usage === "reported_used" ? " Your indication of use is not independently verified." : ""}
-        </div>
-        <div className="saas-score">
-          <div className="saas-kpi">
-            <strong>{documented} / 6</strong>
-            <small>Dimensions with supplier-described capabilities, not proof of enablement</small>
-          </div>
-          <div className="saas-kpi">
-            <strong>{observed} / 6</strong>
-            <small>Dimensions with matching activity in a local export</small>
-          </div>
-          <div className="saas-kpi">
-            <strong>{unresolved} / 6</strong>
-            <small>Not checked, access needed, or no matching event</small>
-          </div>
-        </div>
+        <h3>3. Describe an AI use</h3>
+        <p className="saas-muted">
+          {selectedUses.length
+            ? `You selected ${selectedUses.length} possible ${selectedUses.length === 1 ? "use" : "uses"}. They still need your confirmation and description.`
+            : "You can begin with an example above or describe a different use."}
+          {" "}The next questions focus on purpose, who is affected and who makes decisions.
+        </p>
+        <a className="btn primary" href="/author">Describe an AI use</a>
+        <p className="saas-muted">The description form opens separately; selections on this page are not yet carried across.</p>
+      </div>
+
+      <details className="saas-step saas-secondary">
+        <summary>Optional: check the evidence</summary>
+        <p className="saas-muted">
+          Supplier descriptions are not proof that your organisation has enabled or used a feature.
+          You can inspect a suitably redacted export locally, or ask your supplier what they can verify.
+        </p>
         <div className="saas-coverage">
           {plan.checks.map((check) => (
             <div className="saas-check" key={check.dimension}>
-              <div className="saas-check-head">
-                <strong>{check.title}</strong>
-                <span className={"saas-tag " + (labels[check.state].className ?? "")}>
-                  {labels[check.state].label}
-                </span>
-              </div>
+              <strong>{check.title}</strong>
               <small>{check.summary}</small>
-              <details>
-                <summary>Evidence and scope</summary>
-                <p>{check.provenance}</p>
-                {check.checked_at && <p>Export reviewed: {new Date(check.checked_at).toLocaleString("en-GB")}</p>}
-              </details>
+              <details><summary>Where this comes from</summary><p>{check.provenance}</p></details>
             </div>
           ))}
         </div>
-        <p className="saas-muted" style={{ marginTop: 12 }}>
-          These are evidence states, not scores of AI safety or organisational readiness.
-          A missing event never means AI was not used.
-        </p>
-      </div>
-
-      <div className="saas-step">
-        <div className="saas-step-title">
-          <h3>4. How could we find out more?</h3>
-          <small>Read-only routes and permissions</small>
-        </div>
-        <p className="saas-muted">
-          These are evidence routes, <strong>not active connections</strong>.
-          A customer administrator would need to authorise provider access
-          when live connectors become available. The local export route already works.
-        </p>
-        <div className="saas-routes">
-          {plan.routes.map((route) => (
-            <div className="saas-route" key={route.id}>
-              <div className="saas-check-head">
-                <strong>{route.label}</strong>
-                <span className={"saas-tag " + (route.availability === "available_now" ? "saas-evidence" : "")}>
-                  {route.availability === "available_now" ? "Available" :
-                    route.availability === "external" ? "Ask / review" : "Not connected"}
-                </span>
-              </div>
-              <p>{route.purpose}</p>
-              <details>
-                <summary style={{ fontSize: 11, cursor: "pointer" }}>Access and data boundary</summary>
-                <small>{route.requested_access}</small>
-              </details>
-              {route.documentation && (
-                <p><a href={route.documentation} target="_blank" rel="noreferrer">Supplier documentation ↗</a></p>
-              )}
-              {route.id === "export" && (
-                <button className="saas-btn" type="button" onClick={() => setShowImport((value) => !value)}
-                  aria-expanded={showImport}>{showImport ? "Close local import" : "Review an existing export"}</button>
-              )}
-              {route.id === "supplier" && (
-                <button className="saas-btn" type="button" onClick={() => void copyRequest()}>Copy evidence request</button>
-              )}
-            </div>
-          ))}
-        </div>
-        {notice && <p className="saas-status" role="status">{notice}</p>}
-        <div className="saas-actions" style={{ marginTop: 15 }}>
-          <strong style={{ fontSize: 13 }}>Suggested next steps</strong>
-          <ol>{plan.next_actions.map((step) => <li key={step}>{step}</li>)}</ol>
-        </div>
-        <details style={{ marginTop: 12 }}>
-          <summary style={{ fontSize: 12, cursor: "pointer" }}>View or manually copy supplier request</summary>
-          <textarea readOnly aria-label="Supplier AI evidence request" rows={12} value={evidenceRequest}
-            style={{ display: "block", marginTop: 10, border: "1px solid var(--line)", borderRadius: 10,
-              padding: 12, width: "100%", fontSize: 12, background: "var(--chalk)" }}/>
-        </details>
-      </div>
-
-      {showImport && (
-        <div className="saas-file">
-          <h3>Optional: inspect an existing {current.import_label}</h3>
-          <p className="saas-muted">{current.coverage}. JSON only, up to 2 MB.
-            The file is inspected in your browser: prompts, responses,
-            source records and personal data are not uploaded to CRUX.</p>
-          <label htmlFor="saas-export-file" style={{ display: "block", fontSize: 12, fontWeight: 700 }}>
-            Choose a suitably redacted JSON export
-          </label>
-          <input id="saas-export-file" key={platform + String(assessment?.report.generated_at ?? "")}
-            type="file" accept=".json,application/json" disabled={loading}
+        <div className="saas-step">
+          <h3>Review an existing export</h3>
+          <p className="saas-muted">
+            {current.import_label}. JSON only, up to 2 MB. The file stays in this browser tab.
+            Do not include personal data, prompts, responses or customer records.
+          </p>
+          <input type="file" accept=".json,application/json" disabled={loading}
+            key={platform} aria-label="Choose a redacted export"
             onChange={(event) => void readExport(event.target.files?.[0])}/>
-          {loading && <p role="status">Checking recognised event categories locally…</p>}
-          {error && <p role="alert" className="saas-status">{error}</p>}
+          {loading && <p role="status">Checking the export locally…</p>}
+          {error && <p role="alert">{error}</p>}
           {assessment && (
-            <div>
-              <p role="status" className="saas-muted">
-                <strong>{assessment.ai_events} matching AI events</strong>
-                {" · "}{assessment.events_inspected} entries inspected, completeness unverified.
-              </p>
-              <p className="saas-muted">{assessment.explanation}</p>
-              {candidates.length === 0 && (
-                <p className="saas-muted">No automatic AI-use candidate created.
-                  You can <a href="/author" style={{ textDecoration: "underline" }}>describe a known use yourself</a>.
-                  This is not evidence that AI was absent.</p>
-              )}
-            </div>
+            <p role="status">
+              {assessment.ai_events} recognised AI events in {assessment.events_inspected} inspected entries.
+              This is an unverified sample, not a complete account of AI use.
+            </p>
+          )}
+          {assessment && candidates.length > 0 && (
+            <DiscoveryOnboarding key={platform + assessment.report.generated_at}
+              reportData={assessment.report} connectionName={current.label}
+              connectionMeta="User-supplied export · unverified · browser-only"
+              initialStage="discover" showConnectorChoices={false}
+              {...(onReviewConfirmedUse ? { onReviewConfirmedUse } : {})}/>
+          )}
+          {assessment && candidates.length === 0 && (
+            <p className="saas-muted">No recognised AI event was found. That does not mean AI was not used.</p>
           )}
         </div>
-      )}
-      {assessment && candidates.length > 0 && (
-        <div className="saas-step">
-          <h3>5. Review the possible AI use</h3>
-          <p className="saas-muted">
-            These signals came from an unverified local export, not a live SaaS connection.
-            Confirm what they mean before CRUX creates an AI-use description.
-          </p>
-          <DiscoveryOnboarding key={platform + assessment.report.generated_at}
-            reportData={assessment.report}
-            connectionName={current.label}
-            connectionMeta="Local unverified export · aggregate metadata only · not connected to supplier"
-            initialStage="discover" showConnectorChoices={false}
-            {...(onReviewConfirmedUse ? { onReviewConfirmedUse } : {})}/>
-        </div>
-      )}
+        <button type="button" className="saas-btn" onClick={() => void copyRequest()}>
+          Copy questions for the supplier
+        </button>
+        {notice && <p role="status" className="saas-muted">{notice}</p>}
+      </details>
     </section>
   );
 }
