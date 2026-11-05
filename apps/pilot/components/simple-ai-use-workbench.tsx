@@ -11,7 +11,7 @@ import {
 import { buildReaderModel } from "../lib/reader-model";
 import { putBrowserRecord } from "../lib/browser-records";
 import { observedBehaviourForVersion } from "../lib/observed";
-import { acceptDiscoveredUse, clearPendingConnection, saveOauthReturnDraft, savePendingAdvancedAnswers, savePendingConnection, takeOauthReturnDraft, takePendingReviewRecord, takePendingBrowserRecord } from "../lib/connection-handoff";
+import { acceptDiscoveredUse, clearPendingConnection, saveOauthReturnDraft, savePendingAdvancedAnswers, savePendingConnection, takeOauthReturnDraft, takePendingReviewRecord, takePendingBrowserRecord, takeSaasUseStarter } from "../lib/connection-handoff";
 import {
   evidenceTarget,
   makeSimpleAIUseRecord,
@@ -99,6 +99,13 @@ export function SimpleAIUseWorkbench() {
         }
       }
       if (window.location.hash === "#connect") setStage("connect");
+      else if (!returning) {
+        const starter = takeSaasUseStarter();
+        if (starter) {
+          setAnswers((old) => ({ ...old, name: starter.use, description: starter.use ? `We may use AI in ${starter.platform} for ${starter.use.toLowerCase()}.` : "" }));
+          setStage("describe");
+        }
+      }
       return;
     }
     setBundle(confirmed);
