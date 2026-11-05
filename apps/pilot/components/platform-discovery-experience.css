@@ -50,3 +50,12 @@
 .saas-btn:hover{border-color:var(--moss)}
 @media(max-width:760px){.saas-providers,.saas-score{grid-template-columns:repeat(2,minmax(0,1fr))}.saas-coverage,.saas-routes{grid-template-columns:1fr}.saas-step-title{display:block}}
 @media(max-width:420px){.saas-providers,.saas-score{grid-template-columns:1fr}}
+
+.saas-possibilities{display:grid;gap:9px;margin-top:15px}
+.saas-possibility{display:flex;align-items:center;gap:12px;padding:15px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.35);cursor:pointer;font-size:14px}
+.saas-possibility:has(input:checked){border-color:var(--moss);background:rgba(64,88,74,.07)}
+.saas-possibility input{accent-color:var(--moss);width:18px;height:18px;flex-shrink:0}
+.saas-secondary{margin-top:20px}
+.saas-secondary>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--moss)}
+.saas-start-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px}
+.saas-start-actions .btn{max-width:100%;white-space:normal;text-align:left}
