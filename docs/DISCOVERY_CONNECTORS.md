@@ -99,6 +99,150 @@ For n8n, Make, Zapier, Power Automate and similar systems, the connector can use
 
 A workflow graph may make human gates and actions easier to suggest, but suggestions remain candidates until confirmed.
 
+### Phase 1: platform-first organisational SaaS investigation (October 2026)
+
+**Status: functional pilot on the SaaS discovery branch, NOT a live SaaS account connection.**
+
+CRUX discovery and authoring now offer a source choice: SaaS platforms
+(default) or Git repositories. Git source scanning and its existing
+authorised GitHub flow remain available; an OAuth callback restores the
+Git source chooser.
+
+The SaaS investigation:
+1. Select a platform and state whether your organisation uses it,
+   is evaluating it, or is unsure (a user report, never verified inventory).
+2. Review six evidence dimensions: inventory, supplier capability, customer
+   configuration, activity, human review and decision influence.
+3. Inspect the status and provenance of each dimension, with no invented
+   scores or false assertions of absence.
+4. See read-only inventory, configuration and AI-audit routes, including
+   required access. These routes are labelled *not connected* until live
+   integrations actually exist.
+5. Inspect a redacted local JSON export only as a fallback, with existing
+   bounded provider classifiers and human confirmation of genuine signals.
+6. Copy a privacy-preserving supplier evidence request, or review it before
+   sharing. Plinth has distinct funder and applicant AI-workflow questions.
+
+The common core contract (packages/core/src/saasDiscovery.ts) includes
+typed per-dimension status, provenance and optional check time, along
+with read-only access descriptions, implementation readiness and
+recommended next actions. States include not checked, supplier described,
+organisation reported, matching AI activity in an *unverified local export*,
+no matching event in an incomplete export, and access required.
+
+Changing platforms while parsing a file cannot attach a previous import
+to a new provider. The core also rejects an assessment from another
+provider. No SaaS credentials or identifiable case records are saved.
+
+**A supplier-documented AI feature is only SAYS.** It never proves
+customer configuration (SHOWS) or activity (HAPPENED). No-match
+samples do not prove non-use; coverage is not a safety score.
+
+Next: authenticated read-only inventory and configuration integrations,
+time-scoped AI audit APIs, provenance verification, freshness and retention
+limits, scheduled observation and reviewed downstream outcome links.
+
+### SaaS and organisational tools — import-first prototype (October 2026)
+
+CRUX now offers a **client-side JSON evidence review** alongside Git discovery
+on the Connect / Discover screens. Files are parsed in the browser. Raw exports
+are **not sent to a CRUX backend**. The first cut accepts up to 2 MB per file,
+emits only fixed provider categories plus counts into the existing
+`crux-discovery/0.1` contract, and does not establish whether a user-provided
+file is authentic or complete.
+
+| Platform | Evidence route | What a positive result actually means |
+| --- | --- | --- |
+| Microsoft 365 Copilot | Microsoft Purview `CopilotInteraction` records in JSON | Recorded Copilot interaction in a known host app |
+| Google Workspace Gemini | Admin Reports `gemini_in_workspace_apps` feature-utilisation events | Recorded Gemini feature use |
+| Salesforce Agentforce | OTLP `resourceSpans` with `gen_ai.*` attributes | Recorded model activity in a supplied trace |
+| Power Automate | Dataverse `FlowRun` export | Workflow execution only; requires AI-step evidence |
+| Airtable | Enterprise audit API JSON with AI_CREDIT_CONSUMED | AI credit-consuming activity; ordinary record changes remain context only |
+| Plinth | Organisation-scoped grant, fund and service API JSON | Workflow context only; AI assessment and writing exist as distinct supplier-described features, not inferred execution |
+
+**Never equate record modifications, file access, enabled product licences,
+successful flow runs or ordinary automation activity with AI influence.**
+Without a documented AI activity marker the adapter emits **zero candidate
+signals**. The UI offers human description and declares the uncertainty.
+
+The path from an imported audit event is:
+`Local file → exact provider event parser → metadata-only candidate → human confirmation → CRUX record`.
+Only human confirmation can establish purpose, affected people, authority,
+challenge route and consequences.
+
+#### Next live connections, in order
+
+1. **Microsoft** — tenant-authorised read-only Purview Copilot audit ingestion,
+   then separately evaluate Copilot Studio and Power Automate `FlowRun`/App Insights.
+   Capture licensing, retention and scope limitations.
+2. **Google Workspace** — read-only Admin Reports API with narrow Gemini activity
+   scopes; record customer and event coverage without collecting prompts.
+3. **Salesforce Agentforce** — use the beta single-session OTLP endpoint with
+   Data 360 access; reuse the existing CRUX OTLP adapter and redact payloads
+   at source. Beta tracing can contain prompts and response text; never ingest
+   a raw trace by default.
+4. **Airtable** — inspect Enterprise audit API JSON for the documented
+   `AI_CREDIT_CONSUMED` event. The AI credit record indicates feature use, not
+   why the AI ran or what its output changed. Confirm agent attribution and
+   automation context separately. Enterprise audit access is not universal;
+   other plans need a declared use and supplier/automation evidence.
+5. **Plinth** — use the documented, organisation-scoped
+   `https://app.plinth.org.uk/api/v1` platform API for a fund or workflow
+   inventory; distinguish funder grantmaking from charity-side grant writing.
+   Its published grant applications endpoint includes status and amounts but
+   does **not** document AI execution markers, so it cannot prove model activity.
+   Obtain specific supplier evidence or opt-in bounded AI-step instrumentation.
+   Never bulk-import full applications, member details or case notes to detect AI.
+
+#### Plinth: separate products and AI uses
+
+Plinth's public product descriptions include several AI capabilities; the
+availability of a feature is supplier **SAYS**, not proof a particular
+organisation has configured it (**SHOWS**) or used it (**HAPPENED**).
+
+- **For grantmakers:** AI-assisted eligibility screening and routing;
+  document/register due diligence with cited risk flags; draft assessment
+  scorecards and justifications; AI-assisted feedback letters; monitoring
+  classifications; payment/bank reconciliation. A rule-only eligibility gate
+  must be distinguished from an AI decision aid.
+- **For applicants / charities:** AI grant-writing drafts informed by
+  organisational material, and AI-assisted funder/impact reporting. These
+  involve different people, controls and potential consequences from a
+  funder's assessment system.
+- **Higher-consequence review:** Was an application screened out or its
+  assessor's judgement influenced by AI? Was a suggested score visible to
+  reviewers? What source evidence supported a red flag? Did a person override
+  the suggested result? Who was accountable for an award or rejection?
+- **Evidence boundary:** The platform API documents funds, grant
+  applications, status and disbursements; this is useful **workflow context**
+  only. Assessment provenance, AI invocation logs, score/flag visibility,
+  human reviewer edits and override history would require additional API
+  access or vendor collaboration. Do not call application statuses
+  AI activity observations.
+- **Sensitive data:** Applications, due diligence, bank statements and
+  feedback may be sensitive. Prefer event categories, reviewer-control
+  configuration, source citations, counts and status transitions over
+  identifiable grant application content.
+
+The browser UI now offers a Plinth workflow selector and questions to
+investigate for these separate use cases. Selection itself emits **no**
+AI activity signal or claim.
+
+Supplier docs (verified October 2026):
+- Microsoft: https://learn.microsoft.com/en-us/purview/audit-copilot
+- FlowRun: https://learn.microsoft.com/power-automate/dataverse/cloud-flow-run-metadata
+- Google: https://developers.google.com/workspace/admin/reports/v1/appendix/activity/gemini-in-workspace-apps
+- Salesforce: https://developer.salesforce.com/docs/ai/agentforce/guide/otel-api.html
+- Airtable AI credit audit: https://support.airtable.com/articles/5959979753-tracking-ai-credit-consumption-in-airtable-audit-logs
+- Airtable agent audit: https://www.airtable.com/articles/agent-audit-log
+- Plinth platform API: https://docs.plinth.org.uk/docs/grant-applications
+- Plinth grantmakers: https://www.plinth.org.uk/grantmakers
+- Plinth AI grant writing: https://blog.plinth.org.uk/how-our-ai-grant-writer-tool-works/
+
+**Not delivered by this slice:** provider OAuth, background polling, SaaS
+credentials, permanent ingestion storage, or real-time outcome monitoring.
+"Evidence from an export" must never be labelled "live observation".
+
 ## Collector
 
 Longer term, adapters should be able to feed a small CRUX Collector:

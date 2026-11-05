@@ -15,6 +15,7 @@ export * from "./scope.js";
 export * from "./discovery.js";
 export * from "./connectors.js";
 export * from "./gatewayDiscovery.js";
+export * from "./platformEvidence.js";
 export * from "./sourceSnapshotDiscovery.js";
 export * from "./observationPlan.js";
 export * from "./observationPatch.js";
@@ -268,3 +269,5 @@ export const resolveClaimEvidence = ({
     reasons,
   };
 };
+
+export * from "./saasDiscovery.js";
