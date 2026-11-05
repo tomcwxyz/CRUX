@@ -46,6 +46,8 @@ export function PlatformDiscoveryExperience({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const status = params.get("saas_status");
+    if (params.get("saas") === "google") setPlatform("google-gemini");
+    if (params.get("saas") === "airtable") setPlatform("airtable");
     if (status) setConnectionStatus(status === "connected" ? "Connection authorised. You can now check available evidence." : status === "cancelled" ? "Connection was cancelled." : "Connection was not completed. Please try again.");
   }, []);
   const scan = async () => {
