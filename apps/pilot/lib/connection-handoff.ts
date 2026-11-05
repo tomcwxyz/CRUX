@@ -222,3 +222,27 @@ export function takePendingAdvancedAnswers(): SimpleUseAnswers | null {
   window.sessionStorage.removeItem(advancedKey);
   return parsePendingConnection(raw);
 }
+
+const saasDraftKey = "crux:saas-use-starter:v1";
+
+/** Carry only a user-selected possibility, not a finding or supplier evidence. */
+export function saveSaasUseStarter(platform: string, use: string): void {
+  if (typeof window === "undefined" || platform.length > 100 || use.length > 200) return;
+  window.sessionStorage.setItem(saasDraftKey, JSON.stringify({
+    createdAt: Date.now(), platform, use,
+  }));
+}
+
+export function takeSaasUseStarter(): { platform: string; use: string } | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.sessionStorage.getItem(saasDraftKey);
+  window.sessionStorage.removeItem(saasDraftKey);
+  if (!raw || raw.length > 1000) return null;
+  try {
+    const value = JSON.parse(raw) as { createdAt?: number; platform?: string; use?: string };
+    if (!value.createdAt || value.createdAt > Date.now() || Date.now() - value.createdAt > 30 * 60 * 1000
+      || typeof value.platform !== "string" || value.platform.length > 100
+      || typeof value.use !== "string" || value.use.length > 200) return null;
+    return { platform: value.platform, use: value.use };
+  } catch { return null; }
+}
