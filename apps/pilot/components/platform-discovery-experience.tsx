@@ -8,6 +8,7 @@ import {
 } from "@crux/core";
 import type { CruxPortableBundle } from "@crux/formats";
 import { DiscoveryOnboarding } from "./discovery-onboarding";
+import { saveSaasUseStarter } from "../lib/connection-handoff";
 import "./platform-discovery-experience.css";
 
 // These are starting questions, NOT findings about the selected organisation.
@@ -167,8 +168,12 @@ export function PlatformDiscoveryExperience({
             : "You can begin with an example above or describe a different use."}
           {" "}The next questions focus on purpose, who is affected and who makes decisions.
         </p>
-        <a className="btn primary" href="/author">Describe an AI use</a>
-        <p className="saas-muted">The description form opens separately; selections on this page are not yet carried across.</p>
+        <div className="saas-start-actions">{(selectedUses.length ? selectedUses : ["Another AI use"]).map((item) => (
+          <a key={item} className="btn primary" href="/author" onClick={() => saveSaasUseStarter(current.label, item === "Another AI use" ? "" : item)}>
+            {item === "Another AI use" ? "Describe another use" : `Describe: ${item}`}
+          </a>
+        ))}</div>
+        <p className="saas-muted">Your choice will be carried into the description as a starting point, not as verified evidence.</p>
       </div>
 
       <details className="saas-step saas-secondary">
